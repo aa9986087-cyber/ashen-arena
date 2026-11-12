@@ -17,8 +17,34 @@ const SCREENS = [
 function show(id, on) {
   $(id).hidden = !on;
 }
+let goTok = 0,
+  goFirst = true;
+/** Navigate to a menu screen with a short leave/wipe transition (instant on first call). */
 function go(id) {
-  for (const s of SCREENS) if (s !== 'cards') $(s).hidden = s !== id;
+  const cur = SCREENS.find(q => q !== 'cards' && q !== id && !$(q).hidden),
+    tok = ++goTok;
+  if (goFirst || !cur) {
+    goFirst = false;
+    goNow(id);
+    return;
+  }
+  $(cur).classList.add('leaving');
+  pop($('wipe'), 'run');
+  AU.play('nav');
+  setTimeout(() => {
+    if (tok === goTok) goNow(id);
+  }, 185);
+}
+/** Show only `keep` (clearing transition classes). With no argument every screen is hidden, the 'cards' overlay included. */
+function hideScreens(keep) {
+  for (const s of SCREENS) {
+    if (s === 'cards' && keep !== undefined) continue;
+    $(s).hidden = s !== keep;
+    $(s).classList.remove('leaving');
+  }
+}
+function goNow(id) {
+  hideScreens(id);
   if (id === 'chars') drawChars();
   if (id === 'shop') drawShop();
   if (id === 'tree') drawTree();
@@ -31,9 +57,18 @@ function go(id) {
   if (id === 'menu') menuState();
   wallet();
 }
+let walletLast = null;
 function wallet() {
-  document.querySelectorAll('.wCoins').forEach(e => (e.textContent = '🪙 ' + S.coins));
-  document.querySelectorAll('.wSp').forEach(e => (e.textContent = '✨ ' + S.sp));
+  const ch = walletLast !== null && walletLast !== S.coins + '|' + S.sp;
+  walletLast = S.coins + '|' + S.sp;
+  document.querySelectorAll('.wCoins').forEach(e => {
+    e.textContent = '🪙 ' + S.coins;
+    if (ch) pop(e);
+  });
+  document.querySelectorAll('.wSp').forEach(e => {
+    e.textContent = '✨ ' + S.sp;
+    if (ch) pop(e);
+  });
 }
 /** Shop/menu tile: .item with a title (optional icon), body nodes, and an optional action button. */
 function itemCard(parent, o) {
@@ -143,40 +178,6 @@ function drawShop() {
           drawShop();
         }),
     });
-  }
-}
-function drawTree() {
-  const g = $('treeGrid');
-  g.innerHTML = '';
-  for (const br of TREE) {
-    const col = el('div', 'col');
-    col.appendChild(el('b', '', br.n));
-    br.nodes.forEach((n, i) => {
-      const own = S.tree[n.id],
-        can = i === 0 || S.tree[br.nodes[i - 1].id];
-      itemCard(col, {
-        cls: own ? ' done' : '',
-        title: n.n,
-        body: [el('p', '', n.d)],
-        btn: own ? 'مفعّلة' : can ? 'فعّل بـ ' + n.c + ' ✨' : 'افتح ما قبلها أولاً',
-        disabled: own || !can,
-        onClick: () => {
-          if (S.sp < n.c) {
-            AU.play('deny');
-            toast('تحتاج ' + (n.c - S.sp) + ' نقطة مهارة إضافية');
-            return;
-          }
-          S.sp -= n.c;
-          S.tree[n.id] = 1;
-          AU.play('level');
-          save();
-          newRun();
-          drawTree();
-          wallet();
-        },
-      });
-    });
-    g.appendChild(col);
   }
 }
 function drawAch() {

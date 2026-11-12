@@ -10,6 +10,7 @@ function frame(now) {
   if (!AU.ctx) CM.tick();
   render(dt, now);
 }
+initIntro();
 newRun();
 setStage(0);
 buildPlayer();

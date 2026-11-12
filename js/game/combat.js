@@ -302,6 +302,7 @@ function hurt(d) {
   shake(0.45);
   AU.play('hurt');
   vig = 0.75;
+  pop($('hpbar'), 'hitf');
   text(p.x, p.z, '-' + Math.round(d), '#ff5a50', true);
   if (p.hp <= 0) {
     if (G.revives > 0) {

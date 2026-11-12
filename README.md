@@ -24,11 +24,14 @@ css/
   screens.css           القوائم والشاشات والعناصر المشتركة
   cards.css             بطاقات التطوير ومشهد الأسطوري
   responsive.css        الجوال وتقليل الحركة
+  menu.css              القائمة الرئيسية: المقدمة، الجمر، العنوان، البلاطات
+  motion.css            انتقالات الشاشات وحركات الظهور ونبضات الواجهة
+  skill-tree.css        شاشة شجرة المهارات
 js/
   core/                 أساسيات بدون منطق لعب
     utils.js            دوال رياضية (rand, clamp, wrapAng, rotate, fmtT…)
     config.js           مسارات الأصول وأعلام البيئة (MUSIC_URL, MODEL_DIR, LAB)
-    dom.js              $، el، pips
+    dom.js              $، el، pips، pop (إعادة تشغيل حركة CSS)
     save.js             ملف اللاعب الدائم (localStorage)
   data/                 بيانات اللعبة فقط — مكان التوازن والمحتوى
     weapons.js  characters.js  upgrades.js  achievements.js  stages.js  enemies.js
@@ -54,7 +57,9 @@ js/
     cards.js            بطاقات المستوى ومكافأة الزعيم
     run.js              بدء/استكمال/إنهاء/إيقاف الجولة
   ui/
-    hud.js  screens.js  leaderboard.js  lab.js
+    hud.js  screens.js (التنقل go مع الانتقال)  leaderboard.js  lab.js
+    skill-tree.js       رسم شجرة المهارات وأيقوناتها TREE_IC
+    intro.js            مقدمة VAMOS وجمر القائمة
   input.js              لوحة المفاتيح، الفأرة، عصا اللمس
   main.js               الإقلاع وحلقة الإطارات
 assets/
@@ -77,6 +82,7 @@ assets/
 | بطل | `js/data/characters.js` (+ تفاصيل شكله في `buildPlayer`) |
 | تطوير / صفقة / تطوير دائم / عقدة مهارة | `js/data/upgrades.js` (+ أثره في `recalc` داخل `game/state.js` أو في `update`) |
 | إنجاز | `js/data/achievements.js` |
+| عقدة مهارة جديدة | `TREE` في `js/data/upgrades.js` + أيقونتها في `TREE_IC` داخل `js/ui/skill-tree.js` |
 | عدو | `js/data/enemies.js` + شكله في `render/geometry.js` (نفس المفتاح) + سلوكه في `game/enemy-ai.js` + وزنه في `pickType` داخل `game/spawning.js` |
 | مرحلة / زعيم | `js/data/stages.js` (+ هجمات الزعيم في `game/enemy-ai.js` حسب `bk`) |
 

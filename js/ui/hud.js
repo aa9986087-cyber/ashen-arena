@@ -31,10 +31,15 @@ function drawHud() {
     $('sKills').textContent = '💀 ' + G.kills;
   }
   if (hud.c !== G.coins) {
+    if (hud.c >= 0 && G.coins > hud.c) pop($('sCoins'));
     hud.c = G.coins;
     $('sCoins').textContent = '🪙 ' + G.coins;
   }
   if (hud.l !== G.lvl) {
+    if (hud.l > 0 && G.lvl > hud.l) {
+      pop($('lvl'));
+      pop($('xpbar'), 'xpf');
+    }
     hud.l = G.lvl;
     $('lvl').textContent = G.lvl;
   }

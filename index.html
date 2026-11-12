@@ -15,12 +15,19 @@
     <link rel="stylesheet" href="css/screens.css" />
     <link rel="stylesheet" href="css/cards.css" />
     <link rel="stylesheet" href="css/responsive.css" />
+    <link rel="stylesheet" href="css/menu.css" />
+    <link rel="stylesheet" href="css/motion.css" />
+    <link rel="stylesheet" href="css/skill-tree.css" />
   </head>
   <body class="mouse">
     <canvas id="gl"></canvas>
     <canvas id="fx"></canvas>
     <div id="vig"></div>
     <div id="dark"></div>
+    <div id="intro">
+      <div class="iv"><span>VAMOS</span><i></i><small>يقدّم</small></div>
+    </div>
+    <div id="wipe"></div>
 
     <div id="hud" hidden>
       <div id="xpbar"><i></i></div>
@@ -56,25 +63,75 @@
       </div>
     </div>
 
-    <div class="screen" id="menu">
+    <div class="screen boot" id="menu">
+      <div id="embers"></div>
       <div id="menuTop">
-        <div>
-          <h1>ساحة الرماد</h1>
-          <p class="tag">ادخل ضعيفاً، واخرج إعصاراً. اقتل، اجمع البلورات، واختر قوتك.</p>
-        </div>
         <div class="wallet"><span class="wCoins">🪙 0</span><span class="wSp">✨ 0</span></div>
+      </div>
+      <div id="hero">
+        <div class="orn">
+          <i></i
+          ><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M12 2l4 10-4 10-4-10z" fill="currentColor" />
+            <path d="M2 12l10-3 10 3-10 3z" fill="currentColor" opacity=".55" /></svg
+          ><i></i>
+        </div>
+        <h1>ساحة الرماد</h1>
+        <p class="tag">ادخل ضعيفاً، واخرج إعصاراً</p>
       </div>
       <div id="menuNav">
         <button class="btn go" id="mResume" hidden></button>
-        <button class="btn go" id="mPlay">ابدأ المعركة</button>
-        <button class="btn" data-go="chars">🛡️ الأبطال</button>
-        <button class="btn" data-go="shop">🛒 المتجر</button>
-        <button class="btn" data-go="tree">🌳 المهارات</button>
-        <button class="btn" data-go="ach">🏆 الإنجازات</button>
-        <button class="btn" data-go="board">🏅 الصدارة</button>
-        <button class="btn" data-go="settings">⚙️ الإعدادات</button>
+        <button class="btn go" id="mPlay">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 3h3l9 9-3 3-9-9zM20 3h-3l-9 9 3 3 9-9zM5 16l3 3M19 16l-3 3M3 21l3-3M21 21l-3-3" /></svg
+          ><span id="mPlayT">ابدأ المعركة</span>
+        </button>
+        <div id="tiles">
+          <button class="tile" data-go="chars">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 13a7 7 0 0 1 14 0v6h-4v-5h-1v5h-4v-5H9v5H5z" />
+              <path d="M12 6V3M10 3h4" /></svg
+            ><b>الأبطال</b>
+          </button>
+          <button class="tile" data-go="shop">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 8h12l1 12H5z" />
+              <path d="M9 8V6a3 3 0 0 1 6 0v2M9 12a3 3 0 0 0 6 0" /></svg
+            ><b>المتجر</b>
+          </button>
+          <button class="tile" data-go="tree">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="5" r="2" />
+              <circle cx="6" cy="18" r="2" />
+              <circle cx="18" cy="18" r="2" />
+              <circle cx="12" cy="13" r="1.4" />
+              <path d="M12 7v4.6M11 14l-4 2.6M13 14l4 2.6" /></svg
+            ><b>المهارات</b>
+          </button>
+          <button class="tile" data-go="ach">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
+              <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8M10 17h4" /></svg
+            ><b>الإنجازات</b>
+          </button>
+          <button class="tile" data-go="board">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 17 3 8l5 4 4-7 4 7 5-4-1 9z" />
+              <path d="M4 20.5h16" />
+              <circle cx="12" cy="13.5" r="1" /></svg
+            ><b>الصدارة</b>
+          </button>
+          <button class="tile" data-go="settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"
+              /></svg
+            ><b>الإعدادات</b>
+          </button>
+        </div>
         <button class="btn" id="mLab" hidden>🧪 المختبر: جرّب كل شي بسرعة</button>
-        <p class="credit">صنعها <b>Vamos</b></p>
+        <p class="credit"><span>✦</span> صنعها <b>Vamos</b> <span>✦</span></p>
       </div>
     </div>
 
@@ -111,9 +168,10 @@
           <button class="btn sm" data-go="menu">رجوع</button>
         </div>
         <p class="note" id="treeNote">
-          تكسب نقطة مهارة ✨ عن كل زعيم تهزمه وعن بعض الإنجازات. افتح كل فرع من الأعلى للأسفل.
+          تكسب نقطة مهارة ✨ عن كل زعيم تهزمه وعن بعض الإنجازات. كل فرع ينفتح من تحت لفوق، واضغط أي شكل تشوف تفاصيله.
         </p>
-        <div id="treeGrid"></div>
+        <div id="treeView"></div>
+        <div id="tvInfo"></div>
       </div>
     </div>
 
@@ -266,7 +324,9 @@
     <script src="js/ui/hud.js"></script>
     <script src="js/ui/screens.js"></script>
     <script src="js/ui/leaderboard.js"></script>
+    <script src="js/ui/skill-tree.js"></script>
     <script src="js/ui/lab.js"></script>
+    <script src="js/ui/intro.js"></script>
     <script src="js/input.js"></script>
     <script src="js/render/renderer.js"></script>
     <script src="js/render/models.js"></script>

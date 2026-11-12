@@ -56,7 +56,7 @@ function menuState() {
   const r = loadRun();
   $('mResume').hidden = !r;
   if (r) $('mResume').textContent = 'أكمل جولتك: المستوى ' + r.lvl + '، ' + fmtT(r.t);
-  $('mPlay').textContent = r ? 'جولة جديدة' : 'ابدأ المعركة';
+  $('mPlayT').textContent = r ? 'جولة جديدة' : 'ابدأ المعركة';
 }
 function resumeRun() {
   const o = loadRun();
@@ -112,7 +112,8 @@ function enterArena() {
   setStage(G.stage);
   buildPlayer();
   refreshLoadout();
-  for (const s of SCREENS) $(s).hidden = true;
+  goTok++;
+  hideScreens();
   $('hud').hidden = false;
   $('bossbar').hidden = true;
   bossMesh.visible = false;

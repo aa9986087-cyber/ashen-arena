@@ -1,0 +1,353 @@
+/* Screen transitions, staggered entrances, HUD feedback pops. */
+#wipe {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 34%,
+    rgba(246, 196, 90, 0.18) 44%,
+    rgba(255, 236, 180, 0.7) 50%,
+    rgba(246, 196, 90, 0.18) 56%,
+    transparent 66%
+  );
+  background-size: 320% 100%;
+}
+#wipe.run {
+  animation: wipe 0.52s ease-in-out;
+}
+@keyframes wipe {
+  0% {
+    opacity: 1;
+    background-position: 125% 0;
+  }
+  100% {
+    opacity: 1;
+    background-position: -25% 0;
+  }
+}
+.screen.veil {
+  animation: veilIn 0.28s backwards;
+}
+@keyframes veilIn {
+  from {
+    opacity: 0;
+  }
+}
+.screen.veil > .wrap > .head {
+  animation: headIn 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+@keyframes headIn {
+  from {
+    opacity: 0;
+    transform: translateY(-22px);
+  }
+}
+.screen.leaving {
+  animation: scrOut 0.19s forwards !important;
+  pointer-events: none;
+}
+@keyframes scrOut {
+  to {
+    opacity: 0;
+    transform: scale(1.035);
+  }
+}
+.grid .item,
+.rk,
+.screen .row,
+.screen .sec,
+.center > * {
+  animation: fadeUp 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.grid .item:nth-child(1) {
+  animation-delay: 0.08s;
+}
+.grid .item:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.grid .item:nth-child(3) {
+  animation-delay: 0.17s;
+}
+.grid .item:nth-child(4) {
+  animation-delay: 0.22s;
+}
+.grid .item:nth-child(5) {
+  animation-delay: 0.26s;
+}
+.grid .item:nth-child(6) {
+  animation-delay: 0.3s;
+}
+.grid .item:nth-child(7) {
+  animation-delay: 0.35s;
+}
+.grid .item:nth-child(8) {
+  animation-delay: 0.4s;
+}
+.grid .item:nth-child(9) {
+  animation-delay: 0.44s;
+}
+.grid .item:nth-child(10) {
+  animation-delay: 0.48s;
+}
+.grid .item:nth-child(11) {
+  animation-delay: 0.53s;
+}
+.grid .item:nth-child(12) {
+  animation-delay: 0.57s;
+}
+.grid .item:nth-child(13) {
+  animation-delay: 0.62s;
+}
+.grid .item:nth-child(14) {
+  animation-delay: 0.66s;
+}
+.rk:nth-child(1) {
+  animation-delay: 0.08s;
+}
+.rk:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.rk:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.rk:nth-child(4) {
+  animation-delay: 0.18s;
+}
+.rk:nth-child(5) {
+  animation-delay: 0.22s;
+}
+.rk:nth-child(6) {
+  animation-delay: 0.26s;
+}
+.rk:nth-child(7) {
+  animation-delay: 0.29s;
+}
+.rk:nth-child(8) {
+  animation-delay: 0.33s;
+}
+.rk:nth-child(9) {
+  animation-delay: 0.36s;
+}
+.rk:nth-child(10) {
+  animation-delay: 0.4s;
+}
+.rk:nth-child(11) {
+  animation-delay: 0.43s;
+}
+.rk:nth-child(12) {
+  animation-delay: 0.47s;
+}
+.rk:nth-child(13) {
+  animation-delay: 0.5s;
+}
+.rk:nth-child(14) {
+  animation-delay: 0.54s;
+}
+.rk:nth-child(15) {
+  animation-delay: 0.57s;
+}
+.rk:nth-child(16) {
+  animation-delay: 0.6s;
+}
+.rk:nth-child(17) {
+  animation-delay: 0.64s;
+}
+.rk:nth-child(18) {
+  animation-delay: 0.68s;
+}
+.rk:nth-child(19) {
+  animation-delay: 0.71s;
+}
+.rk:nth-child(20) {
+  animation-delay: 0.74s;
+}
+.screen .row:nth-child(1) {
+  animation-delay: 0.08s;
+}
+.screen .row:nth-child(2) {
+  animation-delay: 0.13s;
+}
+.screen .row:nth-child(3) {
+  animation-delay: 0.18s;
+}
+.screen .row:nth-child(4) {
+  animation-delay: 0.23s;
+}
+.screen .row:nth-child(5) {
+  animation-delay: 0.28s;
+}
+.screen .row:nth-child(6) {
+  animation-delay: 0.33s;
+}
+.screen .row:nth-child(7) {
+  animation-delay: 0.38s;
+}
+.screen .row:nth-child(8) {
+  animation-delay: 0.43s;
+}
+.screen .row:nth-child(9) {
+  animation-delay: 0.48s;
+}
+.center > *:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.center > *:nth-child(2) {
+  animation-delay: 0.14s;
+}
+.center > *:nth-child(3) {
+  animation-delay: 0.23s;
+}
+.center > *:nth-child(4) {
+  animation-delay: 0.32s;
+}
+.center > *:nth-child(5) {
+  animation-delay: 0.41s;
+}
+.center h2 {
+  animation: dropIn 0.5s cubic-bezier(0.2, 1.2, 0.3, 1) backwards;
+}
+@keyframes dropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-40px) scale(1.2);
+  }
+}
+.sum > * {
+  animation: fadeUp 0.35s backwards;
+}
+.sum > *:nth-child(1) {
+  animation-delay: 0.25s;
+}
+.sum > *:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.sum > *:nth-child(3) {
+  animation-delay: 0.35s;
+}
+.sum > *:nth-child(4) {
+  animation-delay: 0.4s;
+}
+.sum > *:nth-child(5) {
+  animation-delay: 0.45s;
+}
+.sum > *:nth-child(6) {
+  animation-delay: 0.5s;
+}
+.sum > *:nth-child(7) {
+  animation-delay: 0.55s;
+}
+.sum > *:nth-child(8) {
+  animation-delay: 0.6s;
+}
+.sum > *:nth-child(9) {
+  animation-delay: 0.65s;
+}
+.sum > *:nth-child(10) {
+  animation-delay: 0.7s;
+}
+.sum > *:nth-child(11) {
+  animation-delay: 0.75s;
+}
+.sum > *:nth-child(12) {
+  animation-delay: 0.8s;
+}
+.stack .btn {
+  animation: fadeUp 0.4s backwards;
+}
+.stack .btn:nth-child(1) {
+  animation-delay: 0.45s;
+}
+.stack .btn:nth-child(2) {
+  animation-delay: 0.53s;
+}
+.stack .btn:nth-child(3) {
+  animation-delay: 0.61s;
+}
+.stack .btn:nth-child(4) {
+  animation-delay: 0.69s;
+}
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.38);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.pop {
+  animation: pop 0.36s ease-out !important;
+}
+.hitf {
+  animation: hitf 0.3s !important;
+}
+@keyframes hitf {
+  0% {
+    filter: brightness(2.6);
+    transform: translateX(-4px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  100% {
+    filter: none;
+    transform: none;
+  }
+}
+.xpf i {
+  animation: xpf 0.7s;
+}
+@keyframes xpf {
+  0% {
+    filter: brightness(3);
+    box-shadow: 0 0 26px 6px var(--xp);
+  }
+}
+#bossbar {
+  animation: dropIn 0.6s backwards;
+}
+.chip {
+  animation: chipIn 0.3s backwards;
+}
+@keyframes chipIn {
+  from {
+    opacity: 0;
+    transform: translateX(18px) scale(0.6);
+  }
+}
+#banner h2 {
+  transition: transform 0.5s cubic-bezier(0.2, 1.3, 0.3, 1);
+  transform: scale(0.6);
+}
+#banner.on h2 {
+  transform: none;
+}
+#hud:not([hidden]) #topRow {
+  animation: headIn 0.5s backwards;
+}
+#hud:not([hidden]) #acts {
+  animation: fadeUp 0.5s 0.15s backwards;
+}
+.btn,
+.tile,
+.card,
+.act {
+  will-change: transform;
+}
+.btn.sm:active,
+.item .btn:active {
+  transform: scale(0.93);
+}
+@media (prefers-reduced-motion: reduce) {
+  .screen *,
+  #hud *,
+  #wipe {
+    animation: none !important;
+    transition: none !important;
+  }
+}

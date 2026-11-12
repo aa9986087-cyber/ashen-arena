@@ -14,35 +14,6 @@
   background: var(--panel);
   backdrop-filter: blur(6px);
 }
-#menu {
-  justify-content: space-between;
-  background: linear-gradient(
-    180deg,
-    rgba(20, 24, 41, 0.78),
-    rgba(20, 24, 41, 0) 38%,
-    rgba(20, 24, 41, 0) 52%,
-    rgba(20, 24, 41, 0.92)
-  );
-}
-#menu h1 {
-  font-family: var(--display);
-  font-weight: 400;
-  font-size: clamp(64px, 17vw, 150px);
-  line-height: 0.95;
-  color: var(--parch);
-  text-shadow:
-    0 0 34px var(--ember2),
-    0 5px 0 #7a2a12;
-  margin-top: 6px;
-}
-#menu .tag {
-  font-size: 17px;
-  font-weight: 500;
-  color: #ffd9a0;
-  max-width: 30ch;
-  margin-top: 6px;
-  text-shadow: 0 1px 4px #000;
-}
 .wallet {
   display: flex;
   gap: 8px;
@@ -53,33 +24,6 @@
   padding: 6px 12px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.15);
-}
-#menuTop {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-#menuNav {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
-  max-width: 760px;
-  width: 100%;
-  margin: 0 auto;
-}
-#menuNav .go,
-#menuNav .credit,
-#mLab {
-  grid-column: 1/-1;
-}
-#mResume {
-  background: linear-gradient(180deg, #58d6c6, #2a9c8f);
-  box-shadow: 0 5px 0 #145a52;
-}
-#mLab {
-  border-color: var(--xp);
 }
 .btn {
   background: var(--night2);
@@ -133,6 +77,12 @@
   font-weight: 400;
   font-size: 38px;
   line-height: 1;
+  background: linear-gradient(180deg, #fff6dc, #f6c45a 60%, #c9781f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 0 #3a1508);
+  padding-bottom: 0.1em;
 }
 .wrap {
   max-width: 900px;
@@ -145,8 +95,9 @@
   gap: 12px;
 }
 .item {
-  background: var(--night2);
-  border: 2px solid rgba(241, 231, 208, 0.14);
+  background: linear-gradient(180deg, #262d4f, #191d34);
+  border: 2px solid rgba(246, 196, 90, 0.26);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
   border-radius: 14px;
   padding: 14px;
   display: flex;
@@ -154,7 +105,8 @@
   gap: 6px;
 }
 .item.sel {
-  border-color: var(--ember);
+  border-color: #f6c45a;
+  box-shadow: 0 0 18px rgba(246, 196, 90, 0.35);
 }
 .item.done {
   border-color: rgba(63, 208, 192, 0.6);
@@ -194,21 +146,6 @@ h4.sec {
   font-size: 17px;
   font-weight: 800;
   margin: 20px 0 10px;
-  color: #ffd9a0;
-}
-#treeGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-#treeGrid .col {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-#treeGrid .col > b {
-  text-align: center;
-  font-size: 16px;
   color: #ffd9a0;
 }
 .row {

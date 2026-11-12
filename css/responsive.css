@@ -16,13 +16,6 @@
   font-size: 12px;
 }
 @media (max-width: 640px) {
-  #menuNav {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  #menuNav .btn:not(.go) {
-    font-size: 13px;
-    padding: 11px 4px;
-  }
   .card {
     width: 100%;
     min-height: 0;
@@ -52,9 +45,6 @@
   }
   #stats span {
     padding: 4px 7px;
-  }
-  #treeGrid {
-    grid-template-columns: 1fr;
   }
   #loadout {
     top: calc(var(--st) + 108px);

@@ -8,6 +8,14 @@ function el(tag, cls, txt) {
   if (txt != null) e.textContent = txt;
   return e;
 }
+/** Restart a one-shot CSS animation class on an element (default: 'pop'). */
+const pop = (e, c) => {
+  if (!e) return;
+  c = c || 'pop';
+  e.classList.remove(c);
+  void e.offsetWidth;
+  e.classList.add(c);
+};
 /** Row of level pips (filled up to l, out of max). */
 function pips(l, max) {
   const d = el('div', 'pips');
