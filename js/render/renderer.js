@@ -140,7 +140,18 @@ function render(dt, now) {
       put(IS, s.x, 1.1, s.z, 0, q, q, q, c[0] * 0.9, c[1] * 0.6, c[2] * 1.3);
     } else put(IB, s.x, 1, s.z, ry, s.r * 2.4, 0.08, 0.5, c[0], c[1], c[2]);
   }
-  for (const s of G.eshots) put(IS, s.x, 1, s.z, 0, 0.6, 0.6, 0.6, 1.9, 0.35, 0.25);
+  for (const s of G.eshots) {
+    const st = s.sty && BOSS_ULTS[s.sty - 1].shot;
+    if (!st) put(IS, s.x, 1, s.z, 0, 0.6, 0.6, 0.6, 1.9, 0.35, 0.25);
+    else {
+      const c = st.c,
+        ry = Math.atan2(s.vx, s.vz);
+      if (st.form === 'orb') put(IS, s.x, 1, s.z, 0, st.s, st.s, st.s, c[0], c[1], c[2]);
+      else if (st.form === 'thorn') put(IB, s.x, 1, s.z, ry, 0.16, 0.16, 0.95, c[0], c[1], c[2]);
+      else if (st.form === 'blade') put(IB, s.x, 1, s.z, ry, 0.7, 0.07, 0.35, c[0], c[1], c[2]);
+      else put(IB, s.x, 1, s.z, ry, 0.3, 0.3, 0.6, c[0], c[1], c[2]); // shell
+    }
+  }
   flush(IB);
   flush(IS);
   // pickups
@@ -183,13 +194,14 @@ function render(dt, now) {
       const k = q.l / q.d;
       m.position.set(q.x, 0.1, q.z);
       m.scale.set(q.r, q.r, 1);
-      m.material.color.setHex(q.f ? 0xffa020 : 0xff2a1a);
+      const zc = q.f ? 0xffa020 : q.sty ? BOSS_ULTS[q.sty - 1].zone : 0xff2a1a;
+      m.material.color.setHex(zc);
       m.material.opacity = 0.18 + 0.4 * k;
       const y = (1 - k) * 26 + 1,
         bs = q.f ? 1.6 : 0.9;
       b.position.set(q.x + (1 - k) * 6, y, q.z - (1 - k) * 4);
       b.scale.set(bs, bs, bs);
-      b.material.color.setHex(q.f ? 0xff8a20 : 0xff4030);
+      b.material.color.setHex(q.f ? 0xff8a20 : q.sty ? zc : 0xff4030);
     }
   });
   slashPool.forEach((m, i) => {

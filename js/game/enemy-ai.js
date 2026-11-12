@@ -16,6 +16,7 @@ function updEnemies(dt) {
   for (let i = 0, n = E.length; i < n; i++) {
     const e = E[i];
     if (e.dead) continue;
+    eSrc = e.boss ? e.kind + 1 : 0;
     e.t += dt;
     if (e.flash > 0) e.flash -= dt;
     if (e.hitCd > 0) e.hitCd -= dt;
@@ -429,6 +430,7 @@ function updEnemies(dt) {
       if (G.state !== 'play') return;
     }
   }
+  eSrc = 0;
   // separation
   for (let i = 0, n = E.length; i < n; i++) {
     const a = E[i];

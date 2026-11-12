@@ -115,7 +115,8 @@ function shot(x, z, ang, o) {
   });
 }
 function eShot(x, z, ang, spd, dmg) {
-  if (G.eshots.length < 300) G.eshots.push({ x, z, vx: Math.cos(ang) * spd, vz: Math.sin(ang) * spd, dmg, life: 5 });
+  if (G.eshots.length < 300)
+    G.eshots.push({ x, z, vx: Math.cos(ang) * spd, vz: Math.sin(ang) * spd, dmg, life: 5, sty: eSrc });
 }
 /** n enemy bullets evenly around a circle: angle_j = (j+shift)/n*TAU + off. */
 function eRing(x, z, n, spd, dmg, off = 0, shift = 0) {
@@ -126,7 +127,7 @@ function eFan(x, z, ang, k, step, spd, dmg) {
   for (let j = -k; j <= k; j++) eShot(x, z, ang + j * step, spd, dmg);
 }
 function zone(x, z, r, delay, dmg, friendly) {
-  G.zones.push({ x, z, r, l: 0, d: delay, dmg, f: friendly });
+  G.zones.push({ x, z, r, l: 0, d: delay, dmg, f: friendly, sty: friendly ? 0 : eSrc });
 }
 function slashFx(ang, tier, R) {
   G.slashes.push({ a: ang, tier, R, l: 0 });
