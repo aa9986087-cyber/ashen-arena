@@ -39,10 +39,10 @@ const CM = {
   },
   tick() {
     if (!this.el || !this.on) return;
+    // the recorded track is the menu song and the boss theme; ordinary fighting uses the synthesized score
     const st = G.state,
-      live = st === 'play' || st === 'cards',
-      k = MUS.boss ? 1 : Math.min(1, MUS.i * 2.5);
-    const target = MUS.boss && st === 'play' ? 0 : S.set.mus * (st === 'paused' ? 0.3 : live ? 0.55 + 0.45 * k : 0.6);
+      inRun = st === 'play' || st === 'cards' || st === 'paused' || st === 'lab',
+      target = !inRun ? S.set.mus * 0.6 : MUS.boss ? S.set.mus * (st === 'paused' ? 0.35 : 1) : 0;
     this.el.volume = clamp(this.el.volume + (target - this.el.volume) * 0.05, 0, 1);
   },
 };

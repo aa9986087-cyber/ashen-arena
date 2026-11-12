@@ -126,6 +126,10 @@ function spawnBoss() {
   $('bossbar').hidden = false;
   $('bossbar').querySelector('span').textContent = G.bossName;
   MUS.boss = true;
+  if (CM.el) {
+    CM.el.currentTime = 0;
+    CM.kick();
+  }
   AU.play('boss');
   shake(0.8);
   banner(G.bossName, 'الزعيم وصل. اقرأ هجماته وراوغ الدوائر الحمراء.', 3);

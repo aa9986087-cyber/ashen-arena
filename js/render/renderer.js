@@ -38,7 +38,7 @@ function render(dt, now) {
     camera.position.set(Math.sin(a) * 13, 6.5, Math.cos(a) * 13);
     camera.lookAt(0, 1.6, 0);
   }
-  updateAtmosphere(dt, now, playing ? p.x : 0, playing ? p.z : 0);
+  updateAtmosphere();
   sun.position.set(p.x + 12, 26, p.z + 9);
   sun.target.position.set(p.x, 0, p.z);
   if (playing && !IN.touch) mouseWorld();

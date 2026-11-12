@@ -64,6 +64,7 @@ function update(dt) {
     p.x += mx * sp * dt;
     p.z += mz * sp * dt;
   }
+  pushOutOfObstacles(p, p.r);
   const pr = Math.hypot(p.x, p.z);
   if (pr > ARENA) {
     p.x *= ARENA / pr;

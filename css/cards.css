@@ -176,6 +176,17 @@
       0 0 38px 4px var(--r3);
   }
 }
+/* six or eight cards: rows of three or four */
+#cardRow[data-n='6'] {
+  max-width: 700px;
+}
+#cardRow[data-n='8'] {
+  max-width: 940px;
+}
+#cardRow[data-n='6'] .card,
+#cardRow[data-n='8'] .card {
+  min-height: 250px;
+}
 #reroll {
   margin-top: 14px;
 }

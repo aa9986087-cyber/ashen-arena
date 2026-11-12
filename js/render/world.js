@@ -75,6 +75,28 @@ scene.add(outer);
   P.mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
 })();
 let decor = [];
+/** Solid footprints of each decor kind: [offsetX, offsetZ, radius] circles in the model's own space (scaled with it).
+    Kinds not listed (dunes) can be walked over. */
+const DECOR_SOLID = {
+  tree: [[0, 0, 0.55]],
+  snowtree: [[0, 0, 0.55]],
+  deadtree: [[0, 0, 0.45]],
+  rock: [[0, 0, 1.2]],
+  lavarock: [[0, 0, 1.2]],
+  ice: [[0, 0, 1]],
+  cactus: [[0, 0, 0.5]],
+  pillar: [[0, 0, 0.85]],
+  flag: [[0, 0, 0.2]],
+  crate: [[0, 0, 0.95]],
+  barrier: [
+    [-1.2, 0, 0.5],
+    [0, 0, 0.5],
+    [1.2, 0, 0.5],
+  ],
+  bones: [[0, 0, 0.6]],
+};
+/** Solid circles { x, z, r } inside the arena for the current stage (see pushOutOfObstacles). */
+const OBST = [];
 function setStage(i) {
   const st = STAGES[i];
   ground.material.color.setHex(st.ground).multiplyScalar(0.86);
@@ -96,6 +118,7 @@ function setStage(i) {
     d.mesh.dispose && d.mesh.dispose();
   }
   decor = [];
+  OBST.length = 0;
   st.decor.forEach((k, j) => {
     const n = j ? 46 : 60,
       I = inst(GEO[k], lamV, n, true);
@@ -103,8 +126,18 @@ function setStage(i) {
     for (let q = 0; q < n; q++) {
       const a = Math.random() * TAU,
         r = q < n * 0.6 ? rand(9, ARENA - 3) : rand(ARENA + 4, 90),
-        s = rand(0.8, 1.35);
-      put(I, Math.cos(a) * r, 0, Math.sin(a) * r, Math.random() * TAU, s, s, s, 1, 1, 1);
+        s = rand(0.8, 1.35),
+        x = Math.cos(a) * r,
+        z = Math.sin(a) * r,
+        ry = Math.random() * TAU;
+      put(I, x, 0, z, ry, s, s, s, 1, 1, 1);
+      // record its solid footprint (rotated like the model) when it stands inside the arena
+      if (r < ARENA + 2 && DECOR_SOLID[k]) {
+        const c = Math.cos(ry),
+          sn = Math.sin(ry);
+        for (const [ox, oz, cr] of DECOR_SOLID[k])
+          OBST.push({ x: x + (ox * c + oz * sn) * s, z: z + (-ox * sn + oz * c) * s, r: cr * s });
+      }
     }
     flush(I);
     decor.push(I);

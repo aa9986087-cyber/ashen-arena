@@ -10,6 +10,20 @@ function eachInRadius(x, z, R, fn, pad = true) {
     if (dx * dx + dz * dz < rr * rr) fn(e, Math.atan2(dz, dx));
   }
 }
+/** Push a body (anything with x, z) of radius r out of the trees, rocks and other solid decor. */
+function pushOutOfObstacles(o, r) {
+  for (const b of OBST) {
+    const dx = o.x - b.x,
+      dz = o.z - b.z,
+      rr = r + b.r;
+    if (dx > rr || dx < -rr || dz > rr || dz < -rr) continue;
+    const d2 = dx * dx + dz * dz;
+    if (d2 >= rr * rr) continue;
+    const d = Math.sqrt(d2) || 0.001;
+    o.x = b.x + (dx / d) * rr;
+    o.z = b.z + (dz / d) * rr;
+  }
+}
 /** Restore player health, capped at max. */
 function heal(v) {
   const p = G.p;

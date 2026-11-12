@@ -185,8 +185,8 @@ const AU = {
     if (!c) return;
     if (CM.on && CM.state !== 'missing') {
       CM.tick();
-      // during a boss fight the recorded track fades out and the synthesized battle score takes over
-      if (!(MUS.boss && G.state === 'play')) {
+      // the synthesized score plays only while fighting without a boss (the track covers menu and bosses)
+      if (!((G.state === 'play' || G.state === 'cards') && !MUS.boss)) {
         this.next = c.currentTime + 0.1;
         return;
       }

@@ -441,6 +441,7 @@ function updEnemies(dt) {
     const kd = 1 - Math.min(1, 8 * dt);
     e.kx *= kd;
     e.kz *= kd;
+    if (!(e.boss && e.st === 3)) pushOutOfObstacles(e, e.r * 0.8); // a leaping boss flies over them
     const er = Math.hypot(e.x, e.z);
     if (er > ARENA + 4) {
       e.x *= (ARENA + 4) / er;
@@ -480,4 +481,6 @@ function updEnemies(dt) {
       }
     }
   }
+  // crowding can shove bodies back into the decor: settle them outside it again
+  for (const e of E) if (!e.dead && !(e.boss && e.st === 3)) pushOutOfObstacles(e, e.r * 0.8);
 }
