@@ -95,6 +95,7 @@ function render(dt, now) {
   }
   // enemies
   bossAura.visible = false;
+  if (G.tslowT > 0) TINT.splice(0, 3, 0.7, 0.85, 1.4);
   for (const e of G.enemies) {
     if (e.boss) {
       const s = e.scale,
@@ -209,6 +210,7 @@ function render(dt, now) {
       0
     );
   }
+  TINT.splice(0, 3, 1, 1, 1);
   for (const k in EM) flush(EM[k]);
   for (const k in EMA) for (let i = 1; i < EMA[k].length; i++) flush(EMA[k][i]);
   for (const k in EMAA) for (const I of EMAA[k]) flush(I);
@@ -243,8 +245,31 @@ function render(dt, now) {
       else put(IB, s.x, 1, s.z, ry, 0.3, 0.3, 0.6, c[0], c[1], c[2]); // shell
     }
   }
+  forDrones((x, z) => {
+    put(IB, x, 2.3 + Math.sin(now * 0.006 + x) * 0.15, z, now * 0.004, 0.55, 0.18, 0.55, 0.5, 1.3, 1.6);
+    put(IS, x, 2.1, z, 0, 0.22, 0.22, 0.22, 0.6, 1.6, 2);
+  });
   flush(IB);
   flush(IS);
+  cloudPool.forEach((m, i) => {
+    const c = G.clouds[i];
+    m.visible = !!c;
+    if (c) {
+      m.position.set(c.x, 0.15, c.z);
+      m.scale.set(c.r, c.r, 1);
+      m.material.opacity = 0.25 * Math.min(1, (c.d - c.l) * 2) + 0.05 * Math.sin(now * 0.01 + i);
+    }
+  });
+  holePool.forEach((m, i) => {
+    const h = G.holes[i];
+    m.visible = !!h;
+    if (h) {
+      const k = Math.min(1, h.l * 3),
+        s = 1.6 * k + 0.25 * Math.sin(now * 0.02);
+      m.position.set(h.x, 1.4, h.z);
+      m.scale.set(s, s, s);
+    }
+  });
   // pickups
   for (const q of G.picks) {
     const bob = 0.5 + Math.sin(q.t * 4) * 0.12;

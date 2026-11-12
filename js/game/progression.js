@@ -23,7 +23,7 @@ function bossDown(e) {
     }
   G.eshots.length = 0;
   G.zones = G.zones.filter(z => z.f);
-  for (let i = 0; i < 12; i++) drop(e.x + rand(-3, 3), e.z + rand(-3, 3), 1, 4 + G.stage * 2);
+  for (let i = 0; i < (S.tree.W4 ? 24 : 12); i++) drop(e.x + rand(-3, 3), e.z + rand(-3, 3), 1, 4 + G.stage * 2);
   drop(e.x, e.z, 0, e.xp);
   drop(e.x, e.z + 1, 2, 40);
   for (const q of G.picks) q.mag = true;

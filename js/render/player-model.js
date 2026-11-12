@@ -178,5 +178,39 @@ function buildWeapon() {
     w.add(mesh(CYL, 0x6b4a2a, 0, -0.5, 0, 0.09, 1.7, 0.09));
     w.add(mesh(SPH, tc, 0, -1.42, 0, 0.34 * s, 0.34 * s, 0.34 * s, [0x1a4a66, 0x0a6a95, 0xaa6a00][t]));
     if (t === 2) w.add(mesh(CYL, 0xffc53d, 0, -1.42, 0, 0.6, 0.04, 0.6, em));
+  } else if (id === 'whip') {
+    w.add(mesh(CYL, 0x3a2a1a, 0, -0.2, 0, 0.1, 0.45, 0.1));
+    for (let i = 0; i < 5; i++)
+      w.add(
+        mesh(
+          BOX,
+          ev ? tc : 0x7fd0ff,
+          Math.sin(i) * 0.08,
+          -0.55 - i * 0.28 * s,
+          0,
+          0.06,
+          0.3 * s,
+          0.06,
+          ev ? em : 0x1a5a88
+        )
+      );
+  } else if (id === 'flame') {
+    w.add(mesh(CYL, 0x8a2a1a, 0, -0.35, -0.12, 0.26, 0.6, 0.26));
+    w.add(mesh(CYL, 0x30343c, 0, -0.85 * s, 0, 0.1, 0.7 * s, 0.1));
+    w.add(mesh(CONE, ev ? tc : 0xff8a20, 0, -1.3 * s, 0, 0.14, 0.25, 0.14, ev ? em : 0x803000));
+  } else if (id === 'shuriken') {
+    for (const r of [0, Math.PI / 4]) {
+      const b = mesh(BOX, tc, 0, -0.45, 0, 0.5 * s, 0.07, 0.12, em);
+      b.rotation.y = r;
+      w.add(b);
+    }
+  } else if (id === 'spear') {
+    w.add(mesh(CYL, 0x6b4a2a, 0, -0.9, 0, 0.07, 2.4 * s, 0.07));
+    const tip = mesh(CONE, tc, 0, -2.2 * s, 0, 0.16, 0.45, 0.16, em);
+    tip.rotation.x = Math.PI;
+    w.add(tip);
+  } else if (id === 'hammer') {
+    w.add(mesh(CYL, 0x6b4a2a, 0, -0.55, 0, 0.08, 1.2, 0.08));
+    w.add(mesh(BOX, tc, 0, -1.15, 0, 0.6 * s, 0.4 * s, 0.4 * s, em));
   }
 }

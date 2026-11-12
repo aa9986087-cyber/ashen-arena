@@ -1,7 +1,8 @@
 'use strict';
 /* Level-up / boss reward cards, and the HUD loadout chips. */
 function rollCards(n, minR, skip) {
-  const RW = [60, 24, 9, 3.2 + G.lvl * 0.22],
+  const luck = S.tree.U4 ? 1.5 : 1,
+    RW = [60, 24 * luck, 9 * luck, (3.2 + G.lvl * 0.22) * luck],
     pool = [],
     has = k => skip && skip.some(c => c.k === k.k && c.id === k.id);
   for (const id in UP) {
@@ -155,6 +156,7 @@ function chooseCard(i) {
   } else if (c.k === 'evo') {
     const w = G.weapons.find(x => x.id === c.id);
     w.evo = 1;
+    S.stats.evos = (S.stats.evos || 0) + 1;
     if (w === G.weapons[0]) buildWeapon();
   } else if (c.k === 'wnew') G.weapons.push({ id: c.id, lvl: 1, cd: 0.2 });
   else if (c.k === 'pact') {

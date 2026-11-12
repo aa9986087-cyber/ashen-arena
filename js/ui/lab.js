@@ -120,6 +120,34 @@ function buildLab() {
     buildWeapon();
     refreshLoadout();
   });
+  labBtn(T, '✨ كل التطويرات الجديدة', () => {
+    for (const k of [
+      'frost',
+      'poison',
+      'drone',
+      'vamp',
+      'thorns',
+      'bounce',
+      'hole',
+      'tslow',
+      'rage',
+      'execute',
+      'corpse',
+    ])
+      G.ups[k] = UP[k].max;
+    recalc();
+    refreshLoadout();
+    closeLab();
+  });
+  labBtn(T, '🔁 بدّل السلاح', () => {
+    const ids = Object.keys(WEP),
+      w = G.weapons[0];
+    w.id = ids[(ids.indexOf(w.id) + 1) % ids.length];
+    w.evo = 0;
+    buildWeapon();
+    refreshLoadout();
+    toast(WEP[w.id].i + ' ' + WEP[w.id].n);
+  });
   labBtn(T, '🏁 شاشة النهاية', () => {
     show('lab', false);
     G.state = 'ending';

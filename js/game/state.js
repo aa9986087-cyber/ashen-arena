@@ -31,13 +31,13 @@ function newRun() {
     specCd: 0,
     buffT: 0,
     buff: {},
-    rerolls: S.tree.U2 ? 2 : 0,
-    revives: 0,
+    rerolls: (S.tree.U2 ? 2 : 0) + (S.tree.U4 ? 1 : 0),
+    revives: S.tree.D5 ? 1 : 0,
     cardMode: '',
     achT: 0,
     ups: {},
     pacts: {},
-    weapons: [{ id: ch.wep, lvl: 1, cd: 0.3 }],
+    weapons: [{ id: ch.wep, lvl: S.tree.A5 ? 2 : 1, cd: 0.3 }],
     enemies: [],
     shots: [],
     eshots: [],
@@ -51,7 +51,11 @@ function newRun() {
     corpses: [],
     allies: [],
     defer: [],
-    tm: { bolt: 1.5, nova: 2, meteor: 2.5, aura: 0 },
+    tm: { bolt: 1.5, nova: 2, meteor: 2.5, aura: 0, poison: 2, hole: 4, tslow: 6, drone: 0 },
+    clouds: [],
+    holes: [],
+    tslowT: 0,
+    droneA: 0,
     orbitA: 0,
     p: {
       x: 0,
@@ -98,17 +102,18 @@ function recalc() {
   p.regen = 0.6 * L('regen') + (S.tree.D2 ? 1 : 0);
   p.armor = Math.min(0.4, 0.08 * L('armor'));
   p.shieldMax = L('shield') ? 12 + 14 * L('shield') : 0;
-  p.magnet = 3.2 * (1 + 0.35 * L('magnet')) * (1 + 0.1 * (pm.mag || 0));
-  p.dashMax = 2.2 * (1 - 0.2 * L('dash'));
+  p.magnet = 3.2 * (1 + 0.35 * L('magnet')) * (1 + 0.1 * (pm.mag || 0)) * (S.tree.W3 ? 1.25 : 1);
+  p.dashMax = 2.2 * (1 - 0.2 * L('dash')) * (S.tree.S2 ? 0.85 : 1);
   p.dashLen = 6 * (1 + 0.3 * L('dashlen'));
-  p.xpMul = 1 + 0.08 * (pm.xp || 0);
-  p.goldMul = 1 + 0.1 * (pm.gold || 0);
-  p.taken = 1;
+  p.xpMul = (1 + 0.08 * (pm.xp || 0)) * (1 + 0.1 * L('xp')) * (S.tree.W2 ? 1.1 : 1);
+  p.goldMul = (1 + 0.1 * (pm.gold || 0)) * (1 + 0.15 * L('coins')) * (S.tree.W1 ? 1.1 : 1);
+  p.taken = S.tree.D4 ? 0.9 : 1;
   p.leech = 0;
   p.enemyMul = 1;
   p.critMul = 2;
   G.pacts = G.pacts || {};
   for (const k in G.pacts) if (G.pacts[k] && PACT[k]) PACT[k].f(p);
+  if (S.tree.A4) p.critMul += 0.5;
   p.maxHp = Math.round(p.maxHp);
   if (p.hp > p.maxHp) p.hp = p.maxHp;
   const na = L('army') ? 1 + L('army') : 0;

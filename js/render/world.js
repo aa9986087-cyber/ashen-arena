@@ -113,6 +113,13 @@ const ringPool = pool(14, () => {
   m.rotation.x = -Math.PI / 2;
   return m;
 });
+/** Poison clouds and black holes (see update.js). */
+const cloudPool = pool(10, () => {
+  const m = new THREE.Mesh(discGeo, addMat(0x50ff60, 0.22));
+  m.rotation.x = -Math.PI / 2;
+  return m;
+});
+const holePool = pool(3, () => new THREE.Mesh(SPH, new THREE.MeshBasicMaterial({ color: 0x0a0010 })));
 const zonePool = pool(48, () => {
   const m = new THREE.Mesh(
     discGeo,

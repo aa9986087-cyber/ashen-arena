@@ -422,6 +422,11 @@ function updEnemies(dt) {
           spd *= 1.35;
           break;
         }
+    if (e.slowT > 0) {
+      e.slowT -= dt;
+      spd *= 0.75 - 0.08 * (G.ups.frost || 1);
+    }
+    if (G.tslowT > 0) spd *= 0.5;
     if (e.elite && !e.boss) {
       e.eCd = (e.eCd === undefined ? rand(1, 3) : e.eCd) - dt;
       if (e.eCd <= 0 && d > 4 && d < 22) {
@@ -445,6 +450,7 @@ function updEnemies(dt) {
       e.hitCd = 0.5;
       e.atkT = ATK_T;
       hurt(e.dmg);
+      if (G.ups.thorns && !e.dead) hit(e, e.dmg * 0.4 * G.ups.thorns, { aoe: 1, quiet: 1, noCrit: 1 });
       if (G.state !== 'play') return;
     }
   }

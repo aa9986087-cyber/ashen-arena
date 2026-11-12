@@ -274,6 +274,8 @@ const GAP = {
   boom: 90,
   hurt: 150,
   bolt: 120,
+  flame: 110,
+  whip: 120,
 };
 const SK = [293.66, 349.23, 392, 440, 523.25, 587.33, 698.46, 880, 1046.5, 1174.7];
 const SFX = {
@@ -300,6 +302,23 @@ const SFX = {
   rocket: a => {
     a.noise(0.4, 0.2, 400);
     a.tone(90, 0.35, 'sine', 0.13, 45);
+  },
+  whip: a => {
+    a.noise(0.14, 0.15, 3000, 0, null, 'highpass');
+    a.tone(880, 0.12, 'triangle', 0.05, 220);
+  },
+  flame: a => a.noise(0.18, 0.08, 700, 0, null, 'bandpass'),
+  shuriken: a => {
+    a.tone(1400, 0.06, 'triangle', 0.04, 900);
+    a.noise(0.05, 0.05, 2500, 0, null, 'bandpass');
+  },
+  spear: a => {
+    a.noise(0.12, 0.12, 1400, 0, null, 'bandpass');
+    a.tone(330, 0.12, 'triangle', 0.06, 165);
+  },
+  hammer: a => {
+    a.noise(0.35, 0.3, 300);
+    a.tone(60, 0.4, 'sine', 0.3, 30);
   },
   staff: a => {
     a.soft(587.33, 0.3, 0.09, 0, a.sg);

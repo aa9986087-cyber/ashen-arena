@@ -55,6 +55,8 @@ function inst(geo, mat, max, shadow) {
   scene.add(m);
   return { mesh: m, n: 0, max };
 }
+/** Colour multiplier applied by put() (e.g. the blue of time slow on enemies); reset it after use. */
+const TINT = [1, 1, 1];
 function put(I, x, y, z, ry, sx, sy, sz, r, g, b, rx, rz) {
   if (I.n >= I.max) return;
   D.position.set(x, y, z);
@@ -62,7 +64,7 @@ function put(I, x, y, z, ry, sx, sy, sz, r, g, b, rx, rz) {
   D.scale.set(sx, sy, sz);
   D.updateMatrix();
   I.mesh.setMatrixAt(I.n, D.matrix);
-  C.setRGB(r, g, b);
+  C.setRGB(r * TINT[0], g * TINT[1], b * TINT[2]);
   I.mesh.setColorAt(I.n, C);
   I.n++;
 }

@@ -134,6 +134,8 @@ function startRun() {
   G.state = 'play';
   enterArena();
   S.stats.runs++;
+  if (S.tree.U5) G.pending++; // a free upgrade card right away
+  if (S.tree.W5) G.coins = 60;
   dailyTrack('run', 1);
   banner(
     STAGES[0].n,

@@ -2,12 +2,12 @@
 #treeView {
   position: relative;
   margin: 6px auto 0;
-  max-width: 520px;
+  max-width: 760px;
   padding: 4px 0 0;
 }
 .tvb {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 4px;
   position: relative;
 }
@@ -27,6 +27,16 @@
 .tvi[data-b='1'] {
   --c: #5ab8ff;
   --g: rgba(80, 170, 255, 0.6);
+}
+.tvcol[data-b='3'],
+.tvi[data-b='3'] {
+  --c: #c78bff;
+  --g: rgba(190, 130, 255, 0.6);
+}
+.tvcol[data-b='4'],
+.tvi[data-b='4'] {
+  --c: #ffd24a;
+  --g: rgba(255, 210, 70, 0.6);
 }
 .tvcol[data-b='2'],
 .tvi[data-b='2'] {
@@ -142,7 +152,7 @@
 }
 .tvjoin {
   height: 28px;
-  margin: 0 16.6%;
+  margin: 0 10%;
   border: 4px solid rgba(255, 255, 255, 0.12);
   border-top: 0;
   border-radius: 0 0 18px 18px;
@@ -195,7 +205,7 @@
   }
 }
 #tvInfo {
-  max-width: 520px;
+  max-width: 560px;
   margin: 16px auto 0;
   min-height: 118px;
 }
@@ -222,4 +232,19 @@
 .tvi .hint {
   color: var(--dim);
   font-size: 13px;
+}
+
+/* five branches on a phone: smaller hexagons */
+@media (max-width: 640px) {
+  .tvn {
+    width: 58px;
+    height: 64px;
+  }
+  .tvn svg {
+    width: 26px;
+    height: 26px;
+  }
+  .tvname {
+    font-size: 17px;
+  }
 }

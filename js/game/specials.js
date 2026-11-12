@@ -135,6 +135,8 @@ const SPECIALS = {
     },
   },
 };
+/** Cooldown of the hero's special, after the skill tree. */
+const specCdMax = () => heroSpecial().cd * (S.tree.S1 ? 0.85 : 1);
 /** The current hero's special. */
 const heroSpecial = () => SPECIALS[CHARS[S.char].sp] || SPECIALS.shock;
 /** Remove enemy bullets within radius R of (x,z). */
@@ -155,10 +157,12 @@ function special() {
   const p = G.p;
   if (G.state !== 'play' || G.specCd > 0) return;
   const sp = heroSpecial();
-  G.specCd = sp.cd;
+  G.specCd = specCdMax();
   AU.play('special');
   shake(0.7);
-  sp.f(p, 60 * p.dmgMul * (1 + G.lvl * 0.06));
+  sp.f(p, 60 * p.dmgMul * (1 + G.lvl * 0.06) * (S.tree.S3 ? 1.4 : 1));
+  if (S.tree.S4) p.inv = Math.max(p.inv, 2);
+  if (S.tree.S5) heal(p.maxHp * 0.15);
   dailyTrack('special', 1);
   text(p.x, p.z - 1, sp.n, '#9fe8ff', true);
   if (G.ups.super) {

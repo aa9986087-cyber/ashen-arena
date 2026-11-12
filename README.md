@@ -94,6 +94,8 @@ assets/
 | عدو | `js/data/enemies.js` + شكله في `render/geometry.js` (نفس المفتاح) + سلوكه في `game/enemy-ai.js` + وزنه في `pickType` داخل `game/spawning.js` |
 | مرحلة / زعيم | `js/data/stages.js` (+ هجماته العادية في `game/enemy-ai.js` حسب `bk`، وضربته الكبرى في `game/boss-ults.js`، وشكله `boss<bk>` في `render/geometry.js`) |
 
+سلاح جديد يحتاج **تطوره الكامل** في `EVO` بنفس الملف، وإذا عنده سلوك خاص يتبرمج في `fire()` داخل `game/combat.js`. والأسلحة اللي ما تطلق مقذوفات تتعلّم بـ `chain` (برق يقفز بين الأعداء) أو `slam` (ضربة على الأرض).
+
 أدوات مساعدة جاهزة للهجمات: `eRing` (حلقة طلقات)، `eFan` (مروحة طلقات)، `spawnPack` (مجموعة أعداء)، `zoneBarrage` (دوائر خطر)، `eachInRadius` (كل عدو داخل دائرة)، `heal`.
 
 ## أكواد الهدايا

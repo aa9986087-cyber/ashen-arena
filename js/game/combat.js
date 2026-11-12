@@ -40,6 +40,8 @@ function hit(e, dmg, o) {
   }
   if (G.superT > 0) dmg *= 2;
   dmg *= buffMul('dmg');
+  if (G.ups.rage && G.p.hp < G.p.maxHp * 0.35) dmg *= 1 + 0.25 * G.ups.rage;
+  if (crit && G.ups.vamp) heal(G.ups.vamp);
   if (e.type === 'shield' && !e.boss && !o.aoe) {
     dmg *= 0.4;
     AU.play('clang');
@@ -61,6 +63,11 @@ function hit(e, dmg, o) {
     e.kz += Math.sin(o.ang) * o.kb;
   }
   if (G.ups.fire && !o.burn) e.burn = 3;
+  if (G.ups.frost && !o.burn) e.slowT = 2;
+  if (G.ups.execute && !e.boss && e.hp > 0 && e.hp < e.maxHp * 0.08 * G.ups.execute) {
+    e.hp = 0;
+    text(e.x, e.z, 'إعدام', '#c8a0ff', true);
+  }
   if (!o.quiet || crit) text(e.x, e.z, Math.round(dmg), crit ? '#ffd23a' : o.burn ? '#ff9a4a' : '#ffffff', crit);
   if (!o.quiet) AU.play('hit');
   if (e.hp <= 0) kill(e);
@@ -90,6 +97,8 @@ function kill(e) {
   if (Math.random() < (e.elite ? 1 : 0.13))
     drop(e.x + rand(-0.5, 0.5), e.z + rand(-0.5, 0.5), 1, e.mini ? 15 : e.elite ? 6 : 1 + (Math.random() < 0.3));
   if (Math.random() < (e.elite ? 0.35 : 0.012)) drop(e.x, e.z + 0.6, 2, 20);
+  if (G.ups.corpse && Math.random() < 0.15 * G.ups.corpse)
+    G.defer.push([e.x, e.z, 2.4 * p.area, (15 + 10 * G.ups.corpse) * p.dmgMul]);
   if (e.type === 'bomber') G.defer.push([e.x, e.z, 3, 30 * p.dmgMul]);
   if (e.burn > 0 && G.ups.nova) G.defer.push([e.x, e.z, 2.6 * p.area, (12 + 10 * G.ups.nova) * p.dmgMul]);
 }
@@ -130,6 +139,7 @@ function shot(x, z, ang, o) {
     col: o.col,
     crit: o.crit || 0,
     fx: o.fx || '',
+    bounce: (o.bounce || 0) + (o.kind === 3 ? 0 : G.ups.bounce || 0),
     life0: o.life || o.range / o.spd,
     hits: [],
     t: 0,
@@ -198,6 +208,26 @@ function fire(w, ang) {
         kind: 5,
         col,
       });
+  } else if (d.chain) {
+    // lightning whip: chains that jump between enemies (frozen for a moment when evolved)
+    const jumps = 3 + t + (ev ? 2 : 0),
+      chains = (t === 2 ? 2 : 1) + (ev ? 1 : 0) + p.multi;
+    for (let i = 0; i < chains; i++) {
+      const b0 = G.bolts.length;
+      boltStrike(jumps, i ? dmg * 0.7 : dmg, p.x, p.z);
+      if (ev)
+        for (const b of G.bolts.slice(b0))
+          for (const q of b.pts.slice(1)) eachInRadius(q[0], q[1], 0.5, e => (e.frz = Math.max(e.frz || 0, 0.35)));
+    }
+  } else if (d.slam) {
+    // thunder hammer: a heavy blow lands on (or near) the closest enemies
+    const near = G.enemies.filter(e => !e.dead && (e.x - p.x) ** 2 + (e.z - p.z) ** 2 < d.range * d.range),
+      n = 1 + (t === 2 ? 1 : 0) + (ev ? 3 : 0) + p.multi,
+      R = (2.8 + (t >= 1 ? 0.7 : 0) + (ev ? 1 : 0)) * p.area;
+    for (let i = 0; i < n; i++) {
+      const e = near.length ? near[i % near.length] : null;
+      zone(e ? e.x : p.x + Math.cos(ang) * 6, e ? e.z : p.z + Math.sin(ang) * 6, R, 0.22 + i * 0.08, dmg, true);
+    }
   } else {
     let n = 1 + p.multi,
       pierce = d.pierce,
@@ -224,8 +254,31 @@ function fire(w, ang) {
       if (t >= 1) n++;
       if (t === 2) aoe = 1.7;
     }
-    let fx = '';
+    let range = d.range,
+      sp = d.spread || 0.1,
+      off = 0,
+      bounce = d.bounce || 0;
+    if (w.id === 'flame') {
+      n += 3 + t;
+      if (t === 2) range *= 1.3;
+    }
+    if (w.id === 'shuriken') {
+      n += 1 + (t >= 1 ? 1 : 0);
+      if (t === 2) bounce++;
+    }
+    if (w.id === 'spear' && t >= 1) n++;
+    let fx = w.id === 'flame' ? 'burn' : '';
     if (ev) {
+      if (w.id === 'flame') {
+        range *= 1.7;
+        off = Math.PI; // a second jet behind
+      } else if (w.id === 'shuriken') {
+        n = 8;
+        sp = TAU / 8;
+      } else if (w.id === 'spear') {
+        n += 2;
+        aoe = 2.2;
+      }
       if (w.id === 'pistol') {
         n += 2;
         pierce += 2;
@@ -236,29 +289,34 @@ function fire(w, ang) {
       } else if (w.id === 'axe') {
         n++;
         fx = 'return';
-      } else fx = { bow: 'split', staff: 'chain', rocket: 'cluster' }[w.id] || '';
+      } else fx = { bow: 'split', staff: 'chain', rocket: 'cluster', flame: 'burn' }[w.id] || '';
     }
-    const sp = d.spread || 0.1;
-    for (let i = 0; i < n; i++)
-      shot(
-        p.x + Math.cos(ang) * 0.8,
-        p.z + Math.sin(ang) * 0.8,
-        ang + (i - (n - 1) / 2) * sp + (d.jit ? rand(-d.jit, d.jit) : 0),
-        {
-          spd: d.spd,
-          dmg,
-          size: d.size * (w.id === 'axe' && t === 2 ? 1.3 : 1),
-          pierce,
-          range: d.range * 1.15,
-          life: d.life,
-          aoe: aoe * p.area,
-          homing: d.homing,
-          kind: d.kind,
-          col,
-          crit,
-          fx,
-        }
-      );
+    const fireCol = w.id === 'flame' && !ev ? [2, 0.75, 0.15] : col,
+      shoot = a0 => {
+        for (let i = 0; i < n; i++)
+          shot(
+            p.x + Math.cos(a0) * 0.8,
+            p.z + Math.sin(a0) * 0.8,
+            a0 + (i - (n - 1) / 2) * sp + (d.jit ? rand(-d.jit, d.jit) : 0),
+            {
+              spd: d.spd,
+              dmg,
+              size: d.size * (w.id === 'axe' && t === 2 ? 1.3 : 1),
+              pierce,
+              range: range * 1.15,
+              life: d.life,
+              aoe: aoe * p.area,
+              homing: d.homing,
+              kind: d.kind,
+              col: fireCol,
+              crit,
+              fx,
+              bounce,
+            }
+          );
+      };
+    shoot(ang);
+    if (off) shoot(ang + off);
   }
   if (G.ups.legend && w === G.weapons[0] && ++p.legCount % 3 === 0) {
     for (let i = 0; i < 8; i++)

@@ -53,5 +53,5 @@ function drawHud() {
   }
   if (G.boss) $('bossbar').querySelector('i').style.width = Math.max(0, (G.boss.hp / G.boss.maxHp) * 100) + '%';
   $('bDash').querySelector('u').style.transform = 'scaleY(' + clamp(p.dashCd / p.dashMax, 0, 1) + ')';
-  $('bSpec').querySelector('u').style.transform = 'scaleY(' + clamp(G.specCd / heroSpecial().cd, 0, 1) + ')';
+  $('bSpec').querySelector('u').style.transform = 'scaleY(' + clamp(G.specCd / specCdMax(), 0, 1) + ')';
 }

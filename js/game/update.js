@@ -4,6 +4,15 @@
 const FX_LIFE = { text: 0.8, bolt: 0.22, slash: 0.18, corpse: 0.55 };
 /** Radius of the electric aura upgrade. */
 const auraRadius = () => (3.4 + 0.55 * G.ups.aura) * G.p.area;
+/** Call fn(x,z) for each combat drone (they circle above the player). */
+function forDrones(fn) {
+  const p = G.p,
+    n = G.ups.drone || 0;
+  for (let i = 0; i < n; i++) {
+    const a = G.droneA + (i / n) * TAU;
+    fn(p.x + Math.cos(a) * 2.2, p.z + Math.sin(a) * 2.2);
+  }
+}
 /** Call fn(angle,x,z) for each orbiting blade. */
 function forOrbitBlades(fn) {
   const p = G.p,
@@ -152,6 +161,87 @@ function update(dt) {
       }
     }
   }
+  if (u.poison) {
+    tm.poison -= dt;
+    if (tm.poison <= 0) {
+      tm.poison = 4;
+      const near = G.enemies.filter(e => !e.dead && (e.x - p.x) ** 2 + (e.z - p.z) ** 2 < 196);
+      if (near.length) {
+        const e = pick(near);
+        G.clouds.push({ x: e.x, z: e.z, r: (2.6 + 0.4 * u.poison) * p.area, l: 0, d: 3, tick: 0 });
+      }
+    }
+  }
+  for (const c of G.clouds) {
+    c.l += dt;
+    if ((c.tick -= dt) <= 0) {
+      c.tick = 0.5;
+      eachInRadius(c.x, c.z, c.r, e => hit(e, (5 + 4 * u.poison) * p.dmgMul, { aoe: 1, quiet: 1, noCrit: 1, burn: 1 }));
+    }
+  }
+  G.clouds = G.clouds.filter(c => c.l < c.d);
+  if (u.hole) {
+    tm.hole -= dt;
+    if (tm.hole <= 0) {
+      tm.hole = 9;
+      const near = G.enemies.filter(e => !e.dead && (e.x - p.x) ** 2 + (e.z - p.z) ** 2 < 256);
+      if (near.length) {
+        const e = pick(near);
+        G.holes.push({ x: e.x, z: e.z, l: 0, d: 2.4 });
+        AU.play('nova');
+      }
+    }
+  }
+  for (const h of G.holes) {
+    h.l += dt;
+    // pull everything (bosses barely) toward the centre, then burst
+    for (const e of G.enemies) {
+      if (e.dead) continue;
+      const dx = h.x - e.x,
+        dz = h.z - e.z,
+        d = Math.hypot(dx, dz);
+      if (d < 10 && d > 0.3) {
+        const f = ((e.boss ? 0.6 : 7) * dt) / d;
+        e.x += dx * f;
+        e.z += dz * f;
+      }
+    }
+    if (Math.random() < dt * 6) ring(h.x, h.z, 9, 0.5, 0.5, [0.6, 0.3, 1]);
+    if (h.l >= h.d) {
+      h.done = 1;
+      explode(h.x, h.z, 5 * p.area, 140 * p.dmgMul);
+      ring(h.x, h.z, 0.5, 7, 0.6, [0.8, 0.4, 1]);
+    }
+  }
+  G.holes = G.holes.filter(h => !h.done);
+  if (u.tslow) {
+    tm.tslow -= dt;
+    if (tm.tslow <= 0) {
+      tm.tslow = 15;
+      G.tslowT = 4;
+      ring(p.x, p.z, 1, 18, 0.8, [0.5, 0.7, 1.3]);
+      banner('إبطاء الزمن', '', 1);
+    }
+  }
+  if (G.tslowT > 0) G.tslowT -= dt;
+  if (u.drone) {
+    G.droneA += dt * 1.8;
+    if ((tm.drone -= dt) <= 0) {
+      tm.drone = 0.45;
+      forDrones((x, z) => {
+        const t = nearest(x, z, 12);
+        if (t)
+          shot(x, z, Math.atan2(t.z - z, t.x - x), {
+            spd: 34,
+            dmg: (8 + 3 * u.drone) * p.dmgMul,
+            size: 0.2,
+            range: 12,
+            kind: 0,
+            col: [0.4, 1.4, 1.6],
+          });
+      });
+    }
+  }
   // allies
   G.allies.forEach((a, i) => {
     const an = (i / Math.max(1, G.allies.length)) * TAU + G.t * 0.3,
@@ -244,7 +334,18 @@ function update(dt) {
             });
         s.hits.push(e);
         if (--s.pierce < 0) {
-          s.life = -1;
+          // ricochet: fly on to the nearest enemy not hit yet
+          const nx = s.bounce > 0 && nearest(s.x, s.z, 10, s.hits);
+          if (nx) {
+            s.bounce--;
+            s.pierce = 0;
+            const a = Math.atan2(nx.z - s.z, nx.x - s.x),
+              v = Math.hypot(s.vx, s.vz);
+            s.a = a;
+            s.vx = Math.cos(a) * v;
+            s.vz = Math.sin(a) * v;
+            s.life = Math.max(s.life, 0.5);
+          } else s.life = -1;
           break;
         }
       }
@@ -260,10 +361,11 @@ function update(dt) {
     }
   }
   G.shots = G.shots.filter(s => s.life > 0);
+  const eslow = G.tslowT > 0 ? 0.5 : 1;
   for (const s of G.eshots) {
     s.life -= dt;
-    s.x += s.vx * dt;
-    s.z += s.vz * dt;
+    s.x += s.vx * dt * eslow;
+    s.z += s.vz * dt * eslow;
     const dx = s.x - p.x,
       dz = s.z - p.z;
     if (dx * dx + dz * dz < 0.75 && p.inv <= 0) {
