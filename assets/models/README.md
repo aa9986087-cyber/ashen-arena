@@ -14,6 +14,10 @@
 | الملف | يحل محل | المصدر |
 |---|---|---|
 | `hero-knight.glb` | البطل: الفارس | KayKit Adventurers (Knight) |
+| `hero-berserker.glb` | البطل: البربري | KayKit Adventurers (Barbarian) |
+| `hero-mage.glb` | البطلة: الساحرة | KayKit Adventurers (Mage) |
+| `hero-ranger.glb` | البطلة: الرامية | KayKit Adventurers (Rogue) |
+| `hero-assassin.glb` | البطل: القاتل | KayKit Adventurers (Rogue Hooded) |
 | `grunt.glb` | الجندي | KayKit Skeletons (Minion + فأس) |
 | `shield.glb` | حامل الدرع | KayKit Skeletons (Warrior + سيف ودرع) |
 | `archer.glb` | الرامي | KayKit Skeletons (Rogue + قوس) |

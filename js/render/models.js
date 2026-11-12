@@ -6,6 +6,10 @@
     Use { to, size, tint } for options: size scales the fitted height, tint:true darkens it for a scarier look. */
 const MODEL_FILES = {
   'hero-knight.glb': 'hero:knight',
+  'hero-berserker.glb': 'hero:berserker',
+  'hero-mage.glb': 'hero:mage',
+  'hero-ranger.glb': 'hero:ranger',
+  'hero-assassin.glb': 'hero:assassin',
   'grunt.glb': 'grunt',
   'shield.glb': 'shield',
   'archer.glb': 'archer',
@@ -21,7 +25,7 @@ const MODEL_FILES = {
   'boss-flame.glb': { to: 'boss5', size: 0.85 }, // wide wings
 };
 /** Bump to make browsers fetch updated model files. */
-const MODEL_VER = 4;
+const MODEL_VER = 5;
 const lin2s = v => (v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
 function texSampler(tex) {
   try {
