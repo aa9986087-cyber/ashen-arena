@@ -1,0 +1,66 @@
+/* Design tokens, reset, typography. */
+:root {
+  --night: #141829;
+  --night2: #1e2440;
+  --panel: rgba(20, 24, 41, 0.92);
+  --parch: #f1e7d0;
+  --dim: #a9a48f;
+  --ember: #f2a23a;
+  --ember2: #e2632b;
+  --blood: #d8443c;
+  --xp: #3fd0c0;
+  --shield: #6fb7ff;
+  --pact: #e0304a;
+  --r0: #9fb0c8;
+  --r1: #4aa3ff;
+  --r2: #b56bff;
+  --r3: #ffb52e;
+  --display: 'Lalezar', 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
+  --body: 'Tajawal', 'Segoe UI', Tahoma, Arial, sans-serif;
+  --st: env(safe-area-inset-top, 0px);
+  --sb: env(safe-area-inset-bottom, 0px);
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+[hidden] {
+  display: none !important;
+}
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--night);
+  color: var(--parch);
+  font-family: var(--body);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+#fx {
+  pointer-events: none;
+}
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 0;
+  background: none;
+}
+button:focus-visible {
+  outline: 3px solid var(--ember);
+  outline-offset: 2px;
+}

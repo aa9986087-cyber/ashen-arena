@@ -1,0 +1,82 @@
+'use strict';
+/* Stages (arena themes), their bosses, and the ending taunts. */
+const STAGES = [
+  {
+    n: 'الغابة المظلمة',
+    ground: 0x3c6b38,
+    fog: 0x16261c,
+    amb: 0x9fc0a0,
+    decor: ['tree', 'rock'],
+    boss: 'حارس الغابة',
+    bk: 0,
+    root: 55,
+  },
+  {
+    n: 'صحراء العظام',
+    ground: 0xc39a55,
+    fog: 0x7a5c34,
+    amb: 0xffe2b0,
+    decor: ['cactus', 'dune'],
+    boss: 'ملك الرمال',
+    bk: 1,
+    root: 61.74,
+  },
+  {
+    n: 'سهول الصقيع',
+    ground: 0xd6e2ec,
+    fog: 0x7f97aa,
+    amb: 0xdcecff,
+    decor: ['snowtree', 'ice'],
+    boss: 'ملك الصقيع',
+    bk: 4,
+    root: 46.25,
+  },
+  {
+    n: 'قلعة الرماد',
+    ground: 0x5c5b6a,
+    fog: 0x1d1c28,
+    amb: 0xa8a8c8,
+    decor: ['pillar', 'flag'],
+    boss: 'الفارس الأسود',
+    bk: 2,
+    root: 49,
+  },
+  {
+    n: 'القاعدة العسكرية',
+    ground: 0x4d574a,
+    fog: 0x222a2a,
+    amb: 0xb8c8c0,
+    decor: ['crate', 'barrier'],
+    boss: 'الجنرال الحديدي',
+    bk: 3,
+    root: 51.91,
+  },
+  {
+    n: 'أرض الحمم',
+    ground: 0x4a2c24,
+    fog: 0x2a0f0a,
+    amb: 0xffb090,
+    decor: ['deadtree', 'lavarock'],
+    boss: 'سيد اللهب',
+    bk: 5,
+    root: 58.27,
+  },
+  {
+    n: 'الهاوية',
+    ground: 0x4a1a2a,
+    fog: 0x2a0a18,
+    amb: 0xd890b0,
+    decor: ['deadtree', 'bones'],
+    boss: 'ظل الهاوية',
+    bk: 0,
+    root: 41.2,
+    abyss: true,
+  },
+];
+/** Name of the boss whose kind is k (ignoring the abyss stage). */
+const bossNameOf = k => STAGES.find(q => q.bk === k && !q.abyss).boss;
+const TAUNTS = [
+  'ستة زعماء طاحوا، وتحسب نفسك خلّصت؟ الهاوية ما سمعت باسمك للحين. {k} عدو؟ رقم ينّسى بكرة. ادخل وورّنا، ولا اطلع وقول هذا حدّي.',
+  'كل اللي قبلك وقفوا هنا وقالوا «يكفي». الهاوية تضحك على اللي يكتفون. رقمك {k}، وفيه واحد من ربعك بيكسره وأنت نايم. بتخليه؟',
+  'النهاية للّي يخافون. تحت ظلام ما طلع منه أحد برقم صغير. {k} عدو بس؟ الهاوية تاكل مثل هالرقم على الريق.',
+];

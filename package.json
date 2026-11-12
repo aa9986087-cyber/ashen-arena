@@ -1,0 +1,11 @@
+{
+  "name": "ashen-arena",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ساحة الرماد — a browser 3D arena survival game (three.js, no build step).",
+  "scripts": {
+    "start": "npx --yes http-server -c-1 -p 8080 .",
+    "format": "npx --yes prettier@3 --write \"js/**/*.js\" \"css/**/*.css\" index.html",
+    "format:check": "npx --yes prettier@3 --check \"js/**/*.js\" \"css/**/*.css\" index.html"
+  }
+}

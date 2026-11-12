@@ -1,0 +1,137 @@
+/* Upgrade cards and the legendary cinematic. */
+/* ---------- cards ---------- */
+#cards {
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+  background: rgba(10, 12, 22, 0.8);
+}
+#cards h2 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(34px, 7vw, 56px);
+  color: var(--xp);
+  text-shadow: 0 0 18px rgba(63, 208, 192, 0.6);
+  line-height: 1.1;
+  text-align: center;
+}
+#cards > p {
+  color: var(--dim);
+  font-weight: 700;
+  margin-bottom: 14px;
+  text-align: center;
+}
+#cardRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 980px;
+}
+.card {
+  width: 205px;
+  min-height: 250px;
+  background: linear-gradient(180deg, #262d4f, #171b30);
+  border: 3px solid var(--rc);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  box-shadow: 0 0 0 0 var(--rc);
+  transition:
+    transform 0.1s,
+    box-shadow 0.15s;
+  animation: deal 0.28s backwards;
+}
+.card:hover,
+.card:focus-visible {
+  transform: translateY(-6px);
+  box-shadow: 0 0 22px -2px var(--rc);
+}
+.card .ic {
+  font-size: 44px;
+  line-height: 1.2;
+}
+.card .rar {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--rc);
+}
+.card h3 {
+  font-size: 19px;
+  font-weight: 800;
+}
+.card p {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #d6cfba;
+  flex: 1;
+  white-space: pre-line;
+}
+.card .syn {
+  font-size: 12px;
+  color: var(--xp);
+  font-weight: 700;
+}
+.card .lv {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ember);
+}
+.card .body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  align-items: inherit;
+}
+.card.pact {
+  --rc: var(--pact);
+}
+.card.r3 {
+  background: linear-gradient(180deg, #4a3a12, #1d170a);
+  animation:
+    deal 0.28s backwards,
+    glow 1.4s infinite alternate;
+}
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translateY(26px) scale(0.92);
+  }
+}
+@keyframes glow {
+  to {
+    box-shadow: 0 0 34px 2px var(--r3);
+  }
+}
+#reroll {
+  margin-top: 14px;
+}
+#cine {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  background: radial-gradient(circle, rgba(255, 200, 80, 0.9), rgba(255, 140, 20, 0.35) 45%, transparent 72%);
+}
+#cine.on {
+  animation: cine 1.9s ease-out;
+}
+#cine b {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(46px, 12vw, 110px);
+  color: #fff7dc;
+  text-shadow:
+    0 0 30px #ff9d00,
+    0 5px 0 #7a4a00;
+  text-align: center;
+  line-height: 1.05;
+}
