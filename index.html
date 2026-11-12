@@ -236,6 +236,7 @@ textarea.txt{min-height:92px;resize:none;font-size:13px;word-break:break-all}
   <div class="head"><h2>الإعدادات</h2><button class="btn sm" id="setBack">رجوع</button></div>
   <div class="row"><span>المؤثرات الصوتية</span><input type="range" id="oSfx" min="0" max="1" step="0.05"></div>
   <div class="row"><span>الموسيقى</span><input type="range" id="oMus" min="0" max="1" step="0.05"></div>
+  <div class="row"><span>موسيقى من جهازك</span><span><button class="btn sm" id="oMusPick">اختر ملف</button> <button class="btn sm" id="oMusClr" hidden>رجّع الأصلية</button></span><input type="file" id="musFile" accept="audio/*" hidden></div>
   <div class="row"><span>الظلال</span><button class="btn sm sw" id="oShadow"></button></div>
   <div class="row"><span>اهتزاز الشاشة</span><button class="btn sm sw" id="oShake"></button></div>
   <div class="row"><span>جودة الرسم</span><button class="btn sm sw" id="oQual"></button></div>
@@ -405,6 +406,8 @@ const AU={ctx:null,last:{},
       const C=window.AudioContext||window.webkitAudioContext;this.ctx=new C();
       this.sg=this.ctx.createGain();this.mg=this.ctx.createGain();
       const comp=this.ctx.createDynamicsCompressor();this.sg.connect(comp);this.mg.connect(comp);comp.connect(this.ctx.destination);
+      const dl=this.ctx.createDelay(1),fb=this.ctx.createGain(),wet=this.ctx.createGain();dl.delayTime.value=.31;fb.gain.value=.38;wet.gain.value=.32;
+      this.mg.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wet);wet.connect(comp);
       const b=this.ctx.createBuffer(1,this.ctx.sampleRate,this.ctx.sampleRate),d=b.getChannelData(0);
       for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
       this.nb=b;this.next=this.ctx.currentTime+.1;this.step=0;this.vol();
@@ -424,26 +427,56 @@ const AU={ctx:null,last:{},
     s.connect(f);f.connect(g);g.connect(dest||this.sg);s.start(t,Math.random()*.5);s.stop(t+d+.03);
   },
   play(n){if(!this.ctx)return;const now=performance.now();if(now-(this.last[n]||0)<(GAP[n]||50))return;this.last[n]=now;SFX[n]&&SFX[n](this);},
+  str(f,d,v,when,dest,cut){
+    const c=this.ctx;if(!c)return;const t=c.currentTime+(when||0),g=c.createGain(),lp=c.createBiquadFilter();
+    lp.type='lowpass';lp.frequency.value=cut||1500;
+    g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(v,t+Math.min(.07,d*.3));g.gain.setValueAtTime(v,t+d*.7);g.gain.exponentialRampToValueAtTime(.001,t+d);
+    for(const det of [-7,7]){const o=c.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(f,t);o.detune.value=det;o.connect(lp);o.start(t);o.stop(t+d+.05);}
+    lp.connect(g);g.connect(dest||this.mg);
+  },
+  vio(f,d,v,when,dest){
+    const c=this.ctx;if(!c)return;const t=c.currentTime+(when||0),g=c.createGain(),lp=c.createBiquadFilter(),a=Math.min(.16,d*.3);
+    lp.type='lowpass';lp.frequency.value=2400;lp.Q.value=.7;
+    g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(v,t+a);g.gain.setValueAtTime(v,t+d*.6);g.gain.exponentialRampToValueAtTime(.001,t+d);
+    const l=c.createOscillator(),lg=c.createGain();l.frequency.value=5.6;lg.gain.setValueAtTime(0,t);lg.gain.linearRampToValueAtTime(11,t+Math.min(.35,d*.6));l.connect(lg);
+    const os=[l];for(const det of [-4,5]){const o=c.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(f,t);o.detune.value=det;lg.connect(o.detune);o.connect(lp);os.push(o);}
+    lp.connect(g);g.connect(dest||this.mg);for(const x of os){x.start(t);x.stop(t+d+.05);}
+  },
+  soft(f,d,v,when,dest){
+    const c=this.ctx;if(!c)return;const t=c.currentTime+(when||0),g=c.createGain(),a=Math.min(.12,d*.35);
+    g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(v,t+a);g.gain.setValueAtTime(v,t+d*.65);g.gain.exponentialRampToValueAtTime(.001,t+d);
+    const o=c.createOscillator(),o2=c.createOscillator(),g2=c.createGain(),l=c.createOscillator(),lg=c.createGain();
+    o.type='triangle';o.frequency.setValueAtTime(f,t);o2.type='sine';o2.frequency.setValueAtTime(f*2,t);g2.gain.value=.22;
+    l.frequency.value=5;lg.gain.value=5;l.connect(lg);lg.connect(o.detune);
+    o.connect(g);o2.connect(g2);g2.connect(g);g.connect(dest||this.mg);
+    for(const x of [o,o2,l]){x.start(t);x.stop(t+d+.05);}
+  },
   music(){
     const c=this.ctx;if(!c)return;
+    if(CM.on){CM.tick();this.next=c.currentTime+.1;return;}
     if(S.set.mus<=0||c.state!=='running'){this.next=c.currentTime+.1;return;}
-    const it=MUS.i,sd=60/(92+it*46+(MUS.boss?14:0))/4;
+    const it=MUS.i,on=MUS.on,boss=MUS.boss,sd=60/(on?58+it*24+(boss?10:0):50)/6;
     if(this.next<c.currentTime)this.next=c.currentTime+.05;
-    const bass=MUS.boss?[0,0,6,0,1,0,7,6]:[0,0,3,0,5,5,3,7],arp=[12,15,19,24,19,15,22,19];
-    while(this.next<c.currentTime+.14){
-      const s=this.step%32,w=this.next-c.currentTime,g=this.mg,root=MUS.root;
-      if(s%4===0)this.tone(root*Math.pow(2,bass[s/4|0]/12),sd*3.6,'sawtooth',MUS.on?.17:.08,null,w,g);
-      if(MUS.on){
-        if(s%8===0||(MUS.boss&&s%8===6))this.tone(125,.15,'sine',.55,40,w,g);
-        if(it>.2&&s%8===4)this.noise(.11,.22,1700,w,g,'highpass');
-        if(it>.4&&s%2===1)this.noise(.03,.07,6500,w,g,'highpass');
-        if((it>.55||MUS.boss)&&s%2===0)this.tone(root*4*Math.pow(2,arp[(s/2)%8]/12),sd*1.6,'square',.045,null,w,g);
-        if(MUS.boss&&s%16===0)this.tone(root*2,sd*8,'sawtooth',.07,root*1.9,w,g);
-      }else if(s%8===0)this.tone(root*4*Math.pow(2,arp[(s/8)%8]/12),sd*7,'triangle',.05,null,w,g);
+    while(this.next<c.currentTime+.16){
+      const s=this.step%96,q=s%12,ch=M_CH[(s/12|0)%4],w=this.next-c.currentTime,g=this.mg,root=MUS.root,N=n=>root*Math.pow(2,n/12);
+      if(q===0)this.str(N(ch[0]),sd*11.5,on?.17:.11,w,g,480);
+      if(q===0&&(it>.35||boss))for(const n of ch)this.str(N(n)*4,sd*11.8,.028,w,g,1700);
+      if(on&&(it>.15||boss)&&q%2===0)this.soft(N(ch[M_OST[q>>1]])*2,sd*2.2,.1+it*.04,w,g);
+      for(const m of M_MEL)if(m[0]===s){this.vio(N(m[1])*8,sd*m[2]*1.05,on?.075+it*.02:.085,w,g);if(boss||it>.7)this.soft(N(m[1])*4,sd*m[2]*.97,.06,w,g);}
+      if(on){
+        const pat=M_DR[boss||it>.6?2:it>.25?1:0];
+        if(pat.includes(q))this.tone(70,.3,'sine',q===0?.26:.15,44,w,g);
+        if(q===3&&Math.random()<.6)this.tone(N(ch[2])*16,.7,'sine',.02,null,w,g);if(q===9&&Math.random()<.4)this.tone(N(ch[1])*16,.7,'sine',.016,null,w,g);
+        
+        if(boss&&q===0)this.soft(N(ch[0])*2,sd*10,.09,w,g);
+      }
       this.next+=sd;this.step++;
     }
   }
 };
+const M_CH=[[0,3,7],[-2,2,5],[-4,0,3],[-5,-2,2]],M_OST=[0,1,2,1,2,1],M_DR=[[0],[0,6],[0,6,10]],
+  M_MEL=[[0,0,6],[6,3,4],[10,2,2],[12,2,6],[18,5,6],[24,3,6],[30,2,2],[32,0,4],[36,-2,8],[44,-5,4],
+    [48,7,6],[54,8,2],[56,7,4],[60,5,6],[66,2,6],[72,3,4],[76,5,2],[78,7,6],[84,2,8],[92,0,4]];
 const GAP={hit:55,kill:60,gem:45,rifle:70,pistol:60,eshot:120,clang:120,boom:90,hurt:150,bolt:120};
 const SFX={
   sword:a=>{a.noise(.13,.22,2600,0,null,'highpass');a.tone(620,.1,'triangle',.07,200);},
@@ -1154,6 +1187,7 @@ function drawAch(){
 let setFrom='menu',resetArm=false;
 function drawSet(){
   $('oSfx').value=S.set.sfx;$('oMus').value=S.set.mus;
+  $('oMusClr').hidden=!CM.on;$('oMusPick').textContent=CM.on?'غيّر الملف':'اختر ملف';
   $('oShadow').textContent=S.set.shadow?'مفعّلة':'متوقفة';$('oShake').textContent=S.set.shake?'مفعّل':'متوقف';$('oQual').textContent=S.set.qual?'عالية':'منخفضة';
   $('oSide').textContent=S.set.left?'يسار':'يمين';document.body.classList.toggle('actsLeft',!!S.set.left);
   $('oReset').textContent=resetArm?'اضغط مجدداً للتأكيد':'امسح';
@@ -1173,6 +1207,35 @@ $('pauseBtn').onclick=()=>pause(true);$('pResume').onclick=()=>pause(false);
 $('pSet').onclick=()=>{setFrom='pause';show('pause',false);show('settings',true);drawSet();};
 $('pQuit').onclick=()=>{show('pause',false);G.state='play';endRun();};
 $('reroll').onclick=()=>{if(G.rerolls>0){G.rerolls--;curCards=rollCards(curCards.length,0);AU.play('select');drawCards();}};
+
+/* ================= custom music from the player's own device ================= */
+function idb(mode,fn){
+  return new Promise((res,rej)=>{try{const r=indexedDB.open('ashen_arena',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onerror=()=>rej(r.error);
+    r.onsuccess=()=>{try{const tx=r.result.transaction('kv',mode),q=fn(tx.objectStore('kv'));tx.oncomplete=()=>res(q&&q.result);tx.onerror=()=>rej(tx.error);}catch(e){rej(e);}};}catch(e){rej(e);}});
+}
+const CM={el:null,src:null,lp:null,g:null,on:false,
+  set(blob){
+    if(this.el){this.el.pause();try{URL.revokeObjectURL(this.el.src);}catch(e){}}else{this.el=new Audio();this.el.loop=true;}
+    this.el.src=typeof blob==='string'?blob:URL.createObjectURL(blob);this.on=true;this.wire();this.el.play().catch(()=>{});
+  },
+  wire(){
+    const c=AU.ctx;if(!c||this.src||!this.el)return;
+    try{this.src=c.createMediaElementSource(this.el);this.lp=c.createBiquadFilter();this.lp.type='lowpass';this.lp.frequency.value=2000;this.g=c.createGain();this.g.gain.value=0;
+      this.src.connect(this.lp);this.lp.connect(this.g);this.g.connect(c.destination);}catch(e){}
+  },
+  clear(){if(this.el)this.el.pause();this.on=false;},
+  tick(){
+    if(!this.el)return;this.wire();const c=AU.ctx;
+    if(!c||!this.g){this.el.volume=S.set.mus;return;}
+    if(this.el.paused&&c.state==='running')this.el.play().catch(()=>{});
+    const st=G.state,live=st==='play'||st==='cards',k=MUS.boss?1:Math.min(1,MUS.i*2.5);
+    const vol=S.set.mus*(st==='paused'?.35:live?.7+.3*k:.65),fq=st==='paused'?700:live?1800+k*16000:3000;
+    this.g.gain.setTargetAtTime(vol,c.currentTime,.3);this.lp.frequency.setTargetAtTime(fq,c.currentTime,.4);
+  }
+};
+$('oMusPick').onclick=()=>$('musFile').click();
+$('musFile').onchange=e=>{const f=e.target.files[0];if(!f)return;AU.init();CM.set(f);idb('readwrite',s=>s.put(f,'music')).catch(()=>{});toast('شُغّلت موسيقاك');drawSet();e.target.value='';};
+$('oMusClr').onclick=()=>{CM.clear();S.set.defMus=0;save();idb('readwrite',s=>s.delete('music')).catch(()=>{});drawSet();};
 
 /* ================= leaderboard ================= */
 let lastRun=null;
@@ -1380,6 +1443,8 @@ function frame(now){
 }
 /* ================= boot ================= */
 newRun();setStage(0);buildPlayer();resize();drawSet();go('menu');if(!S.name)askName();
+const defMusic=()=>{if(S.set.defMus===0)return;fetch('music.m4a',{method:'HEAD'}).then(r=>{if(r.ok&&!CM.on){CM.set('music.m4a');drawSet();}}).catch(()=>{});};
+idb('readonly',s=>s.get('music')).then(b=>{if(b){CM.set(b);drawSet();}else defMusic();}).catch(defMusic);
 window.__game={get G(){return G;},get S(){return S;},update,startRun,chooseCard,spawnBoss,special,dash};
 requestAnimationFrame(frame);
 </script>
