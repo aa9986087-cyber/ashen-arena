@@ -350,3 +350,10 @@ textarea.txt {
   direction: ltr;
   font-size: 14px;
 }
+
+/* hero special line on the heroes screen */
+.item p.spx {
+  color: var(--xp);
+  font-size: 13px;
+  font-weight: 700;
+}

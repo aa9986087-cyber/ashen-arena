@@ -87,8 +87,8 @@ function render(dt, now) {
       b.scale.set(s, s, s);
       bossMat.emissive.setRGB(
         e.flash > 0 ? 0.8 : e.hp < e.maxHp * 0.5 ? 0.25 : 0,
-        e.flash > 0 ? 0.8 : 0,
-        e.flash > 0 ? 0.8 : 0
+        e.flash > 0 ? 0.8 : e.frz > 0 ? 0.3 : 0,
+        e.flash > 0 ? 0.8 : e.frz > 0 ? 0.7 : 0
       );
       continue;
     }
@@ -104,9 +104,9 @@ function render(dt, now) {
       s,
       s,
       s,
-      f ? 3 : e.burn > 0 ? 1.7 : e.elite ? 1.8 : G.abyss ? 0.85 : 1,
-      f ? 3 : e.burn > 0 ? 0.8 : e.elite ? 1.45 : G.abyss ? 0.45 : 1,
-      f ? 3 : e.burn > 0 ? 0.45 : e.elite ? 0.5 : G.abyss ? 0.55 : 1,
+      f ? 3 : e.frz > 0 ? 0.55 : e.burn > 0 ? 1.7 : e.elite ? 1.8 : G.abyss ? 0.85 : 1,
+      f ? 3 : e.frz > 0 ? 0.9 : e.burn > 0 ? 0.8 : e.elite ? 1.45 : G.abyss ? 0.45 : 1,
+      f ? 3 : e.frz > 0 ? 1.7 : e.burn > 0 ? 0.45 : e.elite ? 0.5 : G.abyss ? 0.55 : 1,
       e.st === 2 ? 0.35 : 0,
       Math.sin(ph) * 0.1
     );

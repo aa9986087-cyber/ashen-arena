@@ -111,7 +111,10 @@ function drawChars() {
       cls: S.char === id ? ' sel' : '',
       icon: c.i,
       title: c.n,
-      body: [el('p', '', c.d + ' الصحة ' + c.hp + '.')],
+      body: [
+        el('p', '', c.d + ' الصحة ' + c.hp + '.'),
+        el('p', 'spx', SPECIALS[c.sp].i + ' ' + SPECIALS[c.sp].n + ': ' + SPECIALS[c.sp].d),
+      ],
       btn: S.char === id ? 'مُختار' : own ? 'اختر' : 'افتح بـ ' + c.cost + ' 🪙',
       disabled: S.char === id,
       onClick: () => {

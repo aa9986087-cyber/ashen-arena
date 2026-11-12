@@ -34,11 +34,12 @@ function hit(e, dmg, o) {
   if (e.dead) return;
   o = o || {};
   let crit = false;
-  if (!o.noCrit && Math.random() < G.p.crit + (o.crit || 0)) {
+  if (!o.noCrit && ((G.buffT > 0 && G.buff.crit) || Math.random() < G.p.crit + (o.crit || 0))) {
     dmg *= G.p.critMul || 2;
     crit = true;
   }
   if (G.superT > 0) dmg *= 2;
+  dmg *= buffMul('dmg');
   if (e.type === 'shield' && !e.boss && !o.aoe) {
     dmg *= 0.4;
     AU.play('clang');
@@ -243,28 +244,6 @@ function boltStrike(n, dmg, fromX, fromZ) {
     AU.play('bolt');
   }
 }
-function special() {
-  const p = G.p;
-  if (G.state !== 'play' || G.specCd > 0) return;
-  G.specCd = 18;
-  AU.play('special');
-  shake(0.7);
-  ring(p.x, p.z, 1, 9, 0.45, [0.5, 0.9, 1]);
-  ring(p.x, p.z, 0.5, 7, 0.6, [1, 1, 1]);
-  parts(p.x, 1, p.z, 40, 0.5, 0.9, 1, 14, 0.3, 0.8);
-  eachInRadius(
-    p.x,
-    p.z,
-    9,
-    (e, ang) => hit(e, 60 * p.dmgMul * (1 + G.lvl * 0.06), { aoe: 1, kb: 14, ang, quiet: 1 }),
-    false
-  );
-  G.eshots = G.eshots.filter(s => (s.x - p.x) ** 2 + (s.z - p.z) ** 2 > 81);
-  if (G.ups.super) {
-    G.superT = 8;
-    banner('القوة الخارقة', '', 1.4);
-  }
-}
 function dash() {
   const p = G.p;
   if (G.state !== 'play' || p.dashCd > 0 || p.dashT > 0) return;
@@ -285,7 +264,7 @@ function dash() {
 function hurt(d) {
   const p = G.p;
   if (p.inv > 0 || G.state !== 'play' || G.god) return;
-  d *= (1 - p.armor) * (p.taken || 1) * (G.superT > 0 ? 0.5 : 1);
+  d *= (1 - p.armor) * (p.taken || 1) * (G.superT > 0 ? 0.5 : 1) * buffMul('taken');
   p.shieldRe = 5;
   if (p.shield > 0) {
     const a = Math.min(p.shield, d);

@@ -20,6 +20,11 @@ function updEnemies(dt) {
     if (e.flash > 0) e.flash -= dt;
     if (e.hitCd > 0) e.hitCd -= dt;
     if (e.oCd > 0) e.oCd -= dt;
+    if (e.frz > 0) {
+      // frozen by the mage's special: no movement, attacks or contact damage
+      e.frz -= dt;
+      continue;
+    }
     if (e.burn > 0) {
       e.burn -= dt;
       e.bAcc += dt;

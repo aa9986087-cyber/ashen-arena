@@ -37,7 +37,7 @@ function update(dt) {
   IN.mvz = ml > 0.01 ? (mz / Math.max(ml, 0.01)) * Math.min(ml, 1) : 0;
   const focus = IN.atk || IN.md,
     sup = G.superT > 0;
-  const sp = p.speed * (sup ? 1.3 : 1) * (focus ? 0.75 : 1);
+  const sp = p.speed * (sup ? 1.3 : 1) * (focus ? 0.75 : 1) * buffMul('spd');
   if (p.dashT > 0) {
     p.dashT -= dt;
     const ds = p.dashLen / 0.18;
@@ -67,6 +67,7 @@ function update(dt) {
   if (p.swing > 0) p.swing = Math.max(0, p.swing - dt * 5);
   if (G.specCd > 0) G.specCd -= dt;
   if (G.superT > 0) G.superT -= dt;
+  if (G.buffT > 0) G.buffT -= dt;
   if (p.regen > 0 && p.hp < p.maxHp) heal(p.regen * dt);
   if (p.shieldMax > 0) {
     if (p.shieldRe > 0) p.shieldRe -= dt;
@@ -76,7 +77,7 @@ function update(dt) {
   const manual = IN.md && !IN.touch,
     mAng = Math.atan2(IN.mz - p.z, IN.mx - p.x);
   for (const w of G.weapons) {
-    w.cd -= dt * p.aspd * (focus ? 1.3 : 1) * (sup ? 1.25 : 1);
+    w.cd -= dt * p.aspd * (focus ? 1.3 : 1) * (sup ? 1.25 : 1) * buffMul('aspd');
     if (w.cd > 0) continue;
     const d = WEP[w.id],
       range = d.melee ? d.range * p.area + 0.3 : d.range;

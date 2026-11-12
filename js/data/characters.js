@@ -1,5 +1,5 @@
 'use strict';
-/* Playable heroes. */
+/* Playable heroes. sp = key of the hero's special in SPECIALS (js/game/specials.js). */
 const CHARS = {
   knight: {
     n: 'الفارس',
@@ -13,6 +13,7 @@ const CHARS = {
     cape: 0xa02a2a,
     dmg: 1,
     crit: 0,
+    sp: 'shock',
   },
   ranger: {
     n: 'الرامية',
@@ -26,6 +27,7 @@ const CHARS = {
     cape: 0x1f4f33,
     dmg: 1,
     crit: 0.1,
+    sp: 'arrows',
   },
   gunner: {
     n: 'الجندي',
@@ -39,6 +41,7 @@ const CHARS = {
     cape: 0x3d4024,
     dmg: 1,
     crit: 0,
+    sp: 'barrage',
   },
   mage: {
     n: 'الساحرة',
@@ -52,6 +55,7 @@ const CHARS = {
     cape: 0x3b1f66,
     dmg: 1.15,
     crit: 0,
+    sp: 'freeze',
   },
   berserker: {
     n: 'البربري',
@@ -65,6 +69,7 @@ const CHARS = {
     cape: 0x4a2a1a,
     dmg: 1.1,
     crit: 0,
+    sp: 'rage',
   },
   assassin: {
     n: 'القاتل',
@@ -78,6 +83,7 @@ const CHARS = {
     cape: 0x101018,
     dmg: 1,
     crit: 0.2,
+    sp: 'shadow',
   },
   gunnerx: {
     n: 'المدفعي',
@@ -91,5 +97,6 @@ const CHARS = {
     cape: 0x2a3024,
     dmg: 1,
     crit: 0,
+    sp: 'strike',
   },
 };

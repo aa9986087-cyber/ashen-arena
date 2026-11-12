@@ -109,6 +109,7 @@ function resumeRun() {
 }
 /** Build the arena for the current G and switch from menus to the HUD. */
 function enterArena() {
+  $('bSpec').firstChild.textContent = heroSpecial().i;
   setStage(G.stage);
   buildPlayer();
   refreshLoadout();

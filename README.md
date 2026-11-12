@@ -52,6 +52,7 @@ js/
     fx.js               جزيئات، نصوص طائرة، حلقات، اهتزاز، لافتات
     spawning.js         ظهور الأعداء والزعماء والموجات
     combat.js           الإصابة، القتل، المقذوفات، أسلحة اللاعب، القدرات
+    specials.js         الضربة الخاصة لكل بطل (Q) والتعزيزات المؤقتة
     enemy-ai.js         سلوك الأعداء والزعماء
     update.js           محاكاة كل إطار
     progression.js      هزيمة الزعيم، المراحل، النهاية/الهاوية، الإنجازات
@@ -81,7 +82,8 @@ assets/
 | أبي أضيف… | المكان |
 |---|---|
 | سلاح | `js/data/weapons.js` (+ شكله في `buildWeapon` داخل `render/player-model.js`، وصوته في `SFX` داخل `audio/sound.js`) |
-| بطل | `js/data/characters.js` (+ تفاصيل شكله في `buildPlayer`) |
+| بطل | `js/data/characters.js` (+ تفاصيل شكله في `buildPlayer`، وضربته الخاصة `sp`) |
+| ضربة خاصة | `SPECIALS` في `js/game/specials.js`، واربطها بالبطل عبر `sp` |
 | تطوير / صفقة / تطوير دائم / عقدة مهارة | `js/data/upgrades.js` (+ أثره في `recalc` داخل `game/state.js` أو في `update`) |
 | إنجاز | `js/data/achievements.js` |
 | عقدة مهارة جديدة | `TREE` في `js/data/upgrades.js` + أيقونتها في `TREE_IC` داخل `js/ui/skill-tree.js` |

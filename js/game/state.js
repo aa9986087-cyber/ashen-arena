@@ -29,6 +29,8 @@ function newRun() {
     slow: 0,
     superT: 0,
     specCd: 0,
+    buffT: 0,
+    buff: {},
     rerolls: S.tree.U2 ? 2 : 0,
     revives: 0,
     cardMode: '',
