@@ -13,6 +13,8 @@ const defSave = () => ({
   char: 'knight',
   tree: {},
   ach: {},
+  /** ids of gift codes already redeemed on this device */
+  gifts: {},
   stats: { kills: 0, runs: 0, bestTime: 0, bestLvl: 0, bosses: 0, maxBoss: 0, legend: 0, abyss: 0 },
   set: { sfx: 0.7, mus: 0.5, shadow: 1, shake: 1, qual: 1, left: 1 },
 });

@@ -337,3 +337,16 @@ textarea.txt {
   color: #fff;
   box-shadow: 0 5px 0 #3a0610;
 }
+
+/* gift code row (settings) */
+.giftBox {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+#giftIn {
+  width: min(46vw, 220px);
+  padding: 8px 10px;
+  direction: ltr;
+  font-size: 14px;
+}

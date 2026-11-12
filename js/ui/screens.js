@@ -235,9 +235,12 @@ $('oReset').onclick = () => {
     return;
   }
   resetArm = false;
-  const keep = S.set;
+  // settings and redeemed gift codes survive a wipe (so a gift can't be claimed again)
+  const keep = S.set,
+    gifts = S.gifts;
   S = defSave();
   S.set = keep;
+  S.gifts = gifts;
   save();
   toast('مُسح التقدم');
   askName();

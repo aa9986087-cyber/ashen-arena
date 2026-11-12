@@ -1,37 +1,14 @@
 'use strict';
 /* Leaderboard: local list, shareable signed score codes, and the online (Supabase) board. */
 let lastRun = null;
-const sig = s => {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0).toString(36);
-};
-const b64 = s =>
-  btoa(unescape(encodeURIComponent(s)))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-const unb64 = s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
 function mkCode(e) {
-  const body = [e.n, e.k, e.l, e.t | 0, e.b].join('|');
-  return 'AR1-' + b64(body + '|' + sig(body + '#vamos'));
+  return packCode('AR1', [e.n, e.k, e.l, e.t | 0, e.b], '#vamos');
 }
 function readCode(txt) {
-  const m = /AR1-([A-Za-z0-9_-]+)/.exec(txt || '');
-  if (!m) return null;
-  try {
-    const p = unb64(m[1]).split('|');
-    if (p.length !== 6) return null;
-    const body = p.slice(0, 5).join('|');
-    if (sig(body + '#vamos') !== p[5]) return null;
-    const e = { n: p[0].slice(0, 14), k: +p[1], l: +p[2], t: +p[3], b: +p[4] };
-    return e.n && isFinite(e.k + e.l + e.t + e.b) ? e : null;
-  } catch (err) {
-    return null;
-  }
+  const p = unpackCode('AR1', txt, 5, '#vamos');
+  if (!p) return null;
+  const e = { n: p[0].slice(0, 14), k: +p[1], l: +p[2], t: +p[3], b: +p[4] };
+  return e.n && isFinite(e.k + e.l + e.t + e.b) ? e : null;
 }
 function addScore(e) {
   const B = S.board,
