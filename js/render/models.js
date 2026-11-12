@@ -1,5 +1,6 @@
 'use strict';
-/* 3D models in assets/models/ that replace the procedural shapes (baked to vertex colours, static pose).
+/* 3D models in assets/models/ that replace the procedural shapes, baked to vertex colours.
+   Animated models are baked into a few snapshots per clip and played as a flip-book (cheap for big crowds).
    To add one: put the .glb in assets/models/ and list it here. Sources and licences: assets/models/README.md */
 /** file → what it replaces: a GEO key (enemy type or boss0…boss5), or hero:<CHARS id> (or hero:* for every hero).
     Use { to, size, tint } for options: size scales the fitted height, tint:true darkens it for a scarier look. */
@@ -20,7 +21,7 @@ const MODEL_FILES = {
   'boss-flame.glb': { to: 'boss5', size: 0.85 }, // wide wings
 };
 /** Bump to make browsers fetch updated model files. */
-const MODEL_VER = 3;
+const MODEL_VER = 4;
 const lin2s = v => (v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
 function texSampler(tex) {
   try {
@@ -46,12 +47,23 @@ function texSampler(tex) {
     return null;
   }
 }
-function bakeModel(root, targetH, scary) {
-  root.updateMatrixWorld(true);
-  const pos = [],
+/** How many snapshots are baked per clip (more = smoother, more memory). */
+const ANIM_FRAMES = { walk: 8, run: 10, idle: 8, attack: 8 };
+/**
+ * Bake a loaded glTF scene into vertex-coloured geometry the game can draw cheaply.
+ * Static models give one geometry. Animated ones also give, per clip role (walk / run / idle / attack),
+ * a list of snapshot geometries ("frames") that share the index and colours and differ only in position.
+ * Every frame uses the scale/offset of the first one, so the model doesn't jitter between frames.
+ * Returns { base, clips: { role: [geometry…] } } or null.
+ */
+function bakeModel(root, animations, targetH, scary) {
+  // 1 · collect vertices once: colours and the index never change between frames
+  const meshes = [],
     col = [],
-    v = new THREE.Vector3(),
+    index = [],
     samp = new Map();
+  let n = 0;
+  root.updateMatrixWorld(true);
   root.traverse(o => {
     if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
     const g = o.geometry,
@@ -59,11 +71,12 @@ function bakeModel(root, targetH, scary) {
       UV = g.attributes.uv,
       VC = g.attributes.color,
       idx = g.index,
-      mats = Array.isArray(o.material) ? o.material : [o.material];
-    const total = idx ? idx.count : P.count,
-      groups = g.groups && g.groups.length ? g.groups : [{ start: 0, count: total, materialIndex: 0 }];
-    const skin = o.isSkinnedMesh && typeof o.boneTransform === 'function';
-    if (skin && o.skeleton) o.skeleton.update();
+      mats = Array.isArray(o.material) ? o.material : [o.material],
+      total = idx ? idx.count : P.count,
+      groups = g.groups && g.groups.length ? g.groups : [{ start: 0, count: total, materialIndex: 0 }],
+      off = n,
+      vc = new Float32Array(P.count * 3).fill(1);
+    let used = false;
     for (const gr of groups) {
       const m = mats[gr.materialIndex || 0] || mats[0];
       if (!m || m.visible === false) continue;
@@ -76,14 +89,11 @@ function bakeModel(root, targetH, scary) {
       const end = Math.min(gr.start + gr.count, total);
       for (let k = gr.start; k < end; k++) {
         const i = idx ? idx.getX(k) : k;
-        if (skin) o.boneTransform(i, v);
-        else v.fromBufferAttribute(P, i);
-        v.applyMatrix4(o.matrixWorld);
-        pos.push(v.x, v.y, v.z);
+        index.push(off + i);
         let c = mc;
         if (sp) {
-          const t = sp(UV.getX(i), UV.getY(i));
-          c = [c[0] * t[0], c[1] * t[1], c[2] * t[2]];
+          const tc = sp(UV.getX(i), UV.getY(i));
+          c = [c[0] * tc[0], c[1] * tc[1], c[2] * tc[2]];
         }
         if (VC) c = [c[0] * lin2s(VC.getX(i)), c[1] * lin2s(VC.getY(i)), c[2] * lin2s(VC.getZ(i))];
         if (scary) {
@@ -94,23 +104,73 @@ function bakeModel(root, targetH, scary) {
             (l * 0.45 + c[2] * 0.55) * 0.72,
           ];
         }
-        col.push(c[0], c[1], c[2]);
+        vc.set(c, i * 3);
+        used = true;
       }
     }
+    if (!used) return;
+    meshes.push({ o, P, skin: o.isSkinnedMesh && typeof o.boneTransform === 'function' });
+    for (let i = 0; i < vc.length; i++) col.push(vc[i]);
+    n += P.count;
   });
-  if (pos.length < 9) return null;
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  geo.computeBoundingBox();
-  const b = geo.boundingBox,
-    h = b.max.y - b.min.y || 1,
-    sc = targetH / h;
-  geo.translate(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
-  geo.scale(sc, sc, sc);
-  geo.computeVertexNormals();
-  return geo;
+  if (index.length < 3) return null;
+  const colAttr = new THREE.Float32BufferAttribute(col, 3),
+    idxAttr = new THREE.BufferAttribute(n > 65535 ? new Uint32Array(index) : new Uint16Array(index), 1),
+    v = new THREE.Vector3();
+  let norm = null; // [offsetX, offsetY, offsetZ, scale] fixed by the first snapshot
+  // 2 · one snapshot of the current pose
+  const snapshot = () => {
+    root.updateMatrixWorld(true);
+    const pos = new Float32Array(n * 3);
+    let w = 0;
+    for (const m of meshes) {
+      if (m.skin && m.o.skeleton) m.o.skeleton.update();
+      for (let i = 0; i < m.P.count; i++) {
+        if (m.skin) m.o.boneTransform(i, v);
+        else v.fromBufferAttribute(m.P, i);
+        v.applyMatrix4(m.o.matrixWorld);
+        pos[w++] = v.x;
+        pos[w++] = v.y;
+        pos[w++] = v.z;
+      }
+    }
+    if (!norm) {
+      const b = new THREE.Box3().setFromArray(pos),
+        h = b.max.y - b.min.y || 1;
+      norm = [-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2, targetH / h];
+    }
+    for (let i = 0; i < pos.length; i += 3) {
+      pos[i] = (pos[i] + norm[0]) * norm[3];
+      pos[i + 1] = (pos[i + 1] + norm[1]) * norm[3];
+      pos[i + 2] = (pos[i + 2] + norm[2]) * norm[3];
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setIndex(idxAttr);
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', colAttr);
+    geo.computeVertexNormals();
+    return geo;
+  };
+  // 3 · step every clip the game uses through its frames
+  const clips = {},
+    mixer = animations && animations.length ? new THREE.AnimationMixer(root) : null;
+  for (const role in ANIM_FRAMES) {
+    const clip = mixer && animations.find(a => a.name === role);
+    if (!clip) continue;
+    const act = mixer.clipAction(clip).play(),
+      k = ANIM_FRAMES[role];
+    clips[role] = [];
+    for (let f = 0; f < k; f++) {
+      mixer.setTime((f / k) * clip.duration);
+      clips[role].push(snapshot());
+    }
+    act.stop();
+  }
+  const first = Object.values(clips)[0];
+  return { base: first ? first[0] : snapshot(), clips };
 }
+/** Pick a frame from a clip by cycle progress (0…1, wraps). */
+const animFrame = (frames, t) => frames[((((t % 1) + 1) % 1) * frames.length) | 0];
 function loadModels() {
   if (!THREE.GLTFLoader || !/^https?:$/.test(location.protocol) || IS_SANDBOX) return;
   const L = new THREE.GLTFLoader();
@@ -128,14 +188,21 @@ function loadModels() {
             og.computeBoundingBox();
             th = og.boundingBox.max.y - og.boundingBox.min.y;
           }
-          const g = bakeModel(gl.scene, th * (o.size || 1), !!o.tint);
-          if (!g) return;
+          const baked = bakeModel(gl.scene, gl.animations, th * (o.size || 1), !!o.tint);
+          if (!baked) return;
+          const g = baked.base;
           if (hero) {
-            HERO_GEOS[hero] = g;
+            HERO_GEOS[hero] = baked;
             if (hero === '*' || hero === S.char) buildPlayer();
           } else {
             GEO[key] = g;
-            if (EM[key]) EM[key].mesh.geometry = g;
+            if (baked.clips.walk || baked.clips.attack) ANIM[key] = baked.clips;
+            if (EM[key]) {
+              EM[key].mesh.geometry = g;
+              // one instanced mesh per walk frame; enemies are sorted into them each frame
+              if (baked.clips.walk)
+                EMA[key] = baked.clips.walk.map((fg, i) => (i ? inst(fg, lamV, EM[key].max, true) : EM[key]));
+            }
             if (G.boss && 'boss' + G.boss.kind === key) bossMesh.geometry = g;
           }
         } catch (e) {

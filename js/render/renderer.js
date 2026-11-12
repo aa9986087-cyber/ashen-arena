@@ -44,7 +44,18 @@ function render(dt, now) {
   if (PM.g) {
     const g = PM.g,
       sup = G.superT > 0;
-    g.position.set(p.x, Math.abs(Math.sin(p.walk)) * 0.12 * p.moving, p.z);
+    const H = PM.anim;
+    g.position.set(p.x, H ? 0 : Math.abs(Math.sin(p.walk)) * 0.12 * p.moving, p.z);
+    if (H) {
+      // running beats attacking; a swing plays the attack clip once; otherwise idle
+      const run = playing && p.moving && H.run,
+        atk = !run && p.swing > 0 && H.attack;
+      PM.hm.geometry = run
+        ? animFrame(H.run, p.walk * 0.16)
+        : atk
+          ? animFrame(H.attack, 1 - p.swing)
+          : animFrame(H.idle || H.run, now * 0.0009);
+    }
     g.rotation.y = playing ? p.face : Math.sin(now * 0.0006) * 0.4;
     g.visible = !(p.inv > 0 && p.dashT <= 0 && ((now / 60) | 0) % 2 === 0 && G.state === 'play');
     const sw = Math.sin(p.walk) * 0.9 * p.moving;
@@ -83,7 +94,13 @@ function render(dt, now) {
     if (e.boss) {
       const s = e.scale,
         b = bossMesh;
-      b.position.set(e.x, (e.y || 0) + Math.abs(Math.sin(e.t * 3)) * 0.15, e.z);
+      const A = ANIM['boss' + e.kind];
+      if (A) {
+        // wind-ups (charge, leap, ultimate) play the attack clip, otherwise it walks
+        const atk = A.attack && (e.st === 1 || e.st === 3 || e.st === 4);
+        b.geometry = e.frz > 0 ? A.walk[0] : animFrame(atk ? A.attack : A.walk, e.t * (atk ? 1.1 : 0.9));
+      }
+      b.position.set(e.x, (e.y || 0) + (A ? 0 : Math.abs(Math.sin(e.t * 3)) * 0.15), e.z);
       b.rotation.set(0, e.face, Math.sin(e.t * 3) * 0.05);
       b.scale.set(s, s, s);
       const ab = G.abyss ? 0.14 : 0; // the abyss "shadow" versions glow purple
@@ -103,11 +120,12 @@ function render(dt, now) {
     }
     const s = e.scale,
       ph = e.t * e.spd * 1.7,
-      f = e.flash > 0;
+      f = e.flash > 0,
+      F = EMA[e.type];
     put(
-      EM[e.type],
+      F ? (e.frz > 0 ? F[0] : animFrame(F, e.t * clamp(e.spd * 0.3, 0.6, 2.4) + e.slot)) : EM[e.type],
       e.x,
-      Math.abs(Math.sin(ph)) * 0.2 * s,
+      F ? 0 : Math.abs(Math.sin(ph)) * 0.2 * s,
       e.z,
       e.face,
       s,
@@ -117,10 +135,11 @@ function render(dt, now) {
       f ? 3 : e.frz > 0 ? 0.9 : e.burn > 0 ? 0.8 : e.elite ? 1.45 : G.abyss ? 0.45 : 1,
       f ? 3 : e.frz > 0 ? 1.7 : e.burn > 0 ? 0.45 : e.elite ? 0.5 : G.abyss ? 0.55 : 1,
       e.st === 2 ? 0.35 : 0,
-      Math.sin(ph) * 0.1
+      F ? 0 : Math.sin(ph) * 0.1
     );
   }
   for (const k in EM) flush(EM[k]);
+  for (const k in EMA) for (let i = 1; i < EMA[k].length; i++) flush(EMA[k][i]);
   for (const a of G.allies) put(IAlly, a.x, Math.abs(Math.sin(a.t)) * 0.12, a.z, a.face, 0.85, 0.85, 0.85, 1, 1, 1);
   flush(IAlly);
   if (G.ups.orbit) forOrbitBlades((a, x, z) => put(IBlade, x, 1.1, z, -a, 1.2, 1.2, 1.2, 1.2, 1.3, 1.6));

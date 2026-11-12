@@ -1,6 +1,10 @@
 'use strict';
 /* Instanced meshes for everything drawn in bulk. */
 const EM = {};
+/** Animated enemy types: one instanced mesh per walk frame (EMA[type][0] is EM[type]). Filled by loadModels(). */
+const EMA = {};
+/** Baked clips of loaded models by GEO key, e.g. ANIM.boss4.attack = [geometry…]. */
+const ANIM = {};
 for (const k in EN) EM[k] = inst(GEO[k], lamV, k === 'brute' || k === 'golem' ? 40 : k === 'grunt' ? 170 : 110, true);
 const IAlly = inst(GEO.ally, lamV, 8, true),
   IBlade = inst(GEO.blade, basV, 8),

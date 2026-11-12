@@ -1,5 +1,6 @@
 // Prepare the chosen models for the game (run once; outputs go to assets/models/):
-//  - drop animations (the game bakes one static pose), shrink textures (colours are sampled per vertex)
+//  - keep only the clips the game plays, renamed to their role (walk / run / idle / attack);
+//    shrink textures (colours are sampled per vertex)
 //  - remove props the game draws itself, attach weapons to the skeletons' hands
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
@@ -10,29 +11,33 @@ import sharp from 'sharp';
 const C = process.argv[2], OUT = process.argv[3];
 const SK = C + '/kaykit-skeletons/Assets/gltf/'; // KayKit Skeletons weapon props
 const jobs = {
-  'hero-knight.glb': { src: 'hero/kk_Knight.glb', drop: /^(1H_Sword|1H_Sword_Offhand|2H_Sword|Rectangle_Shield|Round_Shield|Spike_Shield)$/ },
-  'boss-flame.glb': { src: 'um_Flying/Dragon_Evolved.gltf' },
-  'boss-frost.glb': { src: 'um_Big/Yeti.gltf' },
-  'boss-forest.glb': { src: 'um_Big/Orc_Skull.gltf' },
-  'boss-knight.glb': { src: 'um_Big/Demon.gltf' },
-  'grunt.glb': { src: 'mon/kk_Skeleton_Minion.glb', attach: [['Skeleton_Axe', 'handslot.r']] },
-  'shield.glb': { src: 'mon/kk_Skeleton_Warrior.glb', attach: [['Skeleton_Blade', 'handslot.r'], ['Skeleton_Shield_Large_A', 'handslot.l']] },
-  'archer.glb': { src: 'mon/kk_Skeleton_Rogue.glb', attach: [['Skeleton_Crossbow', 'handslot.r']] },
-  'mage.glb': { src: 'mon/kk_Skeleton_Mage.glb', attach: [['Skeleton_Staff', 'handslot.r']] },
-  'wolf.glb': { src: 'mon/q_Wolf.glb' },
-  'fast.glb': { src: 'mon/q_Spider.glb' },
-  'runner.glb': { src: 'mon/q_Snake_angry.glb' },
-  'bomber.glb': { src: 'um_Flying/Demon.gltf' },
-  'shaman.glb': { src: 'um_Flying/Alpaking_Evolved.gltf' },
+  'hero-knight.glb': { src: 'hero/kk_Knight.glb', clips: { idle: 'Idle', run: 'Running_A', attack: '1H_Melee_Attack_Slice_Diagonal' }, drop: /^(1H_Sword|1H_Sword_Offhand|2H_Sword|Rectangle_Shield|Round_Shield|Spike_Shield)$/ },
+  'boss-flame.glb': { src: 'um_Flying/Dragon_Evolved.gltf', clips: { walk: 'Fast_Flying', attack: 'Punch' } },
+  'boss-frost.glb': { src: 'um_Big/Yeti.gltf', clips: { walk: 'Walk', attack: 'Punch' } },
+  'boss-forest.glb': { src: 'um_Big/Orc_Skull.gltf', clips: { walk: 'Walk', attack: 'Punch' } },
+  'boss-knight.glb': { src: 'um_Big/Demon.gltf', clips: { walk: 'Walk', attack: 'Punch' } },
+  'grunt.glb': { src: 'mon/kk_Skeleton_Minion.glb', clips: { walk: 'Walking_D_Skeletons' }, attach: [['Skeleton_Axe', 'handslot.r']] },
+  'shield.glb': { src: 'mon/kk_Skeleton_Warrior.glb', clips: { walk: 'Walking_D_Skeletons' }, attach: [['Skeleton_Blade', 'handslot.r'], ['Skeleton_Shield_Large_A', 'handslot.l']] },
+  'archer.glb': { src: 'mon/kk_Skeleton_Rogue.glb', clips: { walk: 'Walking_A' }, attach: [['Skeleton_Crossbow', 'handslot.r']] },
+  'mage.glb': { src: 'mon/kk_Skeleton_Mage.glb', clips: { walk: 'Walking_A' }, attach: [['Skeleton_Staff', 'handslot.r']] },
+  'wolf.glb': { src: 'mon/q_Wolf.glb', clips: { walk: 'AnimalArmature|Walk' } },
+  'fast.glb': { src: 'mon/q_Spider.glb', clips: { walk: 'SpiderArmature|Spider_Walk' } },
+  'runner.glb': { src: 'mon/q_Snake_angry.glb', clips: { walk: 'SnakeArmature|Snake_Walk' } },
+  'bomber.glb': { src: 'um_Flying/Demon.gltf', clips: { walk: 'Flying_Idle' } },
+  'shaman.glb': { src: 'um_Flying/Alpaking_Evolved.gltf', clips: { walk: 'Fast_Flying' } },
 };
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 for (const [out, job] of Object.entries(jobs)) {
   const doc = await io.read(C + '/' + job.src), root = doc.getRoot();
+  const roleOf = Object.fromEntries(Object.entries(job.clips || {}).map(([role, name]) => [name, role]));
   for (const a of root.listAnimations()) {
+    if (roleOf[a.getName()]) { a.setName(roleOf[a.getName()]); continue; }
     for (const s of a.listSamplers()) s.dispose();
     for (const c of a.listChannels()) c.dispose();
     a.dispose();
   }
+  const kept = root.listAnimations().map(a => a.getName());
+  for (const role in job.clips || {}) if (!kept.includes(role)) throw new Error(out + ': clip not found: ' + job.clips[role]);
   if (job.drop) for (const n of root.listNodes()) if (job.drop.test(n.getName())) n.dispose();
   for (const [file, slotName] of job.attach || []) {
     const src = await io.read(SK + file + '.gltf'), kids = src.getRoot().listScenes()[0].listChildren();
