@@ -113,7 +113,7 @@ const ringPool = pool(14, () => {
   m.rotation.x = -Math.PI / 2;
   return m;
 });
-const zonePool = pool(26, () => {
+const zonePool = pool(48, () => {
   const m = new THREE.Mesh(
     discGeo,
     new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.3, depthWrite: false })
@@ -121,7 +121,7 @@ const zonePool = pool(26, () => {
   m.rotation.x = -Math.PI / 2;
   return m;
 });
-const ballPool = pool(26, () => new THREE.Mesh(SPH, new THREE.MeshBasicMaterial({ color: 0xff8a20 })));
+const ballPool = pool(48, () => new THREE.Mesh(SPH, new THREE.MeshBasicMaterial({ color: 0xff8a20 })));
 const slashGeo = [2.3, 3.6, TAU].map(a => new THREE.RingGeometry(0.45, 1, 28, 1, -a / 2, a));
 const slashPool = pool(6, () => new THREE.Mesh(slashGeo[0], addMat(0xffffff, 1)));
 const auraMesh = new THREE.Mesh(discGeo, addMat(0x4ab8ff, 0.16));
@@ -132,6 +132,11 @@ scene.add(auraMesh);
 const shieldMesh = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 12), addMat(0x6fb7ff, 0.2));
 shieldMesh.visible = false;
 scene.add(shieldMesh);
+/** Coloured glow under the boss (colour from BOSS_ULTS). */
+const bossAura = new THREE.Mesh(discGeo, addMat(0xffffff, 0.2));
+bossAura.rotation.x = -Math.PI / 2;
+bossAura.visible = false;
+scene.add(bossAura);
 const bossMat = new THREE.MeshLambertMaterial({ vertexColors: true });
 const bossMesh = new THREE.Mesh(GEO.boss0, bossMat);
 bossMesh.castShadow = true;

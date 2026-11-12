@@ -78,6 +78,7 @@ function render(dt, now) {
     }
   }
   // enemies
+  bossAura.visible = false;
   for (const e of G.enemies) {
     if (e.boss) {
       const s = e.scale,
@@ -85,11 +86,19 @@ function render(dt, now) {
       b.position.set(e.x, (e.y || 0) + Math.abs(Math.sin(e.t * 3)) * 0.15, e.z);
       b.rotation.set(0, e.face, Math.sin(e.t * 3) * 0.05);
       b.scale.set(s, s, s);
+      const ab = G.abyss ? 0.14 : 0; // the abyss "shadow" versions glow purple
       bossMat.emissive.setRGB(
-        e.flash > 0 ? 0.8 : e.hp < e.maxHp * 0.5 ? 0.25 : 0,
+        e.flash > 0 ? 0.8 : e.hp < e.maxHp * 0.5 ? 0.25 : ab,
         e.flash > 0 ? 0.8 : e.frz > 0 ? 0.3 : 0,
-        e.flash > 0 ? 0.8 : e.frz > 0 ? 0.7 : 0
+        e.flash > 0 ? 0.8 : e.frz > 0 ? 0.7 : ab * 0.9
       );
+      const c = BOSS_ULTS[e.kind].col,
+        R = 3.2 + 0.25 * Math.sin(e.t * 4) + (e.st === 4 ? 1.5 : 0);
+      bossAura.visible = true;
+      bossAura.position.set(e.x, 0.07, e.z);
+      bossAura.scale.set(R, R, 1);
+      bossAura.material.color.setRGB(c[0], c[1], c[2]);
+      bossAura.material.opacity = e.st === 4 ? 0.45 : e.hp < e.maxHp * 0.5 ? 0.3 : 0.18;
       continue;
     }
     const s = e.scale,

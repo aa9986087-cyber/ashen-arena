@@ -53,6 +53,7 @@ js/
     spawning.js         ظهور الأعداء والزعماء والموجات
     combat.js           الإصابة، القتل، المقذوفات، أسلحة اللاعب، القدرات
     specials.js         الضربة الخاصة لكل بطل (Q) والتعزيزات المؤقتة
+    boss-ults.js        الضربة الكبرى لكل زعيم، ولون هالته وجزيئاته
     enemy-ai.js         سلوك الأعداء والزعماء
     update.js           محاكاة كل إطار
     progression.js      هزيمة الزعيم، المراحل، النهاية/الهاوية، الإنجازات
@@ -88,7 +89,7 @@ assets/
 | إنجاز | `js/data/achievements.js` |
 | عقدة مهارة جديدة | `TREE` في `js/data/upgrades.js` + أيقونتها في `TREE_IC` داخل `js/ui/skill-tree.js` |
 | عدو | `js/data/enemies.js` + شكله في `render/geometry.js` (نفس المفتاح) + سلوكه في `game/enemy-ai.js` + وزنه في `pickType` داخل `game/spawning.js` |
-| مرحلة / زعيم | `js/data/stages.js` (+ هجمات الزعيم في `game/enemy-ai.js` حسب `bk`) |
+| مرحلة / زعيم | `js/data/stages.js` (+ هجماته العادية في `game/enemy-ai.js` حسب `bk`، وضربته الكبرى في `game/boss-ults.js`، وشكله `boss<bk>` في `render/geometry.js`) |
 
 أدوات مساعدة جاهزة للهجمات: `eRing` (حلقة طلقات)، `eFan` (مروحة طلقات)، `spawnPack` (مجموعة أعداء)، `zoneBarrage` (دوائر خطر)، `eachInRadius` (كل عدو داخل دائرة)، `heal`.
 

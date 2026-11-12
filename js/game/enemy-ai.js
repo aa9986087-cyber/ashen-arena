@@ -64,7 +64,19 @@ function updEnemies(dt) {
         eFan(e.x, e.z, aa, 1, 0.13, 15, e.dmg * 0.45);
         AU.play('eshot');
       }
-      if (e.st === 1) {
+      e.ult -= dt * rage;
+      bossTick(e, p, dt);
+      if (e.st === 0 && e.ult <= 0 && d < 34) startUlt(e);
+      if (e.st === 4) {
+        // ultimate wind-up (see js/game/boss-ults.js)
+        spd = 0;
+        e.flash = 0.05;
+        e.stT -= dt;
+        if (e.stT <= 0) {
+          e.st = 0;
+          BOSS_ULTS[k].f(e, p);
+        }
+      } else if (e.st === 1) {
         e.stT -= dt;
         e.flash = 0.05;
         spd = 0;
@@ -93,6 +105,10 @@ function updEnemies(dt) {
           e.x = e.lx;
           e.z = e.lz;
           eRing(e.x, e.z, 14, 8, e.dmg * 0.6);
+          if (e.leaps > 0) {
+            e.leaps--;
+            bossLeap(e, p);
+          }
         }
       } else if (k === 0) {
         if (e.a1 <= 0 && d < 17) {
@@ -139,12 +155,7 @@ function updEnemies(dt) {
       } else if (k === 2) {
         if (e.a1 <= 0) {
           e.a1 = 4.6;
-          e.st = 3;
-          e.stT = 1;
-          e.lx = p.x;
-          e.lz = p.z;
-          zone(p.x, p.z, 5, 1, e.dmg * 1.5, false);
-          AU.play('boss');
+          bossLeap(e, p);
         }
         if (e.a2 <= 0 && d < 19) {
           e.a2 = 3;

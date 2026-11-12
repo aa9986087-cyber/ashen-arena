@@ -237,6 +237,12 @@ const GEO = {
       part(CYL, 0x6a8aa8, 0.74, 1.3, 0.6, 0.08, 2.4, 0.08, 1.2),
       part(BOX, 0xc8f0ff, 0.74, 1.75, 1.6, 0.1, 0.9, 0.7),
       part(BOX, 0xeaf6ff, 0, 1.1, -0.3, 1, 1.5, 0.06),
+      // ice shards on the shoulders, a floating crown ring and icy skirt spikes
+      part(CONE, 0x9fdcf5, -0.7, 1.95, 0, 0.16, 0.7, 0.16, 0, 0, 0.35),
+      part(CONE, 0x9fdcf5, 0.7, 1.95, 0, 0.16, 0.7, 0.16, 0, 0, -0.35),
+      part(CYL, 0xc8f0ff, 0, 2.95, 0, 0.75, 0.05, 0.75),
+      part(CONE, 0xc8f0ff, -0.35, 0.35, 0.3, 0.14, 0.7, 0.14, 0.3, 0, 0.3),
+      part(CONE, 0xc8f0ff, 0.35, 0.35, 0.3, 0.14, 0.7, 0.14, 0.3, 0, -0.3),
     ])
   ),
   boss5: merge([
@@ -254,6 +260,13 @@ const GEO = {
     part(BOX, 0xffe060, 0.18, 2.15, 0.66, 0.14, 0.1, 0.06),
     part(BOX, 0x1e1412, -0.45, 0.2, 0, 0.55, 0.4, 0.7),
     part(BOX, 0x1e1412, 0.45, 0.2, 0, 0.55, 0.4, 0.7),
+    // flame crest, burning shoulders and glowing lava cracks
+    part(CONE, 0xff5a10, 0, 3.05, 0.15, 0.3, 0.9, 0.3),
+    part(CONE, 0xffd040, 0, 3.2, 0.2, 0.15, 0.6, 0.15),
+    part(SPH, 0xff8a20, -1.05, 1.95, 0.1, 0.55, 0.35, 0.55),
+    part(SPH, 0xff8a20, 1.05, 1.95, 0.1, 0.55, 0.35, 0.55),
+    part(BOX, 0xff6a1a, -0.5, 1.5, 0.78, 0.08, 0.7, 0.04, 0, 0, 0.4),
+    part(BOX, 0xff6a1a, 0.5, 1.5, 0.78, 0.08, 0.7, 0.04, 0, 0, -0.4),
   ]),
   bones: merge([
     part(SPH, 0xe8e0c8, 0, 0.36, 0, 0.74, 0.64, 0.74),
@@ -281,6 +294,14 @@ const GEO = {
     part(BOX, 0x7dff60, 0.18, 2.15, 0.66, 0.12, 0.1, 0.06),
     part(BOX, 0x54402c, -0.45, 0.2, 0, 0.55, 0.4, 0.7),
     part(BOX, 0x54402c, 0.45, 0.2, 0, 0.55, 0.4, 0.7),
+    // antlers, leafy shoulders and a glowing heart
+    part(CYL, 0x5a3d24, -0.75, 3.05, 0.25, 0.1, 1.2, 0.1, 0, 0, 0.75),
+    part(CYL, 0x5a3d24, 0.75, 3.05, 0.25, 0.1, 1.2, 0.1, 0, 0, -0.75),
+    part(CONE, 0x44904c, -1.2, 3.45, 0.25, 0.45, 0.6, 0.45),
+    part(CONE, 0x44904c, 1.2, 3.45, 0.25, 0.45, 0.6, 0.45),
+    part(SPH, 0x377a40, -1.1, 1.95, 0, 0.75, 0.5, 0.75),
+    part(SPH, 0x377a40, 1.1, 1.95, 0, 0.75, 0.5, 0.75),
+    part(SPH, 0x7dff60, 0, 1.3, 0.74, 0.34, 0.34, 0.2),
   ]),
   boss1: merge([
     part(CONE, 0xb8862e, 0, 0.95, 0, 1.7, 1.9, 1.7),
@@ -294,6 +315,11 @@ const GEO = {
     part(SPH, 0x40e0ff, 0.85, 3.05, 0.2, 0.4, 0.4, 0.4),
     part(BOX, 0xd8a848, -0.62, 1.5, 0, 0.24, 0.8, 0.26),
     part(BOX, 0xd8a848, 0.62, 1.5, 0.15, 0.24, 0.8, 0.26, -0.5),
+    // royal cape, gold collar, chest gem and a sand hem
+    part(BOX, 0x8a2a1a, 0, 1.25, -0.72, 1.4, 1.9, 0.06, 0.15),
+    part(CYL, 0xffd040, 0, 1.95, 0, 0.78, 0.1, 0.78),
+    part(SPH, 0x40e0ff, 0, 1.65, 0.3, 0.2, 0.2, 0.12),
+    part(CYL, 0x9a6a22, 0, 0.15, 0, 1.9, 0.3, 1.9),
   ]),
   boss2: merge(
     human(0x1c1c24, 0x101016, 0x2a2a34, 0.95).concat([
@@ -304,6 +330,13 @@ const GEO = {
       part(BOX, 0x34343e, 0.62, 1.5, 0, 0.42, 0.3, 0.5),
       part(BOX, 0xa8b0c0, 0.72, 1.3, 0.95, 0.16, 0.06, 2),
       part(BOX, 0x5a1010, 0, 1.1, -0.3, 0.9, 1.4, 0.06),
+      // shoulder spikes, horned helm, red sword guard and a long cape
+      part(CONE, 0x16161c, -0.7, 1.9, 0, 0.18, 0.55, 0.18, 0, 0, 0.45),
+      part(CONE, 0x16161c, 0.7, 1.9, 0, 0.18, 0.55, 0.18, 0, 0, -0.45),
+      part(CONE, 0xb01a1a, -0.32, 2.25, 0, 0.1, 0.5, 0.1, 0, 0, 0.55),
+      part(CONE, 0xb01a1a, 0.32, 2.25, 0, 0.1, 0.5, 0.1, 0, 0, -0.55),
+      part(BOX, 0xff2a2a, 0.72, 1.3, 0.05, 0.5, 0.1, 0.12),
+      part(BOX, 0x7a1414, 0, 0.85, -0.36, 1.1, 1.7, 0.05),
     ])
   ),
   boss3: merge([
@@ -318,5 +351,13 @@ const GEO = {
     part(BOX, 0x3a3e44, -0.45, 0.1, 0, 0.5, 0.3, 1),
     part(BOX, 0x3a3e44, 0.45, 0.1, 0, 0.5, 0.3, 1),
     part(BOX, 0xe0b020, 0, 1.3, 0.52, 0.5, 0.3, 0.04),
+    // rocket pods, radio antenna with a red light, medals and a cap visor
+    part(CYL, 0x4d5230, -1.1, 2.2, -0.1, 0.32, 0.6, 0.32),
+    part(CYL, 0x4d5230, 1.1, 2.2, -0.1, 0.32, 0.6, 0.32),
+    part(CYL, 0x202226, 0.35, 2.75, -0.2, 0.04, 0.9, 0.04),
+    part(SPH, 0xff3020, 0.35, 3.2, -0.2, 0.12, 0.12, 0.12),
+    part(BOX, 0xe0b020, -0.4, 1.62, 0.52, 0.14, 0.14, 0.04),
+    part(BOX, 0xe0b020, 0.4, 1.62, 0.52, 0.14, 0.14, 0.04),
+    part(BOX, 0x3a3e44, 0, 2.38, 0.18, 0.9, 0.08, 0.85),
   ]),
 };
