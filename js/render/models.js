@@ -1,25 +1,26 @@
 'use strict';
-/* Optional .glb/.gltf models dropped into assets/models/ replace the procedural ones (baked to vertex colours). */
-const MODEL_SLOTS = {
-  grunt: 'grunt',
-  fast: 'fast',
-  archer: 'archer',
-  shield: 'shield',
-  brute: 'brute',
-  wolf: 'wolf',
-  bomber: 'bomber',
-  mage: 'mage',
-  shaman: 'shaman',
-  golem: 'golem',
-  runner: 'runner',
-  'boss-forest': 'boss0',
-  'boss-sand': 'boss1',
-  'boss-knight': 'boss2',
-  'boss-general': 'boss3',
-  'boss-frost': 'boss4',
-  'boss-flame': 'boss5',
-  hero: 'hero',
+/* 3D models in assets/models/ that replace the procedural shapes (baked to vertex colours, static pose).
+   To add one: put the .glb in assets/models/ and list it here. Sources and licences: assets/models/README.md */
+/** file → what it replaces: a GEO key (enemy type or boss0…boss5), or hero:<CHARS id> (or hero:* for every hero).
+    Use { to, size, tint } for options: size scales the fitted height, tint:true darkens it for a scarier look. */
+const MODEL_FILES = {
+  'hero-knight.glb': 'hero:knight',
+  'grunt.glb': 'grunt',
+  'shield.glb': 'shield',
+  'archer.glb': 'archer',
+  'mage.glb': 'mage',
+  'wolf.glb': { to: 'wolf', size: 1.3 },
+  'fast.glb': { to: 'fast', size: 0.45 }, // a flat, wide spider: keep it low
+  'runner.glb': 'runner',
+  'bomber.glb': 'bomber',
+  'shaman.glb': 'shaman',
+  'boss-forest.glb': 'boss0',
+  'boss-knight.glb': 'boss2',
+  'boss-frost.glb': 'boss4',
+  'boss-flame.glb': { to: 'boss5', size: 0.85 }, // wide wings
 };
+/** Bump to make browsers fetch updated model files. */
+const MODEL_VER = 3;
 const lin2s = v => (v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
 function texSampler(tex) {
   try {
@@ -113,38 +114,36 @@ function bakeModel(root, targetH, scary) {
 function loadModels() {
   if (!THREE.GLTFLoader || !/^https?:$/.test(location.protocol) || IS_SANDBOX) return;
   const L = new THREE.GLTFLoader();
-  for (const f in MODEL_SLOTS) {
-    const key = MODEL_SLOTS[f];
-    const tryExt = ex => {
-      if (!ex.length) return;
-      L.load(
-        MODEL_DIR + f + '.' + ex[0] + '?v=1',
-        gl => {
-          try {
-            let th = 2.5;
-            if (key !== 'hero') {
-              const og = GEO[key];
-              og.computeBoundingBox();
-              th = og.boundingBox.max.y - og.boundingBox.min.y;
-            }
-            const g = bakeModel(gl.scene, th, key !== 'hero');
-            if (!g) return;
-            if (key === 'hero') {
-              HERO_GEO = g;
-              buildPlayer();
-            } else {
-              GEO[key] = g;
-              if (EM[key]) EM[key].mesh.geometry = g;
-              if (G.boss && 'boss' + G.boss.kind === key) bossMesh.geometry = g;
-            }
-          } catch (e) {
-            console.warn('model', f, e);
+  for (const file in MODEL_FILES) {
+    const o = typeof MODEL_FILES[file] === 'string' ? { to: MODEL_FILES[file] } : MODEL_FILES[file],
+      key = o.to,
+      hero = key.startsWith('hero:') ? key.slice(5) : null;
+    L.load(
+      MODEL_DIR + file + '?v=' + MODEL_VER,
+      gl => {
+        try {
+          let th = 2.5; // hero height; enemies keep the height of the shape they replace
+          if (!hero) {
+            const og = GEO[key];
+            og.computeBoundingBox();
+            th = og.boundingBox.max.y - og.boundingBox.min.y;
           }
-        },
-        undefined,
-        () => tryExt(ex.slice(1))
-      );
-    };
-    tryExt(['glb', 'gltf']);
+          const g = bakeModel(gl.scene, th * (o.size || 1), !!o.tint);
+          if (!g) return;
+          if (hero) {
+            HERO_GEOS[hero] = g;
+            if (hero === '*' || hero === S.char) buildPlayer();
+          } else {
+            GEO[key] = g;
+            if (EM[key]) EM[key].mesh.geometry = g;
+            if (G.boss && 'boss' + G.boss.kind === key) bossMesh.geometry = g;
+          }
+        } catch (e) {
+          console.warn('model', file, e);
+        }
+      },
+      undefined,
+      () => console.warn('model missing', file)
+    );
   }
 }

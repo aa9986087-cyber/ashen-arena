@@ -1,20 +1,39 @@
-# نماذج ثلاثية الأبعاد اختيارية (Optional 3D models)
+# النماذج ثلاثية الأبعاد
 
-ضع هنا ملفات `.glb` أو `.gltf` بالأسماء التالية، واللعبة تستبدل بها الأشكال المبنية برمجياً تلقائياً.
-إذا ما وجد الملف، تبقى الأشكال الأصلية كما هي (الطلبات الفاشلة 404 متوقعة وغير مؤذية).
+النماذج هنا تحل محل الأشكال المبنية بالكود. اللعبة تحوّل كل نموذج لألوان مسطحة بوضعية ثابتة (بدون حركة)، وتكبّره أو تصغّره على حجم الشكل اللي يحل محله.
 
-| اسم الملف | يستبدل |
-|---|---|
-| `hero.glb` | البطل |
-| `grunt.glb`, `fast.glb`, `archer.glb`, `shield.glb`, `brute.glb`, `wolf.glb`, `bomber.glb`, `mage.glb`, `shaman.glb`, `golem.glb`, `runner.glb` | الأعداء |
-| `boss-forest.glb` | حارس الغابة |
-| `boss-sand.glb` | ملك الرمال |
-| `boss-knight.glb` | الفارس الأسود |
-| `boss-general.glb` | الجنرال الحديدي |
-| `boss-frost.glb` | ملك الصقيع |
-| `boss-flame.glb` | سيد اللهب |
+## الموجود حالياً
 
-ملاحظات:
-- النماذج تُحمّل فقط عند التشغيل عبر `http/https` (مو `file://`).
-- كل نموذج يُصغّر/يُكبّر تلقائياً لطول الشكل الأصلي، وألوانه (والـ texture) تُخبز في ألوان الرؤوس.
-- قائمة الأسماء موجودة في `MODEL_SLOTS` داخل `js/render/models.js`، والمجلد في `MODEL_DIR` داخل `js/core/config.js`.
+| الملف | يحل محل | المصدر |
+|---|---|---|
+| `hero-knight.glb` | البطل: الفارس | KayKit Adventurers (Knight) |
+| `grunt.glb` | الجندي | KayKit Skeletons (Minion + فأس) |
+| `shield.glb` | حامل الدرع | KayKit Skeletons (Warrior + سيف ودرع) |
+| `archer.glb` | الرامي | KayKit Skeletons (Rogue + قوس) |
+| `mage.glb` | الساحر | KayKit Skeletons (Mage + عصا) |
+| `wolf.glb` | الذئب | Quaternius Animals (Wolf) |
+| `fast.glb` | السريع | Quaternius Easy Enemies (Spider) |
+| `runner.glb` | الراكض | Quaternius Easy Enemies (Snake) |
+| `bomber.glb` | الانتحاري | Quaternius Ultimate Monsters (Flying Demon) |
+| `shaman.glb` | الشامان | Quaternius Ultimate Monsters (Alpaking Evolved) |
+| `boss-forest.glb` | حارس الغابة | Quaternius Ultimate Monsters (Orc Skull) |
+| `boss-knight.glb` | الفارس الأسود | Quaternius Ultimate Monsters (Demon) |
+| `boss-frost.glb` | ملك الصقيع | Quaternius Ultimate Monsters (Yeti) |
+| `boss-flame.glb` | سيد اللهب | Quaternius Ultimate Monsters (Dragon Evolved) |
+
+## الرخصة
+
+كل النماذج رخصتها **CC0** (ملكية عامة): تقدر تستخدمها وتعدلها حتى تجارياً، بدون ذكر المصدر. ومع ذلك نشكرهم:
+- **KayKit** من Kay Lousberg: https://kaylousberg.com
+- **Quaternius**: https://quaternius.com
+
+## إضافة نموذج جديد
+
+1. جهّز الملف بأداة `tools/prepare-models.mjs`. تشيل الحركات، وتصغّر الصور، وتشيل الأشياء اللي اللعبة ترسمها بنفسها (مثل سلاح البطل)، فيصير الملف أصغر بحوالي 10 مرات.
+2. ضع ملف `.glb` في هذا المجلد.
+3. أضفه في `MODEL_FILES` داخل `js/render/models.js`. مثلاً `'brute.glb': 'brute'`، أو لبطل `'hero-mage.glb': 'hero:mage'`.
+   - تقدر تضبط الحجم بـ `size` (مثل `{ to: 'fast', size: 0.45 }`).
+   - وتقدر تغمّق النموذج بـ `tint: true`.
+4. إذا عدّلت ملف موجود، زد `MODEL_VER` عشان المتصفحات تحمّل النسخة الجديدة.
+
+النماذج ما تشتغل لما تفتح اللعبة من `file://`، لازم تشغلها عبر `http`.

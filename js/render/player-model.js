@@ -1,7 +1,7 @@
 'use strict';
 /* Hero model built from primitives (or a loaded hero.glb), plus the held weapon. */
-/** Baked geometry from assets/models/hero.glb, if one was loaded. */
-let HERO_GEO = null;
+/** Baked hero models by CHARS id ('*' = any hero), filled by loadModels(). */
+const HERO_GEOS = {};
 const PM = {};
 const matC = {};
 const lam = (c, em) => {
@@ -110,10 +110,12 @@ function buildPlayer() {
   PM.wp = new THREE.Group();
   PM.wp.position.y = -0.75;
   PM.aR.add(PM.wp);
-  if (HERO_GEO) {
+  const heroGeo = HERO_GEOS[S.char] || HERO_GEOS['*'];
+  if (heroGeo) {
+    // a loaded model replaces the body; only the weapon in the right hand stays procedural
     for (const ch of g.children) if (ch !== PM.aR) ch.visible = false;
     for (const ch of PM.aR.children) if (ch !== PM.wp) ch.visible = false;
-    const hm = new THREE.Mesh(HERO_GEO, lamV);
+    const hm = new THREE.Mesh(heroGeo, lamV);
     hm.castShadow = true;
     g.add(hm);
   }
