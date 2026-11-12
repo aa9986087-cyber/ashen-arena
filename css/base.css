@@ -11,6 +11,11 @@
   --xp: #3fd0c0;
   --shield: #6fb7ff;
   --pact: #e0304a;
+  /* luxe accents: gold trim, dark glass panels */
+  --gold: #f6c45a;
+  --gold2: #c9781f;
+  --goldline: rgba(246, 196, 90, 0.5);
+  --glass: rgba(14, 12, 24, 0.66);
   --r0: #9fb0c8;
   --r1: #4aa3ff;
   --r2: #b56bff;

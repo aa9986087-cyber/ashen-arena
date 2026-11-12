@@ -177,21 +177,22 @@ function endRun() {
   }
   checkAch();
   save();
+  // stat tiles; plain numbers count up from zero
   $('ovSum').innerHTML = '';
   const rows = [
-    ['الوقت', fmtT(G.t)],
-    ['الأعداء', G.kills],
-    ['المستوى', G.lvl],
-    ['وصلت إلى', STAGES[G.stage].n + (G.abyss ? ' (العمق ' + (G.depth + 1) + ')' : '')],
-    ['زعماء هُزموا', G.bossesRun],
-    ['العملات المحفوظة', kept + ' من ' + G.coins],
+    ['💀', 'الأعداء', G.kills],
+    ['⭐', 'المستوى', G.lvl],
+    ['⏱', 'الوقت', fmtT(G.t)],
+    ['👑', 'زعماء هُزموا', G.bossesRun],
+    ['🪙', 'العملات المحفوظة', kept + ' من ' + G.coins],
+    ['🗺️', 'وصلت إلى', STAGES[G.stage].n + (G.abyss ? ' (العمق ' + (G.depth + 1) + ')' : ''), 1],
   ];
-  for (const r of rows) {
-    const a = document.createElement('span');
-    a.textContent = r[0];
-    const b = document.createElement('b');
-    b.textContent = r[1];
-    $('ovSum').append(a, b);
+  for (const [icon, label, v, wide] of rows) {
+    const tile = el('div', 'st' + (wide ? ' wide' : '')),
+      b = el('b', '', v);
+    tile.append(el('i', '', icon), b, el('span', '', label));
+    $('ovSum').appendChild(tile);
+    if (typeof v === 'number' && v > 0) countUp(b, v);
   }
   $('hud').hidden = true;
   show('cards', false);
@@ -218,4 +219,15 @@ function pause(on) {
     show('pause', false);
     show('settings', false);
   }
+}
+/** Animate an element's number from 0 to v (about 0.9 s). */
+function countUp(elm, v) {
+  const t0 = performance.now(),
+    step = () => {
+      const k = Math.min(1, (performance.now() - t0) / 900);
+      elm.textContent = Math.round(v * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) setTimeout(step, 30);
+    };
+  elm.textContent = 0;
+  setTimeout(step, 250);
 }

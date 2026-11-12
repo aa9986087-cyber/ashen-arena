@@ -24,6 +24,7 @@
     <canvas id="fx"></canvas>
     <div id="vig"></div>
     <div id="dark"></div>
+    <div id="shade"></div>
     <div id="intro">
       <div class="iv"><span>VAMOS</span><i></i><small>يقدّم</small></div>
     </div>
@@ -35,7 +36,7 @@
         <div id="vital">
           <div id="lvl">1</div>
           <div id="bars">
-            <div class="bar" id="hpbar"><i></i><b></b></div>
+            <div class="bar" id="hpbar"><em></em><i></i><b></b></div>
             <div class="bar" id="shbar" hidden><i></i></div>
           </div>
         </div>
@@ -319,6 +320,13 @@
     <!-- three.js r128 + GLTFLoader (globals: THREE, THREE.GLTFLoader) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <!-- bloom post-processing (used on high quality) -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
     <!-- Game scripts: plain (non-module) scripts sharing one global scope. ORDER MATTERS:
      each file may only use, at load time, what the files above it define. -->
     <script src="js/core/utils.js"></script>
@@ -339,6 +347,7 @@
     <script src="js/render/geometry.js"></script>
     <script src="js/render/instances.js"></script>
     <script src="js/render/world.js"></script>
+    <script src="js/render/atmosphere.js"></script>
     <script src="js/render/player-model.js"></script>
     <script src="js/game/state.js"></script>
     <script src="js/game/fx.js"></script>
@@ -354,6 +363,7 @@
     <script src="js/game/daily.js"></script>
     <script src="js/ui/hud.js"></script>
     <script src="js/ui/screens.js"></script>
+    <script src="js/ui/portraits.js"></script>
     <script src="js/ui/leaderboard.js"></script>
     <script src="js/ui/gift.js"></script>
     <script src="js/ui/backup.js"></script>

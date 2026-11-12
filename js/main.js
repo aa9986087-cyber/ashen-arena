@@ -11,6 +11,7 @@ function frame(now) {
   render(dt, now);
 }
 initIntro();
+setupBloom();
 newRun();
 setStage(0);
 buildPlayer();

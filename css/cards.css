@@ -4,108 +4,176 @@
   align-items: center;
   justify-content: center;
   z-index: 30;
-  background: rgba(10, 12, 22, 0.8);
+  background: radial-gradient(ellipse at 50% 40%, rgba(30, 24, 52, 0.82), rgba(4, 4, 10, 0.92) 75%);
 }
 #cards h2 {
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(34px, 7vw, 56px);
-  color: var(--xp);
-  text-shadow: 0 0 18px rgba(63, 208, 192, 0.6);
-  line-height: 1.1;
+  font-size: clamp(38px, 7.5vw, 62px);
+  line-height: 1.15;
   text-align: center;
+  background: linear-gradient(180deg, #e8fffb 10%, var(--xp) 55%, #1f8f84);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 0 #06302c) drop-shadow(0 0 20px rgba(63, 208, 192, 0.55));
 }
 #cards > p {
-  color: var(--dim);
+  color: #d8cfb4;
   font-weight: 700;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
   text-align: center;
 }
 #cardRow {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
   justify-content: center;
-  max-width: 980px;
+  max-width: 1000px;
 }
+/* a card: rarity-coloured frame (--rc), inner hairline, ribbon, medallion, one shine sweep when dealt */
 .card {
-  width: 205px;
-  min-height: 250px;
-  background: linear-gradient(180deg, #262d4f, #171b30);
-  border: 3px solid var(--rc);
-  border-radius: 16px;
-  padding: 14px;
+  position: relative;
+  overflow: hidden;
+  width: 214px;
+  min-height: 290px;
+  background:
+    radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--rc) 22%, transparent), transparent 60%),
+    linear-gradient(180deg, #232a4c, #120f22);
+  border: 2px solid var(--rc);
+  border-radius: 18px;
+  padding: 16px 14px 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   text-align: center;
-  box-shadow: 0 0 0 0 var(--rc);
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
   transition:
-    transform 0.1s,
+    transform 0.12s,
     box-shadow 0.15s;
-  animation: deal 0.28s backwards;
+  animation: deal 0.32s cubic-bezier(0.2, 1.2, 0.3, 1) backwards;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 13px;
+  border: 1px solid color-mix(in srgb, var(--rc) 45%, transparent);
+  pointer-events: none;
+}
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  pointer-events: none;
+  animation: cardShine 0.9s 0.25s ease-out backwards;
+  animation-delay: inherit;
+}
+@keyframes cardShine {
+  from {
+    left: -60%;
+  }
+  to {
+    left: 130%;
+  }
 }
 .card:hover,
 .card:focus-visible {
-  transform: translateY(-6px);
-  box-shadow: 0 0 22px -2px var(--rc);
+  transform: translateY(-8px);
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.55),
+    0 0 26px -2px var(--rc);
 }
 .card .ic {
-  font-size: 44px;
-  line-height: 1.2;
+  width: 78px;
+  height: 78px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-size: 42px;
+  line-height: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--rc) 40%, #1a1830), #0c0a18 75%);
+  border: 2px solid var(--rc);
+  box-shadow:
+    0 0 18px color-mix(in srgb, var(--rc) 55%, transparent),
+    inset 0 2px 6px rgba(255, 255, 255, 0.15);
 }
 .card .rar {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
-  color: var(--rc);
+  letter-spacing: 0.06em;
+  color: #120f22;
+  background: var(--rc);
+  border-radius: 999px;
+  padding: 2px 10px;
+  align-self: center;
 }
 .card h3 {
-  font-size: 19px;
-  font-weight: 800;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.2;
+  color: #fff4dc;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6);
 }
 .card p {
   font-size: 14px;
-  line-height: 1.5;
-  color: #d6cfba;
+  line-height: 1.55;
+  color: #d9d0b8;
   flex: 1;
   white-space: pre-line;
 }
 .card .syn {
   font-size: 12px;
   color: var(--xp);
-  font-weight: 700;
+  font-weight: 800;
 }
 .card .lv {
   font-size: 12px;
   font-weight: 800;
-  color: var(--ember);
+  color: var(--gold);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 6px;
+  align-self: stretch;
 }
 .card .body {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   flex: 1;
   align-items: inherit;
 }
 .card.pact {
   --rc: var(--pact);
 }
+/* legendary: warm gold ground and a breathing glow */
 .card.r3 {
-  background: linear-gradient(180deg, #4a3a12, #1d170a);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 200, 80, 0.35), transparent 60%),
+    linear-gradient(180deg, #4a3712, #170f06);
   animation:
-    deal 0.28s backwards,
+    deal 0.32s cubic-bezier(0.2, 1.2, 0.3, 1) backwards,
     glow 1.4s infinite alternate;
 }
 @keyframes deal {
   from {
     opacity: 0;
-    transform: translateY(26px) scale(0.92);
+    transform: translateY(34px) scale(0.86) rotate(-2deg);
   }
 }
 @keyframes glow {
   to {
-    box-shadow: 0 0 34px 2px var(--r3);
+    box-shadow:
+      0 14px 30px rgba(0, 0, 0, 0.5),
+      0 0 38px 4px var(--r3);
   }
 }
 #reroll {

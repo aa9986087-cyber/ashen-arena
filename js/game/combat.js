@@ -413,5 +413,29 @@ function addXp(v) {
     G.lvl++;
     G.need = xpNeed(G.lvl);
     G.pending++;
+    levelUpFx();
+  }
+}
+/** A pillar of light rising from the hero, with a ring on the ground. */
+function levelUpFx() {
+  const p = G.p;
+  ring(p.x, p.z, 0.4, 4.5, 0.6, [0.4, 1.3, 1.1]);
+  for (let i = 0; i < 34 && G.parts.length < 600; i++) {
+    const a = Math.random() * TAU,
+      r = Math.random() * 0.7;
+    G.parts.push({
+      x: p.x + Math.cos(a) * r,
+      y: rand(0, 1),
+      z: p.z + Math.sin(a) * r,
+      vx: 0,
+      vy: rand(7, 14),
+      vz: 0,
+      l: 0,
+      m: rand(0.5, 0.9),
+      s: rand(0.12, 0.26),
+      r: 0.5,
+      g: 1.6,
+      b: 1.4,
+    });
   }
 }

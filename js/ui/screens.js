@@ -101,6 +101,13 @@ function buy(cost, fn) {
   checkAch();
   wallet();
 }
+/** <img> with the hero's 3D portrait (empty if it could not be drawn). */
+function portraitImg(id) {
+  const img = el('img', 'portrait');
+  img.alt = CHARS[id].n;
+  img.src = heroPortrait(id) || '';
+  return img;
+}
 function drawChars() {
   const g = $('charGrid');
   g.innerHTML = '';
@@ -112,6 +119,7 @@ function drawChars() {
       icon: c.i,
       title: c.n,
       body: [
+        portraitImg(id),
         el('p', '', c.d + ' الصحة ' + c.hp + '.'),
         el('p', 'spx', SPECIALS[c.sp].i + ' ' + SPECIALS[c.sp].n + ': ' + SPECIALS[c.sp].d),
       ],

@@ -10,6 +10,7 @@ function resize() {
   camera.updateProjectionMatrix();
   fxC.width = W * DPR;
   fxC.height = H * DPR;
+  resizeBloom();
 }
 addEventListener('resize', resize);
 const proj = (x, y, z) => {
@@ -37,6 +38,7 @@ function render(dt, now) {
     camera.position.set(Math.sin(a) * 13, 6.5, Math.cos(a) * 13);
     camera.lookAt(0, 1.6, 0);
   }
+  updateAtmosphere(dt, now, playing ? p.x : 0, playing ? p.z : 0);
   sun.position.set(p.x + 12, 26, p.z + 9);
   sun.target.position.set(p.x, 0, p.z);
   if (playing && !IN.touch) mouseWorld();
@@ -334,7 +336,7 @@ function render(dt, now) {
       m.material.opacity = 0.85 * (1 - k);
     }
   });
-  renderer.render(scene, camera);
+  drawScene();
   // 2D overlay
   fx.setTransform(DPR, 0, 0, DPR, 0, 0);
   fx.clearRect(0, 0, W, H);
@@ -368,13 +370,21 @@ function render(dt, now) {
     for (const q of G.texts) {
       const a = proj(q.x, 2 + q.l * 2.4, q.z),
         k = q.l / FX_LIFE.text;
+      // numbers pop in (grow then settle); big ones use the display face with a soft glow
+      const pop = 1 + Math.max(0, 0.35 - q.l) * 1.6,
+        size = (q.big ? 30 : 17) * pop;
       fx.globalAlpha = 1 - k * k;
-      fx.font = (q.big ? '800 24px ' : '700 16px ') + 'Tajawal,sans-serif';
-      fx.lineWidth = 3;
-      fx.strokeStyle = 'rgba(0,0,0,.75)';
+      fx.font = q.big ? size + 'px Lalezar,Tajawal,sans-serif' : '800 ' + size + 'px Tajawal,sans-serif';
+      fx.lineWidth = q.big ? 5 : 3.5;
+      fx.strokeStyle = 'rgba(10,4,0,.85)';
       fx.strokeText(q.t, a[0], a[1]);
+      if (q.big) {
+        fx.shadowColor = q.c;
+        fx.shadowBlur = 14;
+      }
       fx.fillStyle = q.c;
       fx.fillText(q.t, a[0], a[1]);
+      fx.shadowBlur = 0;
     }
     fx.globalAlpha = 1;
     fx.font = '18px sans-serif';
@@ -413,6 +423,9 @@ function render(dt, now) {
   $('vig').style.opacity = vig + (playing && p.hp < p.maxHp * 0.25 ? 0.25 + 0.1 * Math.sin(now * 0.008) : 0);
   if (bannerT > 0) {
     bannerT -= dt;
-    if (bannerT <= 0) $('banner').classList.remove('on');
+    if (bannerT <= 0) {
+      $('banner').classList.remove('on');
+      $('hud').classList.remove('lb');
+    }
   }
 }

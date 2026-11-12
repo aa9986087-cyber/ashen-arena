@@ -1,8 +1,13 @@
 'use strict';
-/* Stages (arena themes), their bosses, and the ending taunts. */
+/* Stages (arena themes), their bosses, and the ending taunts.
+   sky = colour at the top of the sky dome · mote = floating particles (rise > 0 drifts up, < 0 falls) · tuft = grass tint */
 const STAGES = [
   {
     n: 'الغابة المظلمة',
+    sky: 0x0b1a14,
+    mote: [0.9, 1.6, 0.4],
+    rise: 0.25,
+    tuft: 0x4f8a3e,
     ground: 0x3c6b38,
     fog: 0x16261c,
     amb: 0x9fc0a0,
@@ -13,6 +18,11 @@ const STAGES = [
   },
   {
     n: 'صحراء العظام',
+    sky: 0x3a2a18,
+    mote: [1.4, 1.1, 0.6],
+    rise: 0.1,
+    drift: 2.4,
+    tuft: 0x9a7a3c,
     ground: 0xc39a55,
     fog: 0x7a5c34,
     amb: 0xffe2b0,
@@ -23,6 +33,10 @@ const STAGES = [
   },
   {
     n: 'سهول الصقيع',
+    sky: 0x2a3a52,
+    mote: [1.6, 1.7, 1.9],
+    rise: -0.9,
+    tuft: 0xb8cad8,
     ground: 0xd6e2ec,
     fog: 0x7f97aa,
     amb: 0xdcecff,
@@ -33,6 +47,10 @@ const STAGES = [
   },
   {
     n: 'قلعة الرماد',
+    sky: 0x0c0b14,
+    mote: [0.9, 0.85, 0.85],
+    rise: 0.35,
+    tuft: 0x4a4a58,
     ground: 0x5c5b6a,
     fog: 0x1d1c28,
     amb: 0xa8a8c8,
@@ -43,6 +61,10 @@ const STAGES = [
   },
   {
     n: 'القاعدة العسكرية',
+    sky: 0x101616,
+    mote: [1.8, 0.9, 0.3],
+    rise: 0.6,
+    tuft: 0x3f4a38,
     ground: 0x4d574a,
     fog: 0x222a2a,
     amb: 0xb8c8c0,
@@ -53,6 +75,10 @@ const STAGES = [
   },
   {
     n: 'أرض الحمم',
+    sky: 0x1a0604,
+    mote: [2, 0.6, 0.15],
+    rise: 1.1,
+    tuft: 0x5a2a1c,
     ground: 0x4a2c24,
     fog: 0x2a0f0a,
     amb: 0xffb090,
@@ -63,6 +89,10 @@ const STAGES = [
   },
   {
     n: 'الهاوية',
+    sky: 0x12040c,
+    mote: [1.4, 0.3, 0.8],
+    rise: 0.8,
+    tuft: 0x4a1a34,
     ground: 0x4a1a2a,
     fog: 0x2a0a18,
     amb: 0xd890b0,

@@ -7,8 +7,9 @@ function drawHud() {
     hpT = Math.ceil(p.hp) + ' / ' + p.maxHp;
   if (hud.hp !== hpT) {
     hud.hp = hpT;
-    $('hpbar').firstElementChild.style.width = hpw + '%';
-    $('hpbar').lastElementChild.textContent = hpT;
+    $('hpbar').querySelector('i').style.width = hpw + '%';
+    $('hpbar').querySelector('em').style.width = hpw + '%';
+    $('hpbar').querySelector('b').textContent = hpT;
   }
   const sh = p.shieldMax ? Math.round((p.shield / p.shieldMax) * 100) : -1;
   if (hud.sh !== sh) {
@@ -52,6 +53,15 @@ function drawHud() {
     $('stageInfo').textContent = st;
   }
   if (G.boss) $('bossbar').querySelector('i').style.width = Math.max(0, (G.boss.hp / G.boss.maxHp) * 100) + '%';
-  $('bDash').querySelector('u').style.transform = 'scaleY(' + clamp(p.dashCd / p.dashMax, 0, 1) + ')';
-  $('bSpec').querySelector('u').style.transform = 'scaleY(' + clamp(G.specCd / specCdMax(), 0, 1) + ')';
+  cooldown($('bDash'), p.dashCd / p.dashMax);
+  cooldown($('bSpec'), G.specCd / specCdMax());
+}
+/** Show a button's cooldown (1 = just used, 0 = ready) and flash it when it comes back. */
+function cooldown(btn, k) {
+  k = clamp(k, 0, 1);
+  const was = +btn.dataset.cd || 0;
+  if (Math.abs(was - k) < 0.004) return;
+  btn.style.setProperty('--cd', k);
+  btn.dataset.cd = k;
+  if (k === 0 && was > 0) pop(btn, 'ready');
 }

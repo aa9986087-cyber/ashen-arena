@@ -2,23 +2,48 @@
 /* Arena ground, stage decor, and pooled effect meshes. */
 /* ground + decor */
 const gtexC = document.createElement('canvas');
-gtexC.width = gtexC.height = 256;
+gtexC.width = gtexC.height = 512;
 (() => {
-  const c = gtexC.getContext('2d');
-  c.fillStyle = '#e9e9e9';
-  c.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 2600; i++) {
-    const v = (200 + Math.random() * 55) | 0;
-    c.fillStyle = 'rgb(' + v + ',' + v + ',' + v + ')';
-    c.fillRect(Math.random() * 256, Math.random() * 256, rand(1, 5), rand(1, 5));
+  // soft patches, speckles and small stones; tinted per stage by the material colour
+  const c = gtexC.getContext('2d'),
+    S0 = 512;
+  c.fillStyle = '#d8d8d8';
+  c.fillRect(0, 0, S0, S0);
+  const blob = (x, y, r, v, a) => {
+    for (const dx of [-S0, 0, S0])
+      for (const dy of [-S0, 0, S0]) {
+        const g = c.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, r);
+        g.addColorStop(0, 'rgba(' + v + ',' + v + ',' + v + ',' + a + ')');
+        g.addColorStop(1, 'rgba(' + v + ',' + v + ',' + v + ',0)');
+        c.fillStyle = g;
+        c.fillRect(x + dx - r, y + dy - r, r * 2, r * 2);
+      }
+  };
+  for (let i = 0; i < 26; i++)
+    blob(Math.random() * S0, Math.random() * S0, rand(50, 140), Math.random() < 0.5 ? 150 : 255, rand(0.25, 0.5));
+  for (let i = 0; i < 5000; i++) {
+    const v = (170 + Math.random() * 85) | 0;
+    c.fillStyle = 'rgba(' + v + ',' + v + ',' + v + ',.55)';
+    c.fillRect(Math.random() * S0, Math.random() * S0, rand(1, 3), rand(1, 4));
   }
-  c.strokeStyle = 'rgba(120,120,120,.35)';
-  c.lineWidth = 2;
-  c.strokeRect(0, 0, 256, 256);
+  for (let i = 0; i < 70; i++) {
+    const x = Math.random() * S0,
+      y = Math.random() * S0,
+      r = rand(2, 5);
+    c.fillStyle = 'rgba(90,90,90,.5)';
+    c.beginPath();
+    c.ellipse(x + 1, y + 1.5, r, r * 0.7, 0, 0, TAU);
+    c.fill();
+    c.fillStyle = 'rgba(245,245,245,.7)';
+    c.beginPath();
+    c.ellipse(x, y, r, r * 0.7, 0, 0, TAU);
+    c.fill();
+  }
 })();
 const gtex = new THREE.CanvasTexture(gtexC);
 gtex.wrapS = gtex.wrapT = THREE.RepeatWrapping;
-gtex.repeat.set(28, 28);
+gtex.repeat.set(16, 16);
+gtex.anisotropy = 4;
 const ground = new THREE.Mesh(
   new THREE.CircleGeometry(110, 48),
   new THREE.MeshLambertMaterial({ map: gtex, color: 0x3c6b38 })
@@ -52,16 +77,17 @@ scene.add(outer);
 let decor = [];
 function setStage(i) {
   const st = STAGES[i];
-  ground.material.color.setHex(st.ground);
+  ground.material.color.setHex(st.ground).multiplyScalar(0.86);
   scene.fog.color.setHex(st.fog);
   scene.background.setHex(st.fog);
   hemi.color.setHex(st.amb);
   const ab = !!st.abyss;
-  scene.fog.near = ab ? 26 : 34;
-  scene.fog.far = ab ? 70 : 78;
-  sun.intensity = ab ? 0.85 : 0.95;
-  sun.color.setHex(ab ? 0xffb0c0 : 0xfff2d8);
-  hemi.intensity = 0.62;
+  // closer fog gives depth at the screen edges; a warm key light over a cooler fill
+  scene.fog.near = ab ? 22 : 26;
+  scene.fog.far = ab ? 62 : 70;
+  sun.intensity = ab ? 0.85 : 0.92;
+  sun.color.setHex(ab ? 0xffb0c0 : 0xffe6c0);
+  hemi.intensity = 0.52;
   hemi.groundColor.setHex(ab ? 0x5a1030 : 0x30343c);
   edge.material.color.setHex(ab ? 0xff2030 : 0xf2a23a);
   $('dark').style.opacity = ab ? 1 : 0;
@@ -84,6 +110,7 @@ function setStage(i) {
     decor.push(I);
   });
   MUS.root = st.root;
+  setAtmosphere(st);
 }
 
 /* pooled fx meshes */

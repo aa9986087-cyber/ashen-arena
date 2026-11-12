@@ -37,6 +37,8 @@ function banner(h, sub, dur) {
   $('banner').querySelector('p').textContent = sub || '';
   $('banner').classList.add('on');
   bannerT = dur || 2.4;
+  // long banners (new stage, boss arrival) get cinematic letterbox bars
+  $('hud').classList.toggle('lb', bannerT >= 3);
 }
 let toastT = null;
 function toast(t) {
