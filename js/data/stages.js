@@ -5,7 +5,7 @@ const STAGES = [
   {
     n: 'الغابة المظلمة',
     sky: 0x0b1a14,
-    mote: [0.9, 1.6, 0.4],
+    mote: [1.4, 1.2, 0.45],
     rise: 0.25,
     tuft: 0x4f8a3e,
     ground: 0x3c6b38,
