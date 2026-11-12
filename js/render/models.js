@@ -58,6 +58,8 @@ const ANIM_FRAMES = { walk: 8, run: 10, idle: 8, attack: 8 };
  * Static models give one geometry. Animated ones also give, per clip role (walk / run / idle / attack),
  * a list of snapshot geometries ("frames") that share the index and colours and differ only in position.
  * Every frame uses the scale/offset of the first one, so the model doesn't jitter between frames.
+ * If the model has a right-hand slot (KayKit rigs: handslot.r), each frame also records where that hand is
+ * (geometry.userData.hand = { p, q }) so the game can put the hero's weapon in it.
  * Returns { base, clips: { role: [geometry…] } } or null.
  */
 function bakeModel(root, animations, targetH, scary) {
@@ -122,6 +124,10 @@ function bakeModel(root, animations, targetH, scary) {
     idxAttr = new THREE.BufferAttribute(n > 65535 ? new Uint32Array(index) : new Uint16Array(index), 1),
     v = new THREE.Vector3();
   let norm = null; // [offsetX, offsetY, offsetZ, scale] fixed by the first snapshot
+  const hand = root.getObjectByName('handslot.r') || root.getObjectByName('handslotr'),
+    hp = new THREE.Vector3(),
+    hq = new THREE.Quaternion(),
+    hs = new THREE.Vector3();
   // 2 · one snapshot of the current pose
   const snapshot = () => {
     root.updateMatrixWorld(true);
@@ -153,6 +159,13 @@ function bakeModel(root, animations, targetH, scary) {
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.setAttribute('color', colAttr);
     geo.computeVertexNormals();
+    if (hand) {
+      hand.matrixWorld.decompose(hp, hq, hs);
+      geo.userData.hand = {
+        p: new THREE.Vector3((hp.x + norm[0]) * norm[3], (hp.y + norm[1]) * norm[3], (hp.z + norm[2]) * norm[3]),
+        q: hq.clone(),
+      };
+    }
     return geo;
   };
   // 3 · step every clip the game uses through its frames

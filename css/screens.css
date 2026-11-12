@@ -357,3 +357,43 @@ textarea.txt {
   font-size: 13px;
   font-weight: 700;
 }
+
+/* daily mission progress */
+.dbar {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.dbar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--ember), var(--r3));
+}
+.item.done .dbar i {
+  background: var(--xp);
+}
+#dailyReset {
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+/* progress backup (settings) */
+.bkRow {
+  flex-wrap: wrap;
+}
+.bkBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(100%, 300px);
+}
+#bkIn {
+  min-height: 64px;
+  direction: ltr;
+  font-size: 12px;
+}
+.bkBtns {
+  display: flex;
+  gap: 8px;
+}

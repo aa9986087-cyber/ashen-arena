@@ -56,6 +56,10 @@ function menuState() {
   const r = loadRun();
   $('mResume').hidden = !r;
   if (r) $('mResume').textContent = 'أكمل جولتك: المستوى ' + r.lvl + '، ' + fmtT(r.t);
+  const D = daily(),
+    left = D.ids.filter(id => !D.done[id]).length;
+  $('dailyBadge').hidden = !left;
+  $('dailyBadge').textContent = left;
   $('mPlayT').textContent = r ? 'جولة جديدة' : 'ابدأ المعركة';
 }
 function resumeRun() {
@@ -128,6 +132,7 @@ function startRun() {
   G.state = 'play';
   enterArena();
   S.stats.runs++;
+  dailyTrack('run', 1);
   banner(
     STAGES[0].n,
     IN.touch

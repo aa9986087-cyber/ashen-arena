@@ -10,6 +10,7 @@ function hideBoss() {
 }
 function bossDown(e) {
   hideBoss();
+  dailyTrack('boss', 1);
   G.slow = 1.2;
   shake(1);
   ring(e.x, e.z, 1, 16, 0.9, [1, 0.8, 0.3]);

@@ -184,6 +184,7 @@ function drawShop() {
   }
 }
 function drawAch() {
+  drawDaily();
   const g = $('achGrid');
   g.innerHTML = '';
   for (const a of ACH)

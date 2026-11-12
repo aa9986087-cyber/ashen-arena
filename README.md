@@ -59,11 +59,13 @@ js/
     progression.js      هزيمة الزعيم، المراحل، النهاية/الهاوية، الإنجازات
     cards.js            بطاقات المستوى ومكافأة الزعيم
     run.js              بدء/استكمال/إنهاء/إيقاف الجولة
+    daily.js            مهام اليوم (3 مهام تتجدد كل يوم)
   ui/
     hud.js  screens.js (التنقل go مع الانتقال)  leaderboard.js  lab.js
     skill-tree.js       رسم شجرة المهارات وأيقوناتها TREE_IC
     intro.js            مقدمة VAMOS وجمر القائمة
     gift.js             أكواد الهدايا (عملات)
+    backup.js           نسخة احتياطية للتقدم (كود AS1)
   input.js              لوحة المفاتيح، الفأرة، عصا اللمس
   main.js               الإقلاع وحلقة الإطارات
 assets/
@@ -87,6 +89,7 @@ assets/
 | ضربة خاصة | `SPECIALS` في `js/game/specials.js`، واربطها بالبطل عبر `sp` |
 | تطوير / صفقة / تطوير دائم / عقدة مهارة | `js/data/upgrades.js` (+ أثره في `recalc` داخل `game/state.js` أو في `update`) |
 | إنجاز | `js/data/achievements.js` |
+| مهمة يومية | `js/data/missions.js` |
 | عقدة مهارة جديدة | `TREE` في `js/data/upgrades.js` + أيقونتها في `TREE_IC` داخل `js/ui/skill-tree.js` |
 | عدو | `js/data/enemies.js` + شكله في `render/geometry.js` (نفس المفتاح) + سلوكه في `game/enemy-ai.js` + وزنه في `pickType` داخل `game/spawning.js` |
 | مرحلة / زعيم | `js/data/stages.js` (+ هجماته العادية في `game/enemy-ai.js` حسب `bk`، وضربته الكبرى في `game/boss-ults.js`، وشكله `boss<bk>` في `render/geometry.js`) |

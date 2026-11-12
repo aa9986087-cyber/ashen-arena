@@ -359,3 +359,23 @@
     animation: none !important;
   }
 }
+
+/* missions left today, on the tile */
+.tile {
+  position: relative;
+}
+.tile .badge {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--ember2);
+  color: #fff;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 20px;
+}

@@ -55,6 +55,11 @@ function render(dt, now) {
         : atk
           ? animFrame(H.attack, 1 - p.swing)
           : animFrame(H.idle || H.run, now * 0.0009);
+      const hd = PM.wpHand && PM.hm.geometry.userData.hand;
+      if (hd) {
+        PM.wp.position.copy(hd.p);
+        PM.wp.quaternion.copy(hd.q).multiply(WP_ALIGN);
+      }
     }
     g.rotation.y = playing ? p.face : Math.sin(now * 0.0006) * 0.4;
     g.visible = !(p.inv > 0 && p.dashT <= 0 && ((now / 60) | 0) % 2 === 0 && G.state === 'play');

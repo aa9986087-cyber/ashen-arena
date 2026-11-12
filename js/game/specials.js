@@ -159,6 +159,7 @@ function special() {
   AU.play('special');
   shake(0.7);
   sp.f(p, 60 * p.dmgMul * (1 + G.lvl * 0.06));
+  dailyTrack('special', 1);
   text(p.x, p.z - 1, sp.n, '#9fe8ff', true);
   if (G.ups.super) {
     G.superT = 8;

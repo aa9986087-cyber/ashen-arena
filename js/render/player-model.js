@@ -1,6 +1,8 @@
 'use strict';
 /* Hero model built from primitives (or a loaded hero.glb), plus the held weapon. */
 /** Baked hero models ({ base, clips }) by CHARS id ('*' = any hero), filled by loadModels(). */
+/** Turns the procedural weapon (built pointing down -Y) to point along a KayKit hand slot (+Y). */
+const WP_ALIGN = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI, 0, 0));
 const HERO_GEOS = {};
 const PM = {};
 const matC = {};
@@ -120,7 +122,13 @@ function buildPlayer() {
     g.add(hm);
     PM.hm = hm;
     PM.anim = heroGeo.clips;
-  } else PM.hm = PM.anim = null;
+    // the weapon leaves the procedural arm and follows the model's own hand (see render)
+    PM.wpHand = !!heroGeo.base.userData.hand;
+    if (PM.wpHand) g.add(PM.wp);
+  } else {
+    PM.hm = PM.anim = null;
+    PM.wpHand = false;
+  }
   PM.g = g;
   scene.add(g);
   buildWeapon();

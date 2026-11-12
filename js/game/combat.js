@@ -59,6 +59,8 @@ function kill(e) {
   e.dead = true;
   G.kills++;
   S.stats.kills++;
+  dailyTrack('kill', 1);
+  if (e.elite) dailyTrack('elite', 1);
   const p = G.p;
   if (p.leech && !e.boss) heal(p.leech);
   parts(e.x, 1, e.z, e.boss ? 60 : e.elite ? 18 : 7, 1, 0.35, 0.25, e.boss ? 14 : 7, e.boss ? 0.4 : 0.22);

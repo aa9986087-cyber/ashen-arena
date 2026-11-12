@@ -350,6 +350,9 @@ function update(dt) {
     if ((G.t | 0) % 5 === 0) saveRun();
     S.stats.bestLvl = Math.max(S.stats.bestLvl, G.lvl);
     S.stats.bestTime = Math.max(S.stats.bestTime, G.t);
+    dailyTrack('time', G.t, true);
+    dailyTrack('lvl', G.lvl, true);
+    dailyTrack('coins', G.coins, true);
     checkAch();
   }
   // boss reward → cards → next stage
