@@ -1,7 +1,7 @@
 'use strict';
 /* Per-frame simulation: movement, weapons, abilities, projectiles, pickups and timers. */
 /** Lifetimes (seconds) of short-lived effects; shared by update() and render(). */
-const FX_LIFE = { text: 0.8, bolt: 0.22, slash: 0.18 };
+const FX_LIFE = { text: 0.8, bolt: 0.22, slash: 0.18, corpse: 0.55 };
 /** Radius of the electric aura upgrade. */
 const auraRadius = () => (3.4 + 0.55 * G.ups.aura) * G.p.area;
 /** Call fn(angle,x,z) for each orbiting blade. */
@@ -207,6 +207,13 @@ function update(dt) {
         s.vz = Math.sin(s.a) * v;
       }
     }
+    if (s.fx === 'return' && !s.back && s.t > s.life0 * 0.5) {
+      // evolved axes turn around and can hit everything again on the way back
+      s.back = 1;
+      s.vx = -s.vx;
+      s.vz = -s.vz;
+      s.hits = [];
+    }
     s.x += s.vx * dt;
     s.z += s.vz * dt;
     if (s.kind === 3 && Math.random() < 0.6) parts(s.x, 1, s.z, 1, 1, 0.6, 0.2, 1, 0.2, 0.3);
@@ -222,6 +229,19 @@ function update(dt) {
         }
         hit(e, s.dmg, { kb: 2, ang: s.a, crit: s.crit });
         if (s.aoe) explode(s.x, s.z, s.aoe, s.dmg * 0.5, true);
+        if (s.fx === 'burn' && !e.dead) e.burn = 3;
+        else if (s.fx === 'chain') boltStrike(4, s.dmg * 0.6, e.x, e.z);
+        else if (s.fx === 'split')
+          for (const da of [-0.55, 0.55])
+            shot(s.x, s.z, s.a + da, {
+              spd: 26,
+              dmg: s.dmg * 0.6,
+              size: s.r,
+              pierce: 1,
+              life: 0.4,
+              kind: 1,
+              col: s.col,
+            });
         s.hits.push(e);
         if (--s.pierce < 0) {
           s.life = -1;
@@ -231,6 +251,11 @@ function update(dt) {
     }
     if (s.life <= 0 && s.kind === 3 && s.life > -1) {
       explode(s.x, s.z, s.aoe, s.dmg);
+      if (s.fx === 'cluster')
+        for (let j = 0; j < 5; j++) {
+          const a = (j / 5) * TAU + s.t;
+          G.defer.push([s.x + Math.cos(a) * 2.8, s.z + Math.sin(a) * 2.8, 1.9, s.dmg * 0.35]);
+        }
       s.life = -1;
     }
   }
@@ -319,6 +344,7 @@ function update(dt) {
   G.texts = age(G.texts, () => FX_LIFE.text);
   G.rings = age(G.rings, q => q.d);
   G.bolts = age(G.bolts, () => FX_LIFE.bolt);
+  G.corpses = age(G.corpses, () => FX_LIFE.corpse);
   G.slashes = age(G.slashes, () => FX_LIFE.slash);
   if (G.abyss && Math.random() < dt * 14) {
     const a = Math.random() * TAU,

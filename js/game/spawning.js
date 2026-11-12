@@ -48,6 +48,10 @@ function spawn(type, x, z, elite) {
     flank: (type === 'grunt' || type === 'shield') && gw >= 2 && Math.random() < 0.45,
     dead: false,
   };
+  if (elite) {
+    e.affix = pick(Object.keys(AFFIX));
+    if (e.affix === 'ward') e.ward = e.wardMax = e.maxHp * 0.35;
+  }
   G.enemies.push(e);
   return e;
 }

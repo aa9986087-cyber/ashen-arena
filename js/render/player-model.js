@@ -140,9 +140,11 @@ function buildWeapon() {
     id = cur ? cur.id : CHARS[S.char].wep,
     L = cur ? cur.lvl : 1,
     t = wTier(L);
-  const tc = [0xc3cad6, 0x62d0ff, 0xffc53d][t],
-    em = [0, 0x0a3a55, 0x7a4a00][t],
-    s = 1 + t * 0.18;
+  // an evolved weapon glows violet and is bigger
+  const ev = cur && cur.evo,
+    tc = ev ? 0xd070ff : [0xc3cad6, 0x62d0ff, 0xffc53d][t],
+    em = ev ? 0x5a1488 : [0, 0x0a3a55, 0x7a4a00][t],
+    s = ev ? 1.6 : 1 + t * 0.18;
   if (id === 'sword') {
     w.add(mesh(BOX, tc, 0, -0.78 * s, 0, 0.15 * s, 1.45 * s, 0.05, em));
     w.add(mesh(BOX, 0x6b4a2a, 0, -0.03, 0, 0.5, 0.1, 0.12));

@@ -25,7 +25,7 @@ const MODEL_FILES = {
   'boss-flame.glb': { to: 'boss5', size: 0.85 }, // wide wings
 };
 /** Bump to make browsers fetch updated model files. */
-const MODEL_VER = 5;
+const MODEL_VER = 6;
 const lin2s = v => (v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
 function texSampler(tex) {
   try {
@@ -219,6 +219,8 @@ function loadModels() {
               // one instanced mesh per walk frame; enemies are sorted into them each frame
               if (baked.clips.walk)
                 EMA[key] = baked.clips.walk.map((fg, i) => (i ? inst(fg, lamV, EM[key].max, true) : EM[key]));
+              if (baked.clips.attack)
+                EMAA[key] = baked.clips.attack.map(fg => inst(fg, lamV, (EM[key].max / 3) | 0, true));
             }
             if (G.boss && 'boss' + G.boss.kind === key) bossMesh.geometry = g;
           }

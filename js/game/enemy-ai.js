@@ -1,5 +1,7 @@
 'use strict';
 /* Enemy and boss behaviour (movement, attacks) and crowd separation. */
+/** Length (s) of an enemy's attack animation. */
+const ATK_T = 0.5;
 /** Ranged-enemy movement: approach beyond `far`, retreat inside `near`, otherwise strafe at speed×slow.
     Returns [mx, mz, speedMultiplier]. */
 const kite = (d, far, near, slow, ux, uz, side) =>
@@ -10,7 +12,8 @@ function zoneBarrage(cx, cz, n, spread, r, d0, dstep, dmg) {
     zone(cx + (j ? rand(-spread, spread) : 0), cz + (j ? rand(-spread, spread) : 0), r, d0 + j * dstep, dmg, false);
 }
 function updEnemies(dt) {
-  const p = G.p,
+  const hasteSrc = G.enemies.filter(q => q.affix === 'haste' && !q.dead),
+    p = G.p,
     E = G.enemies,
     fl = G.ups.fire || 0;
   for (let i = 0, n = E.length; i < n; i++) {
@@ -21,6 +24,7 @@ function updEnemies(dt) {
     if (e.flash > 0) e.flash -= dt;
     if (e.hitCd > 0) e.hitCd -= dt;
     if (e.oCd > 0) e.oCd -= dt;
+    if (e.atkT > 0) e.atkT -= dt; // attack animation timer (see ATK_T)
     if (e.frz > 0) {
       // frozen by the mage's special: no movement, attacks or contact damage
       e.frz -= dt;
@@ -261,6 +265,7 @@ function updEnemies(dt) {
       e.cd -= dt;
       if (e.cd <= 0 && d < 16) {
         e.cd = 2.3 + Math.random();
+        e.atkT = ATK_T;
         eShot(e.x, e.z, Math.atan2(dz, dx) + rand(-0.08, 0.08), 9.5, e.dmg);
         AU.play('eshot');
       }
@@ -322,6 +327,7 @@ function updEnemies(dt) {
       e.cd -= dt;
       if (e.cd <= 0) {
         e.cd = 4.5;
+        e.atkT = ATK_T;
         let n = 0;
         for (const o of E) {
           if (o.dead || o === e || o.boss) continue;
@@ -339,6 +345,7 @@ function updEnemies(dt) {
       e.cd -= dt;
       if (e.cd <= 0 && d < 18) {
         e.cd = 3.6 + Math.random();
+        e.atkT = ATK_T;
         zone(p.x + (IN.mvx || 0) * 2, p.z + (IN.mvz || 0) * 2, 2.6, 1, e.dmg, false);
         e.flash = 0.15;
       }
@@ -406,10 +413,20 @@ function updEnemies(dt) {
         }
       }
     }
+    if (e.affix === 'regen' && e.hp < e.maxHp) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.04 * dt);
+    if (e.affix === 'ward' && (e.wardT -= dt) <= 0 && e.ward < e.wardMax)
+      e.ward = Math.min(e.wardMax, e.ward + e.wardMax * 0.3 * dt);
+    if (hasteSrc.length && !e.boss)
+      for (const h of hasteSrc)
+        if (h !== e && (h.x - e.x) ** 2 + (h.z - e.z) ** 2 < 49) {
+          spd *= 1.35;
+          break;
+        }
     if (e.elite && !e.boss) {
       e.eCd = (e.eCd === undefined ? rand(1, 3) : e.eCd) - dt;
       if (e.eCd <= 0 && d > 4 && d < 22) {
         e.eCd = 2.8;
+        e.atkT = ATK_T;
         eShot(e.x, e.z, Math.atan2(dz, dx), 12, e.dmg * 0.5);
         AU.play('eshot');
       }
@@ -426,6 +443,7 @@ function updEnemies(dt) {
     }
     if (d < e.r + p.r && e.hitCd <= 0 && !(e.boss && e.st === 3)) {
       e.hitCd = 0.5;
+      e.atkT = ATK_T;
       hurt(e.dmg);
       if (G.state !== 'play') return;
     }

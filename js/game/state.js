@@ -48,6 +48,7 @@ function newRun() {
     zones: [],
     bolts: [],
     slashes: [],
+    corpses: [],
     allies: [],
     defer: [],
     tm: { bolt: 1.5, nova: 2, meteor: 2.5, aura: 0 },

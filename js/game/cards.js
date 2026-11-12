@@ -20,6 +20,12 @@ function rollCards(n, minR, skip) {
         if (!has(c)) pool.push(c);
       }
     }
+  // a full evolution is almost always offered as soon as it becomes possible
+  for (const w of G.weapons)
+    if (w.lvl >= 5 && !w.evo && EVO[w.id] && G.ups[EVO[w.id].up]) {
+      const c = { k: 'evo', id: w.id, r: 3, w: 400 };
+      if (!has(c)) pool.push(c);
+    }
   if (G.lvl >= 3 && minR <= 1)
     for (const id in PACT)
       if (!G.pacts[id]) {
@@ -54,6 +60,16 @@ function cardInfo(c) {
       l = G.ups[c.id] || 0;
     let syn = '';
     if (u.syn && G.ups[u.syn[0]]) syn = u.syn[1];
+    for (const w of G.weapons)
+      if (!w.evo && EVO[w.id] && EVO[w.id].up === c.id)
+        syn =
+          'يكمّل تطور ' +
+          WEP[w.id].i +
+          ' ← ' +
+          EVO[w.id].i +
+          ' ' +
+          EVO[w.id].n +
+          (w.lvl < 5 ? ' (لما يوصل المستوى 5)' : '');
     return { i: u.i, n: u.n, d: u.d, lv: u.max > 1 ? (l ? 'المستوى ' + l + ' ← ' + (l + 1) : 'جديد') : '', syn };
   }
   if (c.k === 'wup') {
@@ -65,8 +81,12 @@ function cardInfo(c) {
       n: d.n,
       d: nl === 3 ? 'يتطور شكل السلاح: ' + d.evo[0] : nl === 5 ? 'الشكل الأسطوري: ' + d.evo[1] : 'ضرر +30% وهجوم أسرع',
       lv: 'المستوى ' + w.lvl + ' ← ' + nl,
-      syn: '',
+      syn: nl === 5 && EVO[c.id] ? 'يتطور كامل مع ' + UP[EVO[c.id].up].i + ' ' + UP[EVO[c.id].up].n : '',
     };
+  }
+  if (c.k === 'evo') {
+    const v = EVO[c.id];
+    return { i: v.i, n: v.n, d: v.d, lv: 'تطور كامل: ' + WEP[c.id].n + ' + ' + UP[v.up].n, syn: '' };
   }
   if (c.k === 'wnew') {
     const d = WEP[c.id];
@@ -132,6 +152,10 @@ function chooseCard(i) {
     const w = G.weapons.find(x => x.id === c.id);
     w.lvl++;
     if (w === G.weapons[0]) buildWeapon();
+  } else if (c.k === 'evo') {
+    const w = G.weapons.find(x => x.id === c.id);
+    w.evo = 1;
+    if (w === G.weapons[0]) buildWeapon();
   } else if (c.k === 'wnew') G.weapons.push({ id: c.id, lvl: 1, cd: 0.2 });
   else if (c.k === 'pact') {
     const r0 = p.hp / p.maxHp;
@@ -182,7 +206,7 @@ function refreshLoadout() {
     if (lvl != null) c.appendChild(el('b', '', lvl));
     L.appendChild(c);
   };
-  for (const w of G.weapons) chip(' w', WEP[w.id].i, w.lvl);
+  for (const w of G.weapons) chip(' w' + (w.evo ? ' evo' : ''), w.evo ? EVO[w.id].i : WEP[w.id].i, w.evo ? '★' : w.lvl);
   for (const id in G.pacts || {}) chip(' pact', PACT[id].i);
   for (const id in G.ups) if (G.ups[id]) chip('', UP[id].i, G.ups[id]);
   L.classList.toggle('wide', L.children.length > 9);

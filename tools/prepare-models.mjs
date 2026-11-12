@@ -21,15 +21,15 @@ const jobs = {
   'boss-frost.glb': { src: 'um_Big/Yeti.gltf', clips: { walk: 'Walk', attack: 'Punch' } },
   'boss-forest.glb': { src: 'um_Big/Orc_Skull.gltf', clips: { walk: 'Walk', attack: 'Punch' } },
   'boss-knight.glb': { src: 'um_Big/Demon.gltf', clips: { walk: 'Walk', attack: 'Punch' } },
-  'grunt.glb': { src: 'mon/kk_Skeleton_Minion.glb', clips: { walk: 'Walking_D_Skeletons' }, attach: [['Skeleton_Axe', 'handslot.r']] },
-  'shield.glb': { src: 'mon/kk_Skeleton_Warrior.glb', clips: { walk: 'Walking_D_Skeletons' }, attach: [['Skeleton_Blade', 'handslot.r'], ['Skeleton_Shield_Large_A', 'handslot.l']] },
-  'archer.glb': { src: 'mon/kk_Skeleton_Rogue.glb', clips: { walk: 'Walking_A' }, attach: [['Skeleton_Crossbow', 'handslot.r']] },
-  'mage.glb': { src: 'mon/kk_Skeleton_Mage.glb', clips: { walk: 'Walking_A' }, attach: [['Skeleton_Staff', 'handslot.r']] },
-  'wolf.glb': { src: 'mon/q_Wolf.glb', clips: { walk: 'AnimalArmature|Walk' } },
-  'fast.glb': { src: 'mon/q_Spider.glb', clips: { walk: 'SpiderArmature|Spider_Walk' } },
-  'runner.glb': { src: 'mon/q_Snake_angry.glb', clips: { walk: 'SnakeArmature|Snake_Walk' } },
+  'grunt.glb': { src: 'mon/kk_Skeleton_Minion.glb', clips: { walk: 'Walking_D_Skeletons', attack: '1H_Melee_Attack_Chop' }, attach: [['Skeleton_Axe', 'handslot.r']] },
+  'shield.glb': { src: 'mon/kk_Skeleton_Warrior.glb', clips: { walk: 'Walking_D_Skeletons', attack: '1H_Melee_Attack_Slice_Diagonal' }, attach: [['Skeleton_Blade', 'handslot.r'], ['Skeleton_Shield_Large_A', 'handslot.l']] },
+  'archer.glb': { src: 'mon/kk_Skeleton_Rogue.glb', clips: { walk: 'Walking_A', attack: '2H_Ranged_Shoot' }, attach: [['Skeleton_Crossbow', 'handslot.r']] },
+  'mage.glb': { src: 'mon/kk_Skeleton_Mage.glb', clips: { walk: 'Walking_A', attack: 'Spellcast_Shoot' }, attach: [['Skeleton_Staff', 'handslot.r']] },
+  'wolf.glb': { src: 'mon/q_Wolf.glb', clips: { walk: 'AnimalArmature|Walk', attack: 'AnimalArmature|Attack' } },
+  'fast.glb': { src: 'mon/q_Spider.glb', clips: { walk: 'SpiderArmature|Spider_Walk', attack: 'SpiderArmature|Spider_Attack' } },
+  'runner.glb': { src: 'mon/q_Snake_angry.glb', clips: { walk: 'SnakeArmature|Snake_Walk', attack: 'SnakeArmature|Snake_Attack' } },
   'bomber.glb': { src: 'um_Flying/Demon.gltf', clips: { walk: 'Flying_Idle' } },
-  'shaman.glb': { src: 'um_Flying/Alpaking_Evolved.gltf', clips: { walk: 'Fast_Flying' } },
+  'shaman.glb': { src: 'um_Flying/Alpaking_Evolved.gltf', clips: { walk: 'Fast_Flying', attack: 'Punch' } },
 };
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 for (const [out, job] of Object.entries(jobs)) {

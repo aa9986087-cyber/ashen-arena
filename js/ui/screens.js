@@ -172,6 +172,18 @@ function drawShop() {
           '',
           d.melee ? 'سلاح قريب يضرب كل من أمامك.' : 'عند المستوى 3: ' + d.evo[0] + '. عند 5: ' + d.evo[1] + '.'
         ),
+        el(
+          'p',
+          'spx',
+          'التطور الكامل: المستوى 5 + ' +
+            UP[EVO[id].up].i +
+            ' ' +
+            UP[EVO[id].up].n +
+            ' ← ' +
+            EVO[id].i +
+            ' ' +
+            EVO[id].n
+        ),
       ],
       btn: own ? 'مفتوح' : 'افتح بـ ' + d.cost + ' 🪙',
       disabled: !!own,

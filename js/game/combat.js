@@ -44,6 +44,16 @@ function hit(e, dmg, o) {
     dmg *= 0.4;
     AU.play('clang');
   }
+  if (e.ward > 0) {
+    const a = Math.min(e.ward, dmg);
+    e.ward -= a;
+    dmg -= a;
+    e.wardT = 4;
+    if (dmg <= 0) {
+      e.flash = 0.1;
+      return;
+    }
+  }
   e.hp -= dmg;
   e.flash = 0.1;
   if (o.kb && !e.boss && e.type !== 'brute' && e.type !== 'golem') {
@@ -68,6 +78,13 @@ function kill(e) {
   if (e.boss) {
     bossDown(e);
     return;
+  }
+  // a fallen body that tips over and sinks (drawn by render, aged in update)
+  if (G.corpses.length < 60) G.corpses.push({ type: e.type, x: e.x, z: e.z, face: e.face, s: e.scale, l: 0 });
+  if (e.affix === 'split') {
+    const r0 = G.enemies.length;
+    spawnPack(e.type, 3, e.x, e.z, 1.5);
+    for (let i = r0; i < G.enemies.length; i++) G.enemies[i].scale *= 0.8;
   }
   drop(e.x, e.z, 0, e.xp);
   if (Math.random() < (e.elite ? 1 : 0.13))
@@ -112,6 +129,8 @@ function shot(x, z, ang, o) {
     kind: o.kind || 0,
     col: o.col,
     crit: o.crit || 0,
+    fx: o.fx || '',
+    life0: o.life || o.range / o.spd,
     hits: [],
     t: 0,
   });
@@ -139,8 +158,9 @@ function fire(w, ang) {
     d = WEP[w.id],
     L = w.lvl,
     t = wTier(L),
-    dmg = d.dmg * (1 + 0.22 * (L - 1)) * p.dmgMul,
-    col = TIERC[t];
+    ev = w.evo && EVO[w.id],
+    dmg = d.dmg * (1 + 0.22 * (L - 1)) * p.dmgMul * (ev ? 1.5 : 1),
+    col = ev ? EVOC : TIERC[t];
   p.aim = ang;
   p.swing = 1;
   AU.play(w.id);
@@ -156,6 +176,18 @@ function fire(w, ang) {
         hit(e, dmg, { kb: 7, ang: Math.atan2(dz, dx) });
     }
     slashFx(ang, t, R);
+    if (ev)
+      for (let i = 0; i < 6; i++)
+        shot(p.x, p.z, ang + (i / 6) * TAU, {
+          spd: 20,
+          dmg: dmg * 0.5,
+          size: 0.7,
+          pierce: 6,
+          life: 0.55,
+          kind: 5,
+          col,
+          fx: 'burn',
+        });
     for (let i = 0; i < p.multi; i++)
       shot(p.x, p.z, ang + (i - (p.multi - 1) / 2) * 0.3, {
         spd: 22,
@@ -192,6 +224,20 @@ function fire(w, ang) {
       if (t >= 1) n++;
       if (t === 2) aoe = 1.7;
     }
+    let fx = '';
+    if (ev) {
+      if (w.id === 'pistol') {
+        n += 2;
+        pierce += 2;
+        aoe = 1.2;
+      } else if (w.id === 'rifle') {
+        pierce += 2;
+        aoe = 1.2;
+      } else if (w.id === 'axe') {
+        n++;
+        fx = 'return';
+      } else fx = { bow: 'split', staff: 'chain', rocket: 'cluster' }[w.id] || '';
+    }
     const sp = d.spread || 0.1;
     for (let i = 0; i < n; i++)
       shot(
@@ -210,6 +256,7 @@ function fire(w, ang) {
           kind: d.kind,
           col,
           crit,
+          fx,
         }
       );
   }

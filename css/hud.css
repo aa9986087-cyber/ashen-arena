@@ -341,3 +341,8 @@ body.mouse .act.big {
   font-size: 21px;
   grid-row: auto;
 }
+
+.chip.evo {
+  border-color: #d070ff;
+  box-shadow: 0 0 10px rgba(208, 112, 255, 0.6);
+}

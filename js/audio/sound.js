@@ -185,8 +185,11 @@ const AU = {
     if (!c) return;
     if (CM.on && CM.state !== 'missing') {
       CM.tick();
-      this.next = c.currentTime + 0.1;
-      return;
+      // during a boss fight the recorded track fades out and the synthesized battle score takes over
+      if (!(MUS.boss && G.state === 'play')) {
+        this.next = c.currentTime + 0.1;
+        return;
+      }
     }
     if (S.set.mus <= 0 || c.state !== 'running') {
       this.next = c.currentTime + 0.1;
@@ -220,6 +223,9 @@ const AU = {
         if (q === 3 && Math.random() < 0.6) this.tone(N(ch[2]) * 16, 0.7, 'sine', 0.02, null, w, g);
         if (q === 9 && Math.random() < 0.4) this.tone(N(ch[1]) * 16, 0.7, 'sine', 0.016, null, w, g);
         if (boss && q === 0) this.soft(N(ch[0]) * 2, sd * 10, 0.09, w, g);
+        // boss theme: war drums on the off-beats and a low brass stab every bar
+        if (boss && (q === 4 || q === 8 || q === 10)) this.tone(52, 0.35, 'sine', 0.2, 32, w, g);
+        if (boss && q === 0 && s % 24 === 0) this.str(N(ch[0]) / 2, sd * 6, 0.12, w, g, 380);
       }
       this.next += sd;
       this.step++;

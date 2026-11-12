@@ -111,6 +111,15 @@ function buildLab() {
       refreshLoadout();
     }
   });
+  labBtn(T, '🧬 تطور كامل', () => {
+    const w = G.weapons[0];
+    w.lvl = 5;
+    G.ups[EVO[w.id].up] = Math.max(1, G.ups[EVO[w.id].up] || 0);
+    w.evo = 1;
+    recalc();
+    buildWeapon();
+    refreshLoadout();
+  });
   labBtn(T, '🏁 شاشة النهاية', () => {
     show('lab', false);
     G.state = 'ending';

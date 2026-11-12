@@ -106,3 +106,16 @@ const TIERC = [
 ];
 /** Visual/evolution tier of a weapon level: 0 (lvl 1-2), 1 (lvl 3-4), 2 (lvl 5). */
 const wTier = L => (L >= 5 ? 2 : L >= 3 ? 1 : 0);
+/** Full evolutions: a level-5 weapon plus its partner upgrade (up) offers a legendary card that turns it into this.
+    The behaviour is in fire() and the projectile loop (shot fx: burn / split / return / chain / cluster). */
+const EVO = {
+  sword: { up: 'fire', n: 'نصل الجحيم', i: '🔥', d: 'ضرر +50%، وكل ضربة تطلق 6 موجات نار تشعل الأعداء' },
+  pistol: { up: 'crit', n: 'مسدس الإعدام', i: '💀', d: 'ضرر +50%، طلقتين زيادة تخترق، وكل طلقة تنفجر' },
+  bow: { up: 'multi', n: 'قوس العاصفة', i: '🌪️', d: 'ضرر +50%، وكل سهم ينقسم 3 سهام لما يصيب' },
+  axe: { up: 'orbit', n: 'فؤوس الإعصار', i: '🌀', d: 'ضرر +50%، فأس زيادة، والفؤوس ترجع لك وتضرب مرة ثانية' },
+  rifle: { up: 'aspd', n: 'الرشاش الثقيل', i: '💣', d: 'ضرر +50%، الرصاص ينفجر ويخترق أكثر' },
+  staff: { up: 'bolt', n: 'عصا الصواعق', i: '⚡', d: 'ضرر +50%، وكل كرة تصيب تطلق صاعقة تقفز بين 4 أعداء' },
+  rocket: { up: 'nova', n: 'قيامة الصواريخ', i: '☄️', d: 'ضرر +50%، وكل انفجار يفرّخ 5 انفجارات صغيرة حوله' },
+};
+/** Colour of evolved projectiles and blades. */
+const EVOC = [1.7, 0.55, 1.9];

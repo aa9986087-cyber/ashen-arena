@@ -28,3 +28,10 @@ const MON_N = {
   runner: 'الراكض',
   golem: 'غولم',
 };
+/** Elite traits: every elite rolls one. tint = colour multiplier in the arena; see hit(), kill() and updEnemies(). */
+const AFFIX = {
+  split: { n: 'ينقسم', i: '✳️', d: 'لما يموت يطلع منه 3 صغار', tint: [1.7, 1.6, 0.5] },
+  regen: { n: 'يتجدد', i: '💚', d: 'يرجع له 4% من صحته كل ثانية', tint: [0.6, 1.8, 0.7] },
+  haste: { n: 'مُسرِّع', i: '⚡', d: 'الأعداء حوله أسرع 35%', tint: [1.9, 1.3, 0.3] },
+  ward: { n: 'درع', i: '🛡️', d: 'درع يمتص الضرر ويتجدد إذا ما انضرب', tint: [0.7, 1.1, 2] },
+};

@@ -126,9 +126,18 @@ function render(dt, now) {
     const s = e.scale,
       ph = e.t * e.spd * 1.7,
       f = e.flash > 0,
-      F = EMA[e.type];
+      F = EMA[e.type],
+      FA = EMAA[e.type];
+    let I = EM[e.type];
+    if (F) {
+      I = e.frz > 0 ? F[0] : animFrame(F, e.t * clamp(e.spd * 0.3, 0.6, 2.4) + e.slot);
+      if (FA && e.atkT > 0 && !(e.frz > 0)) {
+        const a = animFrame(FA, Math.min(0.99, 1 - e.atkT / ATK_T));
+        if (a.n < a.max) I = a; // a full attack batch falls back to walking rather than vanishing
+      }
+    }
     put(
-      F ? (e.frz > 0 ? F[0] : animFrame(F, e.t * clamp(e.spd * 0.3, 0.6, 2.4) + e.slot)) : EM[e.type],
+      I,
       e.x,
       F ? 0 : Math.abs(Math.sin(ph)) * 0.2 * s,
       e.z,
@@ -136,15 +145,73 @@ function render(dt, now) {
       s,
       s,
       s,
-      f ? 3 : e.frz > 0 ? 0.55 : e.burn > 0 ? 1.7 : e.elite ? 1.8 : G.abyss ? 0.85 : 1,
-      f ? 3 : e.frz > 0 ? 0.9 : e.burn > 0 ? 0.8 : e.elite ? 1.45 : G.abyss ? 0.45 : 1,
-      f ? 3 : e.frz > 0 ? 1.7 : e.burn > 0 ? 0.45 : e.elite ? 0.5 : G.abyss ? 0.55 : 1,
+      f
+        ? 3
+        : e.frz > 0
+          ? 0.55
+          : e.burn > 0
+            ? 1.7
+            : e.elite
+              ? e.affix
+                ? AFFIX[e.affix].tint[0]
+                : 1.8
+              : G.abyss
+                ? 0.85
+                : 1,
+      f
+        ? 3
+        : e.frz > 0
+          ? 0.9
+          : e.burn > 0
+            ? 0.8
+            : e.elite
+              ? e.affix
+                ? AFFIX[e.affix].tint[1]
+                : 1.45
+              : G.abyss
+                ? 0.45
+                : 1,
+      f
+        ? 3
+        : e.frz > 0
+          ? 1.7
+          : e.burn > 0
+            ? 0.45
+            : e.elite
+              ? e.affix
+                ? AFFIX[e.affix].tint[2]
+                : 0.5
+              : G.abyss
+                ? 0.55
+                : 1,
       e.st === 2 ? 0.35 : 0,
       F ? 0 : Math.sin(ph) * 0.1
     );
   }
+  // fallen enemies: tip over backwards, darken and sink
+  for (const c of G.corpses) {
+    const k = c.l / FX_LIFE.corpse,
+      s = c.s * (1 - 0.25 * k),
+      v = 0.55 * (1 - k) + 0.15;
+    put(
+      EMA[c.type] ? EMA[c.type][0] : EM[c.type],
+      c.x,
+      -k * k * 1.2 * c.s,
+      c.z,
+      c.face,
+      s,
+      s,
+      s,
+      v,
+      v * 0.8,
+      v * 0.8,
+      -k * 1.4,
+      0
+    );
+  }
   for (const k in EM) flush(EM[k]);
   for (const k in EMA) for (let i = 1; i < EMA[k].length; i++) flush(EMA[k][i]);
+  for (const k in EMAA) for (const I of EMAA[k]) flush(I);
   for (const a of G.allies) put(IAlly, a.x, Math.abs(Math.sin(a.t)) * 0.12, a.z, a.face, 0.85, 0.85, 0.85, 1, 1, 1);
   flush(IAlly);
   if (G.ups.orbit) forOrbitBlades((a, x, z) => put(IBlade, x, 1.1, z, -a, 1.2, 1.2, 1.2, 1.2, 1.3, 1.6));
@@ -285,13 +352,21 @@ function render(dt, now) {
       fx.fillText(q.t, a[0], a[1]);
     }
     fx.globalAlpha = 1;
+    fx.font = '18px sans-serif';
     for (const e of G.enemies)
-      if (e.elite && !e.boss && e.hp < e.maxHp) {
+      if (e.elite && !e.boss) {
         const a = proj(e.x, 2.6 * e.scale, e.z);
-        fx.fillStyle = 'rgba(0,0,0,.6)';
-        fx.fillRect(a[0] - 20, a[1], 40, 5);
-        fx.fillStyle = '#ffb52e';
-        fx.fillRect(a[0] - 20, a[1], 40 * Math.max(0, e.hp / e.maxHp), 5);
+        if (e.affix) fx.fillText(AFFIX[e.affix].i, a[0], a[1] - 6);
+        if (e.hp < e.maxHp) {
+          fx.fillStyle = 'rgba(0,0,0,.6)';
+          fx.fillRect(a[0] - 20, a[1], 40, 5);
+          fx.fillStyle = '#ffb52e';
+          fx.fillRect(a[0] - 20, a[1], 40 * Math.max(0, e.hp / e.maxHp), 5);
+        }
+        if (e.wardMax && e.ward > 0) {
+          fx.fillStyle = '#6fb7ff';
+          fx.fillRect(a[0] - 20, a[1] + 6, 40 * (e.ward / e.wardMax), 3);
+        }
       }
     if (G.boss) {
       const a = proj(G.boss.x, 1, G.boss.z);

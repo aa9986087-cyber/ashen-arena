@@ -30,7 +30,7 @@ function saveRun() {
         revives: G.revives,
         ups: G.ups,
         pacts: G.pacts,
-        weapons: G.weapons.map(w => ({ id: w.id, lvl: w.lvl })),
+        weapons: G.weapons.map(w => ({ id: w.id, lvl: w.lvl, evo: w.evo ? 1 : 0 })),
         specCd: G.specCd,
         hp: p.hp,
         shield: p.shield,
@@ -93,7 +93,9 @@ function resumeRun() {
     specCd: +o.specCd || 0,
   });
   G.need = xpNeed(G.lvl);
-  G.weapons = o.weapons.filter(w => WEP[w.id]).map(w => ({ id: w.id, lvl: clamp(w.lvl | 0, 1, 5), cd: 0.6 }));
+  G.weapons = o.weapons
+    .filter(w => WEP[w.id])
+    .map(w => ({ id: w.id, lvl: clamp(w.lvl | 0, 1, 5), cd: 0.6, evo: w.evo && w.lvl >= 5 ? 1 : 0 }));
   if (!G.weapons.length) G.weapons = [{ id: CHARS[o.char].wep, lvl: 1, cd: 0.3 }];
   if (o.bossOn) {
     G.wave = 5;
