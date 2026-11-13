@@ -19,6 +19,7 @@ function spawn(type, x, z, elite) {
     z *= (ARENA + 3) / r;
   }
   const e = {
+    nid: (G.nidC = (G.nidC || 0) + 1), // stable id: lets a live viewer follow each enemy between snapshots
     type,
     x,
     z,
