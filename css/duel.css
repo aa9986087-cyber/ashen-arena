@@ -568,3 +568,80 @@ html.rot #duel {
   transform-origin: top left;
   transform: rotate(90deg) translateY(-100%);
 }
+
+/* the killing-blow cinematic: black bars, the HUD gone, colours drained a little */
+#dCine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+#dCine::before,
+#dCine::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  background: #000;
+  transition: height 0.45s ease;
+}
+#dCine::before {
+  top: 0;
+}
+#dCine::after {
+  bottom: 0;
+}
+#duel.cine #dCine::before,
+#duel.cine #dCine::after {
+  height: 13%;
+}
+#dCineT {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: 2.5%;
+  margin: 0;
+  text-align: center;
+  color: #f1d07e;
+  font-family: var(--display);
+  font-size: clamp(20px, 5vmin, 36px);
+  letter-spacing: 1px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.6s,
+    transform 0.6s;
+}
+#dCineT small {
+  display: block;
+  font-family: var(--body);
+  font-weight: 800;
+  font-size: 0.45em;
+  color: #fff;
+  opacity: 0.85;
+}
+#duel.cine #dCineT {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.45s;
+}
+#duel.cine #dTop,
+#duel.cine #dActs,
+#duel.cine #dBtns,
+#duel.cine #dMsg,
+#duel.cine #dFloat,
+#duel.cine #dKeys,
+#duel.cine #dJoy,
+#duel.cine #dGore {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.3s;
+}
+#gl {
+  transition: filter 0.6s;
+}
+html.cine #gl {
+  filter: saturate(0.55) contrast(1.18) brightness(0.95);
+}

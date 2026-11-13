@@ -186,6 +186,7 @@ class Duelist {
     this.mixer.stopAllAction();
     this.cur = null;
     goreReset(this); // stumps heal between rounds
+    this.kcSeen = false;
     this.play('idle', 0);
   }
   /** Cross-fade to an animation; `dur` stretches the clip to last that many seconds. */

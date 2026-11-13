@@ -213,6 +213,7 @@ function duelExit() {
 }
 /** Starting spots: the host (or the training player) on the south side, the guest on the north. */
 function duelPlace() {
+  if (DUEL.kc) duelKillcamEnd(); // a new round starts: the cinematic of the last one is over
   const south = !DUEL.net || DUEL.net.host,
     A = [0, -3, 0],
     B = [0, 3, Math.PI];
@@ -320,7 +321,33 @@ function duelLock(on) {
   if (DUEL.me && !DUEL.watch) DUEL.me.freeLook = !on;
   $('dLock').classList.toggle('on', on);
 }
+/* ---- the killing blow: slow motion, a low orbiting camera, black bars, a deep boom and heartbeats */
+function duelKillcam(victim, killer) {
+  if (DUEL.kc || !killer) return;
+  const a = Math.atan2(victim.x - killer.x, victim.z - killer.z);
+  DUEL.kc = { t: 0, dur: 3.1, victim, killer, ang: a + (Math.random() < 0.5 ? 1.35 : -1.35) };
+  const who = killer === DUEL.me ? $('dNameMe').textContent : $('dNameFoe').textContent;
+  const T = $('dCineT');
+  T.textContent = '☠️ الضربة القاضية';
+  T.appendChild(el('small', '', who));
+  $('duel').classList.add('cine');
+  document.documentElement.classList.add('cine');
+  DUEL.hitStop = 0;
+  DS.finisher();
+}
+/** The cinematic's clock: nearly frozen, then easing back to full speed for the last second. */
+function duelKcScale() {
+  const t = DUEL.kc.t;
+  return t < 1.7 ? 0.15 : Math.min(1, 0.15 + ((t - 1.7) / 1.1) * 0.85);
+}
+function duelKillcamEnd() {
+  DUEL.kc = null;
+  $('duel').classList.remove('cine');
+  document.documentElement.classList.remove('cine');
+  if ($('dMsg').querySelector('b').textContent) pop($('dMsg'), 'show'); // the round's verdict, now that it can be seen
+}
 function duelInput(dt = 0) {
+  if (DUEL.kc) return;
   const me = DUEL.me,
     k = IN.k;
   // turning: finger / middle-mouse drag, or Q E (allowed in the countdown too, to look around)
@@ -567,6 +594,29 @@ function duelCamera(dt) {
     cam.updateProjectionMatrix();
     return;
   }
+  if (DUEL.kc) {
+    // the cinematic: cut to a low shot beside the fallen fighter, drifting around and up as he goes down
+    for (const m of me.fpHide) m.visible = !m.userData.cut;
+    const K = DUEL.kc,
+      v = K.victim,
+      p = Math.min(1, K.t / K.dur),
+      e = p * p * (3 - 2 * p),
+      ang = K.ang + e * 1.15,
+      r = 2.0 + e * 1.4;
+    dT.set(v.x + Math.sin(ang) * r, 0.5 + e * 1.0, v.z + Math.cos(ang) * r);
+    if (!K.cut) {
+      K.cut = true;
+      cam.position.copy(dT);
+      dLook.set(v.x, 1.0, v.z);
+    } else cam.position.lerp(dT, Math.min(1, dt * 4));
+    dV.set(v.x * 0.8 + K.killer.x * 0.2, 0.95 - e * 0.35, v.z * 0.8 + K.killer.z * 0.2);
+    dLook.lerp(dV, Math.min(1, dt * 5));
+    cam.lookAt(dLook);
+    cam.fov = 36 + e * 12;
+    if (cam.aspect !== W / H) cam.aspect = W / H;
+    cam.updateProjectionMatrix();
+    return;
+  }
   for (const m of me.fpHide) m.visible = !fp && !m.userData.cut;
   // a sprint widens the view a touch and bobs the eye with the stride
   DUEL.runFx = (DUEL.runFx || 0) + ((me.running ? 1 : 0) - (DUEL.runFx || 0)) * Math.min(1, dt * 6);
@@ -613,16 +663,27 @@ function duelFrame(rdt) {
   }
   if (DUEL.watch) {
     DUEL.shake = 0;
-    DUEL.me.update(rdt, DUEL.foe);
-    DUEL.foe.update(rdt, DUEL.me);
+    const ts = DUEL.kc ? duelKcScale() : 1;
+    DUEL.me.update(rdt * ts, DUEL.foe);
+    DUEL.foe.update(rdt * ts, DUEL.me);
     if (performance.now() - DUEL.watch.lastRx > 8000 && DUEL.phase !== 'over') duelWatchEnd('انقطع البث');
   } else {
     duelInput(rdt);
     duelStep(rdt);
     if (DUEL.net && DUEL.net.ready) duelNetTick(rdt);
   }
+  // a fighter just fell: the killing blow plays as a cinematic
+  for (const [f, o] of [
+    [DUEL.me, DUEL.foe],
+    [DUEL.foe, DUEL.me],
+  ])
+    if (f.act === 'dead' && !f.kcSeen) {
+      f.kcSeen = true;
+      duelKillcam(f, o);
+    }
+  if (DUEL.kc && (DUEL.kc.t += rdt) >= DUEL.kc.dur) duelKillcamEnd();
   arenaTick(rdt);
-  goreUpdate(DUEL.slow > 0 ? rdt * 0.35 : rdt);
+  goreUpdate(rdt * (DUEL.kc ? duelKcScale() : DUEL.slow > 0 ? 0.35 : 1));
   duelCamera(rdt);
   duelHud();
   renderer.render(DUEL.scene, DUEL.cam);
@@ -638,6 +699,7 @@ function duelStep(rdt) {
     DUEL.slow -= rdt;
     dt *= 0.35;
   }
+  if (DUEL.kc) dt = rdt * duelKcScale(); // the killing blow's own clock
   DUEL.shake = Math.max(0, DUEL.shake - rdt * 1.6);
   const me = DUEL.me,
     foe = DUEL.foe;
@@ -690,7 +752,7 @@ function duelRoundEnd(told) {
   }
   if (!draw) DUEL.score[meWon ? 0 : 1]++;
   DUEL.phase = 'ko';
-  DUEL.phaseT = 2.6;
+  DUEL.phaseT = 3.5; // room for the killing-blow cinematic
   DUEL.slow = 1.1;
   duelPips();
   if (draw) duelMsg('تعادل', 'الوقت انتهى بنفس الصحة');

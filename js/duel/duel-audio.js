@@ -194,6 +194,30 @@ const DS = {
   death(who) {
     dVoice(who.pitch * 1.15, 0.95, 0.6, [620, 980], 0.45);
   },
+  /** The killing blow: a deep boom under a slowed impact, a few heartbeats, then the crowd erupts. */
+  finisher() {
+    const c = AU.ctx;
+    if (!c) return;
+    const t = c.currentTime;
+    const tone = (f0, f1, at, dur, v) => {
+      const o = c.createOscillator(),
+        g = c.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f0, t + at);
+      o.frequency.exponentialRampToValueAtTime(f1, t + at + dur);
+      g.gain.setValueAtTime(0.0001, t + at);
+      g.gain.exponentialRampToValueAtTime(v, t + at + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + at + dur);
+      o.connect(g);
+      g.connect(AU.sg);
+      o.start(t + at);
+      o.stop(t + at + dur + 0.05);
+    };
+    tone(120, 30, 0, 1.7, 0.9);
+    dPlay(dOne('hit', 3), 1, 0.5);
+    for (const k of [0.6, 0.82, 1.5, 1.72, 2.4, 2.62]) tone(62, 40, k, 0.2, k % 1 < 0.7 ? 0.7 : 0.45);
+    setTimeout(() => DS.crowd(0.36), 2300);
+  },
   crowd(v = 0.18) {
     dCrowd(2.6, v);
   },
