@@ -6,6 +6,8 @@ async function lobbyOpen() {
   AU.init();
   LOBBY.open = true;
   go('duelMenu');
+  // get the arena ready while you choose (training or a challenge): entering it is then instant
+  setTimeout(() => duelPrepare().catch(() => {}), 350);
   if (!S.name) askName();
   lobbyDrawRec();
   $('dmList').innerHTML = '';

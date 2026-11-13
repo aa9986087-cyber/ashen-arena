@@ -31,6 +31,92 @@ try {
 } catch (e) {}
 
 /* ---- enter / leave */
+let duelPrep = null;
+const duelYield = () => new Promise(r => setTimeout(r, 0));
+/** Build the arena and both fighters and warm the GPU on them, once and ahead of time (the ⚔️ menu starts it),
+    so stepping into the arena is instant. Each heavy step yields so the menu stays responsive meanwhile. */
+function duelPrepare() {
+  if (DUEL.ready) return Promise.resolve();
+  if (duelPrep) return duelPrep;
+  duelPrep = (async () => {
+    duelSoundsLoad();
+    // the arena's name and banners are drawn in the game's display font: wait for it
+    await Promise.race([document.fonts.load('80px Lalezar'), new Promise(r => setTimeout(r, 2500))]).catch(() => {});
+    const models = Promise.all([duelLoad(), duelLoad()]);
+    await duelYield();
+    DUEL.scene = duelArena();
+    const [a, b] = await models;
+    await duelYield();
+    DUEL.me = new Duelist(a, 212, 118); // blue cloth: you
+    DUEL.foe = new Duelist(b, 2, 96); // red cloth, deeper voice: the opponent
+    DUEL.scene.add(DUEL.me.root, DUEL.foe.root);
+    DUEL.me.onHit = r => duelOutcome(DUEL.me, DUEL.foe, r);
+    DUEL.foe.onHit = r => duelOutcome(DUEL.foe, DUEL.me, r);
+    await duelWarm();
+    DUEL.ready = true;
+  })().catch(e => {
+    duelPrep = null;
+    throw e;
+  });
+  return duelPrep;
+}
+/** Compile every shader of the arena (a few objects at a time, between frames) and upload every texture
+    (one draw into a single pixel of the screen), so the first frame inside the arena has nothing left to prepare. */
+async function duelWarm() {
+  const pools = GORE.dropMesh ? [GORE.dropMesh, GORE.splatMesh, GORE.poolMesh] : [];
+  const cam = DUEL.cam,
+    items = [];
+  DUEL.scene.traverse(o => o.material && o.visible && items.push(o));
+  const withEnc = fn => {
+    const enc = renderer.outputEncoding;
+    renderer.outputEncoding = THREE.sRGBEncoding; // the duel draws in sRGB: compile those programs
+    try {
+      fn();
+    } catch (e) {
+      console.warn('duel warm', e);
+    }
+    renderer.outputEncoding = enc;
+  };
+  for (const m of pools) m.count = 1;
+  duelPlace();
+  cam.aspect = W / H;
+  cam.position.set(0, 1.6, -4.5);
+  cam.lookAt(0, 1.2, 3);
+  cam.updateProjectionMatrix();
+  DUEL.me.mixer.update(0);
+  DUEL.foe.mixer.update(0);
+  // one pixel in the corner: drawing there runs the GPU's first-use work without anything showing
+  const sz = renderer.getSize(new THREE.Vector2()),
+    pixel = () => {
+      renderer.setScissorTest(true);
+      renderer.setScissor(0, 0, 1, 1);
+      renderer.setViewport(0, 0, 1, 1);
+      renderer.render(DUEL.scene, cam);
+      renderer.setScissorTest(false);
+      renderer.setViewport(0, 0, sz.x, sz.y);
+    };
+  // a few objects at a time: compile their shaders, upload their textures, draw them once; then the next frame
+  for (const o of items) o.visible = false;
+  for (let k = 0; k < items.length; k += 4) {
+    const batch = items.slice(k, k + 4);
+    for (const o of batch) o.visible = true;
+    withEnc(() => {
+      renderer.compile(DUEL.scene, cam);
+      for (const o of batch)
+        for (const m of [].concat(o.material))
+          for (const key of ['map', 'emissiveMap', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap'])
+            if (m[key] && m[key].isTexture) renderer.initTexture(m[key]);
+      pixel();
+    });
+    for (const o of batch) o.visible = false;
+    await duelYield();
+  }
+  for (const o of items) o.visible = true;
+  withEnc(pixel);
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, sz.x, sz.y);
+  for (const m of pools) m.count = 0;
+}
 async function duelStart(online, watch) {
   AU.init();
   hideScreens();
@@ -43,20 +129,8 @@ async function duelStart(online, watch) {
   // a touch screen needs the on-screen buttons from the first second
   if (matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) document.body.classList.remove('mouse');
   renderer.outputEncoding = THREE.sRGBEncoding; // the duel models are lit in sRGB
-  duelSoundsLoad();
   try {
-    if (!DUEL.ready) {
-      // the arena's name and banners are drawn in the game's display font: wait for it
-      await Promise.race([document.fonts.load('80px Lalezar'), new Promise(r => setTimeout(r, 2500))]).catch(() => {});
-      DUEL.scene = duelArena();
-      const [a, b] = await Promise.all([duelLoad(), duelLoad()]);
-      DUEL.me = new Duelist(a, 212, 118); // blue cloth: you
-      DUEL.foe = new Duelist(b, 2, 96); // red cloth, deeper voice: the opponent
-      DUEL.scene.add(DUEL.me.root, DUEL.foe.root);
-      DUEL.me.onHit = r => duelOutcome(DUEL.me, DUEL.foe, r);
-      DUEL.foe.onHit = r => duelOutcome(DUEL.foe, DUEL.me, r);
-      DUEL.ready = true;
-    }
+    await duelPrepare();
   } catch (e) {
     console.warn('duel', e);
     toast('ما قدرت أحمّل المبارزة، تأكد من الإنترنت');
