@@ -112,13 +112,12 @@ function finWound(F, bone, n, heavy) {
   GORE.jets.push({ f: F.v, bone: b, t: 0, dur: 6, rate: 22, drip: 1, acc: 0 });
   F.k.blood = Math.min(1, (F.k.blood || 0) + 0.45);
   goreBlade(F.k);
-  DS.hurt(F.v, true);
   DUEL.shake = 0.35;
   if (F.hit < 0) {
     F.hit = F.real;
     DS.finisher();
-    DS.death(F.v);
-  }
+    DS.finWound(F.kind, F.v);
+  } else DS.hurt(F.v, true); // the first of two blows already took its sound
 }
 /** Start clip `name` on fighter f at clip time `at` (seconds), once. */
 function finPlay(f, name, at, fade = 0.1, speed = 1) {

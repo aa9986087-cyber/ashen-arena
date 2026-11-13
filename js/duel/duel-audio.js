@@ -26,7 +26,68 @@ const DSND_FILES = [
   'block2',
   'break0',
 ];
+/** Recorded combat sounds (assets/audio/duel/real/<name><n>.mp3): Oculus Audio Pack 01 by Oculus VR, LLC (CC BY 4.0),
+    Kenney RPG Audio (CC0) and PanderMusubi's medieval weapons library (CC0). name → number of takes. */
+const DREAL = {
+  whs: 3,
+  swish: 6,
+  hurt: 6,
+  gear: 2,
+  effort: 2,
+  slice: 2,
+  squish: 6,
+  punch: 6,
+  death: 6,
+  chop: 1,
+  clash: 10,
+  skull: 2,
+  whm: 3,
+  parry: 2,
+  kick: 5,
+  scrape: 2,
+  bone: 2,
+  scream: 3,
+  punchH: 4,
+  dscream: 2,
+  punchX: 1,
+};
+const DREAL_BUF = {};
+function duelRealLoad() {
+  if (DREAL_BUF.loading || !AU.ctx) return;
+  DREAL_BUF.loading = true;
+  for (const [name, n] of Object.entries(DREAL))
+    for (let i = 0; i < n; i++)
+      fetch('assets/audio/duel/real/' + name + i + '.mp3')
+        .then(r => r.arrayBuffer())
+        .then(ab => new Promise((ok, no) => AU.ctx.decodeAudioData(ab, ok, no)))
+        .then(b => (DREAL_BUF[name] = DREAL_BUF[name] || []).push(b))
+        .catch(() => {});
+}
+/** Play a random take of a recorded sound: volume, pitch, delay (s), arena reverb. False while it isn't loaded. */
+function rPlay(name, v = 1, rate = 1, when = 0, wet = 0.22) {
+  const c = AU.ctx,
+    list = DREAL_BUF[name];
+  if (!c || !list || !list.length) return false;
+  const s = c.createBufferSource(),
+    g = c.createGain();
+  s.buffer = list[(Math.random() * list.length) | 0];
+  s.playbackRate.value = rate * rand(0.97, 1.03);
+  g.gain.value = v;
+  s.connect(g);
+  g.connect(AU.sg);
+  if (typeof DSFX !== 'undefined' && DSFX.rev && wet > 0) {
+    const w = c.createGain();
+    w.gain.value = wet;
+    g.connect(w);
+    w.connect(DSFX.rev);
+  }
+  s.start(c.currentTime + when);
+  return true;
+}
+/** A fighter's voice pitch: each fighter sounds like himself (you a little higher, your foe deeper). */
+const dVox = who => clamp((who && who.pitch ? who.pitch : 110) / 110, 0.82, 1.12);
 function duelSoundsLoad() {
+  duelRealLoad();
   if (AU.ctx) sfxBuild(); // the designed combat sounds (duel-sfx.js)
   if (DSND.loading || !AU.ctx) return DSND.loading;
   DSND.loading = Promise.all(
@@ -167,42 +228,78 @@ function dCrowd(dur, v) {
 /** Duel sound cues; `who` is the fighter (each has its own voice pitch). */
 const DS = {
   light(who) {
-    sfxPlay('whoosh', 0.6, sfxRnd(0.95, 1.1), 0.12, 0.12) || dWhoosh(0.24, 0.55, 0.12);
-    if (Math.random() < 0.75) dVoice(who.pitch * rand(0.95, 1.08), 0.17, 0.5, [700, 1200], 0.75);
+    rPlay('swish', 0.55, rand(0.95, 1.12), 0.1, 0.1) ||
+      sfxPlay('whoosh', 0.6, sfxRnd(0.95, 1.1), 0.12, 0.12) ||
+      dWhoosh(0.24, 0.55, 0.12);
+    if (Math.random() < 0.4)
+      rPlay('effort', 0.5, dVox(who) * rand(0.97, 1.08)) || dVoice(who.pitch, 0.17, 0.5, [700, 1200], 0.75);
   },
   heavy(who) {
-    dVoice(who.pitch * 0.92, 0.5, 0.6, [820, 1250], 0.62); // the wind-up war cry
-    sfxPlay('whooshH', 0.8, 1, DM.heavy.hitFrom - 0.28, 0.15) || dWhoosh(0.4, 0.8, DM.heavy.hitFrom - 0.25);
+    rPlay('effort', 0.8, dVox(who) * 0.92) || dVoice(who.pitch * 0.92, 0.5, 0.6, [820, 1250], 0.62); // the war cry
+    rPlay('whm', 0.85, rand(0.8, 0.95), DM.heavy.hitFrom - 0.18, 0.15) ||
+      sfxPlay('whooshH', 0.8, 1, DM.heavy.hitFrom - 0.28, 0.15) ||
+      dWhoosh(0.4, 0.8, DM.heavy.hitFrom - 0.25);
   },
   dodge() {
-    sfxPlay('whoosh', 0.4, 0.7, 0, 0.1) || dWhoosh(0.3, 0.35);
+    rPlay('swish', 0.35, 0.8, 0, 0.08) || sfxPlay('whoosh', 0.4, 0.7, 0, 0.1) || dWhoosh(0.3, 0.35);
+    rPlay('gear', 0.45, rand(0.95, 1.1));
   },
+  /** A blade in flesh: the cut, the wet, the body, the bone for heavy blows, and the man's pain. */
   hurt(who, heavy) {
-    sfxPlay(heavy ? 'chop' : 'slice', heavy ? 1 : 0.9, 1, 0, heavy ? 0.3 : 0.22) ||
-      dPlay(dOne('hit', 3), heavy ? 1 : 0.8, rand(0.9, 1.1));
-    dVoice(who.pitch * 1.3, heavy ? 0.4 : 0.24, 0.55, [600, 1000], 0.8);
+    const real = heavy
+      ? rPlay('chop', 1, rand(0.75, 0.95), 0, 0.28) && (rPlay('bone', 0.75), rPlay('punchH', 0.8), true)
+      : rPlay('slice', 0.9, rand(0.95, 1.1), 0, 0.2) && (rPlay('punch', 0.55), true);
+    if (real) rPlay('squish', heavy ? 0.75 : 0.5, rand(1, 1.25));
+    else
+      sfxPlay(heavy ? 'chop' : 'slice', heavy ? 1 : 0.9, 1, 0, heavy ? 0.3 : 0.22) ||
+        dPlay(dOne('hit', 3), heavy ? 1 : 0.8, rand(0.9, 1.1));
+    rPlay('hurt', heavy ? 0.9 : 0.7, dVox(who), 0.03, 0.15) ||
+      dVoice(who.pitch * 1.3, heavy ? 0.4 : 0.24, 0.55, [600, 1000], 0.8);
   },
-  /** A boot in the chest: a thud, leather, rattling plates, and a winded grunt. */
+  /** A boot in the chest: a real kick, and the wind knocked out of him. */
   kick(who) {
-    sfxPlay('kick', 1, 1, 0, 0.2) || dPlay(dOne('hit', 3), 0.7, 0.8);
-    dVoice(who.pitch * 1.2, 0.22, 0.5, [650, 1050], 0.7);
+    rPlay('kick', 1, rand(0.9, 1.05), 0, 0.2) || sfxPlay('kick', 1, 1, 0, 0.2) || dPlay(dOne('hit', 3), 0.7, 0.8);
+    rPlay('effort', 0.6, dVox(who) * 1.08, 0.04) || dVoice(who.pitch * 1.2, 0.22, 0.5, [650, 1050], 0.7);
   },
   block() {
-    sfxPlay('clash', 0.85, 1, 0, 0.3) || dPlay(dOne('block', 3), 0.9, rand(0.95, 1.1));
+    rPlay('clash', 0.85, rand(0.95, 1.08), 0, 0.3) ||
+      sfxPlay('clash', 0.85, 1, 0, 0.3) ||
+      dPlay(dOne('block', 3), 0.9, rand(0.95, 1.1));
   },
   parry() {
+    if (rPlay('parry', 1, rand(1, 1.1), 0, 0.45)) return void rPlay('clash', 0.5, 1.25, 0.04, 0.3);
     if (sfxPlay('parry', 1, 1, 0, 0.4)) return;
     dPlay(dOne('clash', 3), 1, 1.15);
     dPlay('clash1', 0.5, 1.7, 0.06);
   },
   breakGuard() {
+    if (rPlay('clash', 1, 0.82, 0, 0.35)) {
+      rPlay('scrape', 0.65, 1, 0.03, 0.3);
+      rPlay('punchX', 0.7);
+      return;
+    }
     if (sfxPlay('break', 1, 1, 0, 0.35)) return;
     dPlay('break0', 1);
     dPlay(dOne('clash', 3), 0.7, 0.8);
   },
   death(who) {
-    dVoice(who.pitch * 1.15, 0.95, 0.6, [620, 980], 0.45);
+    rPlay('death', 0.95, dVox(who), 0, 0.25) || dVoice(who.pitch * 1.15, 0.95, 0.6, [620, 980], 0.45);
     sfxPlay('fall', 0.85, 1, 0.6, 0.3); // the body hits the stones
+    rPlay('gear', 0.55, 0.9, 0.6);
+  },
+  /** A limb cut off a living man. */
+  scream(who) {
+    rPlay('scream', 1, dVox(who), 0.05, 0.3);
+  },
+  /** A finisher's wound: a skull split (the beheading, no voice left), or bone and a dying scream. */
+  finWound(kind, who) {
+    rPlay('chop', 1, 0.7, 0, 0.35);
+    rPlay('squish', 0.9, 0.9, 0.03);
+    if (kind === 0) rPlay('skull', 1, 0.95, 0, 0.3);
+    else {
+      rPlay('bone', 0.9, 0.9);
+      rPlay('dscream', 1, dVox(who), 0.08, 0.35) || DS.death(who);
+    }
   },
   /** The killing blow: a deep boom under a slowed impact, a few heartbeats, then the crowd erupts. */
   finisher() {
@@ -224,7 +321,7 @@ const DS = {
       o.stop(t + at + dur + 0.05);
     };
     tone(120, 30, 0, 1.7, 0.9);
-    sfxPlay('chop', 1, 0.55, 0, 0.5) || dPlay(dOne('hit', 3), 1, 0.5);
+    rPlay('punchX', 1, 0.55, 0, 0.5) || sfxPlay('chop', 1, 0.55, 0, 0.5) || dPlay(dOne('hit', 3), 1, 0.5);
     for (const k of [0.6, 0.82, 1.5, 1.72, 2.4, 2.62]) tone(62, 40, k, 0.2, k % 1 < 0.7 ? 0.7 : 0.45);
     setTimeout(() => DS.crowd(0.36), 2300);
   },

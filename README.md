@@ -116,6 +116,12 @@ Modular Character Outfits – Fantasy، وUniversal Base Characters، وUniversa
 الأونلاين: اللي ينضرب هو اللي يحكم على الضربة (يعرف وقت صده ومراوغته بالضبط)، والمتحدّي (المضيف) يحكم الجولات ويسجل النتيجة.
 جدول السجل وإعداده في `supabase/duels.sql`.
 
+أصوات المبارزة المسجّلة في `assets/audio/duel/real/` (مقصوصة وموحّدة الارتفاع):
+- "Oculus Audio Pack 01" by Oculus VR, LLC (https://developers.meta.com/vr/downloads/package/oculus-audio-pack-1/), licensed under CC BY 4.0 — السيوف، الضربات، العظام، الدم، الصفير، وأصوات الألم والموت والصراخ.
+- Kenney RPG Audio (CC0) — قطع السكين والتقطيع.
+- PanderMusubi, sound-effects-library-weapons (CC0) — نصل على نصل.
+والمعلّق من Kenney Voiceover Pack Fighter (CC0).
+
 ## أكواد الهدايا
 
 اللاعب يلصق الكود في **الإعدادات ← كود هدية** وتنضاف العملات لمحفظته. كل كود ينفع مرة وحدة في الجهاز، حتى لو مسح اللاعب تقدمه.

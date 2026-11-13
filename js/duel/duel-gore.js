@@ -345,6 +345,7 @@ function goreCut(f, key, a) {
   GORE.jets.push({ piece: GORE.pieces[GORE.pieces.length - 1], t: 0, dur: 2.5, rate: 35, acc: 0, pump: 1 });
   // cut while still standing: it bleeds for a while (the owner's copy loses the health), and both sides are told
   if (f.act !== 'dead' && f.hp > 0) {
+    DS.scream(f);
     f.bleedT = disarmed ? 99 : 5;
     if (!DUEL.watch)
       duelFloat(
