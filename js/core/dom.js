@@ -22,3 +22,27 @@ function pips(l, max) {
   for (let i = 0; i < max; i++) d.appendChild(el('i', i < l ? 'on' : ''));
   return d;
 }
+
+/* iPhone Safari ignores user-scalable=no: a quick second tap in the same spot still zooms in, and two fingers pinch.
+   Swallow the second of two quick taps close together (not in text fields), and the pinch gestures. */
+(() => {
+  let lastT = 0,
+    lastX = 0,
+    lastY = 0;
+  document.addEventListener(
+    'touchend',
+    e => {
+      const t = e.changedTouches[0],
+        now = performance.now();
+      if (!t) return;
+      const near = Math.hypot(t.clientX - lastX, t.clientY - lastY) < 60;
+      if (now - lastT < 350 && near && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) e.preventDefault();
+      lastT = now;
+      lastX = t.clientX;
+      lastY = t.clientY;
+    },
+    { passive: false }
+  );
+  for (const g of ['gesturestart', 'gesturechange', 'gestureend'])
+    document.addEventListener(g, e => e.preventDefault(), { passive: false });
+})();

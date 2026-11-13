@@ -42,6 +42,11 @@
 [hidden] {
   display: none !important;
 }
+/* no double-tap zoom anywhere (iPhone Safari zooms on a quick second tap, e.g. on the attack button);
+   anything that sets its own touch-action (canvas, scroll lists) keeps it */
+* {
+  touch-action: manipulation;
+}
 html,
 body {
   height: 100%;
