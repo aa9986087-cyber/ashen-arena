@@ -38,12 +38,16 @@
   flex: 0 1 330px;
   padding: 6px 12px 6px 8px;
   border-radius: 14px;
-  background: var(--glass);
+  background: rgba(
+    14,
+    12,
+    24,
+    0.8
+  ); /* no backdrop blur: re-blurring the live 3D view every frame is costly on phones */
   border: 1px solid var(--goldline);
   box-shadow:
     0 6px 18px rgba(0, 0, 0, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(4px);
 }
 #lvl {
   flex: none;
@@ -553,4 +557,21 @@ body.mouse .act.big {
   font-weight: 700;
   color: #ffe2a8;
   text-shadow: 0 1px 4px #000;
+}
+
+/* optional FPS counter (settings) */
+#fps {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font:
+    700 12px/1 ui-monospace,
+    monospace;
+  color: #9fffa0;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 4px 8px;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 3;
 }

@@ -223,10 +223,13 @@ function drawSet() {
   $('oShadow').textContent = S.set.shadow ? 'مفعّلة' : 'متوقفة';
   $('oShake').textContent = S.set.shake ? 'مفعّل' : 'متوقف';
   $('oQual').textContent = S.set.qual ? 'عالية' : 'منخفضة';
+  $('oFps').textContent = S.set.fps ? 'ظاهر' : 'مخفي';
+  $('fps').hidden = !S.set.fps;
   $('oSide').textContent = S.set.left ? 'يسار' : 'يمين';
   document.body.classList.toggle('actsLeft', !!S.set.left);
   $('oReset').textContent = resetArm ? 'اضغط مجدداً للتأكيد' : 'امسح';
   sun.castShadow = !!S.set.shadow;
+  RS = 1;
   resize();
 }
 $('oSfx').oninput = e => {
@@ -247,6 +250,7 @@ for (const [id, key] of [
   ['oShake', 'shake'],
   ['oSide', 'left'],
   ['oQual', 'qual'],
+  ['oFps', 'fps'],
 ])
   $(id).onclick = () => {
     S.set[key] = S.set[key] ? 0 : 1;

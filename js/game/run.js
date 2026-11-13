@@ -2,7 +2,7 @@
 /* Run lifecycle: start, resume (saved run), end, pause, back to menu. */
 const RUN_KEY = 'ashen_arena_run';
 function saveRun() {
-  if (!G || G.lab || (G.state !== 'play' && G.state !== 'paused' && G.state !== 'cards')) return;
+  if (!G || G.lab || (G.state !== 'play' && G.state !== 'paused' && G.state !== 'cards' && G.state !== 'count')) return;
   const p = G.p,
     inCards = G.state === 'cards';
   try {
@@ -239,7 +239,7 @@ function updCount(dt) {
   if (!n) c.dataset.n = '';
 }
 function pause(on) {
-  if (on && G.state === 'play') {
+  if (on && (G.state === 'play' || G.state === 'count')) {
     G.state = 'paused';
     show('pause', true);
     saveRun();

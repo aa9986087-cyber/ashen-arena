@@ -5,7 +5,9 @@ const glC = $('gl'),
   fx = fxC.getContext('2d');
 const renderer = new THREE.WebGLRenderer({ canvas: glC, antialias: true, powerPreference: 'high-performance' });
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap; // PCF soft costs ~2x the samples for a barely visible difference
+/** Render scale (0.55…1) picked by the adaptive resolution in perf.js; multiplies the pixel ratio. */
+let RS = 1;
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x16261c, 34, 78);
 scene.background = new THREE.Color(0x16261c);

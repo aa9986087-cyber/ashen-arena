@@ -191,6 +191,8 @@ const animFrame = (frames, t) => frames[((((t % 1) + 1) % 1) * frames.length) | 
 function loadModels() {
   if (!THREE.GLTFLoader || !/^https?:$/.test(location.protocol) || IS_SANDBOX) return;
   const L = new THREE.GLTFLoader();
+  let left = Object.keys(MODEL_FILES).length;
+  const done = () => --left || warmGPU(); // all in: push every model and frame to the GPU before play needs it
   for (const file in MODEL_FILES) {
     const o = typeof MODEL_FILES[file] === 'string' ? { to: MODEL_FILES[file] } : MODEL_FILES[file],
       key = o.to,
@@ -226,10 +228,15 @@ function loadModels() {
           }
         } catch (e) {
           console.warn('model', file, e);
+        } finally {
+          done();
         }
       },
       undefined,
-      () => console.warn('model missing', file)
+      () => {
+        console.warn('model missing', file);
+        done();
+      }
     );
   }
 }

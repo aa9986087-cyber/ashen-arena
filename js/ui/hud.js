@@ -52,7 +52,13 @@ function drawHud() {
     hud.st = st;
     $('stageInfo').textContent = st;
   }
-  if (G.boss) $('bossbar').querySelector('i').style.width = Math.max(0, (G.boss.hp / G.boss.maxHp) * 100) + '%';
+  if (G.boss) {
+    const bw = Math.max(0, Math.round((G.boss.hp / G.boss.maxHp) * 400) / 4); // only restyle when it moves a quarter percent
+    if (hud.bw !== bw) {
+      hud.bw = bw;
+      $('bossbar').querySelector('i').style.width = bw + '%';
+    }
+  }
   cooldown($('bDash'), p.dashCd / p.dashMax);
   cooldown($('bSpec'), G.specCd / specCdMax());
 }
@@ -60,7 +66,7 @@ function drawHud() {
 function cooldown(btn, k) {
   k = clamp(k, 0, 1);
   const was = +btn.dataset.cd || 0;
-  if (Math.abs(was - k) < 0.004) return;
+  if (Math.abs(was - k) < 0.01 && !(k === 0 && was > 0)) return;
   btn.style.setProperty('--cd', k);
   btn.dataset.cd = k;
   if (k === 0 && was > 0) pop(btn, 'ready');

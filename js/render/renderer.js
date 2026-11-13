@@ -3,7 +3,7 @@
 function resize() {
   W = innerWidth;
   H = innerHeight;
-  DPR = Math.min(devicePixelRatio || 1, S.set.qual ? 2 : 1.25);
+  DPR = Math.min(devicePixelRatio || 1, S.set.qual ? 2 : 1.25) * RS;
   renderer.setPixelRatio(DPR);
   renderer.setSize(W, H, false);
   camera.aspect = W / H;

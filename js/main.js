@@ -8,6 +8,7 @@ function frame(now) {
   last = now;
   if (G.state === 'play') update(dt * (G.slow > 0 ? 0.35 : 1) * (G.slowmo ? 0.3 : 1));
   updCount(Math.min(raw, 0.25)); // real seconds, even on a slow device
+  perfTick(raw * 1000);
   AU.music();
   if (!AU.ctx) CM.tick();
   render(dt, now);
@@ -20,6 +21,7 @@ buildPlayer();
 resize();
 drawSet();
 go('menu');
+warmGPU();
 try {
   loadModels();
 } catch (e) {}
