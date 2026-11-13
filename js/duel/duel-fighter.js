@@ -169,6 +169,8 @@ class Duelist {
     Object.assign(this, { combo: 0, comboT: 0, kx: 0, kz: 0, dx: 0, dz: 0, blockT: 0, moving: 0 });
     this.want.mx = this.want.mz = 0;
     this.want.block = false;
+    // stop every clip (a finished death clip stays clamped at full weight and would blend into the new round's pose)
+    this.mixer.stopAllAction();
     this.cur = null;
     this.play('idle', 0);
   }

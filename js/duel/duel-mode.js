@@ -143,7 +143,7 @@ async function duelStart(online) {
     foe = DUEL.foe;
   // online: the opponent's copy follows the network and its owner judges our blows on it
   foe.remote = !!online;
-  me.onMove = online ? m => DUEL.net && DUEL.net.ch.send('mv', m) : null;
+  me.onMove = online ? m => DUEL.net && DUEL.net.ch.send('mv', Object.assign(m, { r: DUEL.round })) : null;
   foe.onHit = online
     ? r => {
         duelOutcome(foe, me, r);
@@ -554,12 +554,13 @@ async function duelStartOnline(room, host, foeName) {
   const alive = () => (N.lastRx = performance.now());
   ch.on('st', s => {
     alive();
+    if (s.r !== DUEL.round) return; // a late message from the previous round
     if (DUEL.foe && DUEL.phase !== 'over') DUEL.foe.netState(s);
     if (!host && s.ck !== undefined && DUEL.phase === 'fight') DUEL.clock = s.ck;
   })
     .on('mv', m => {
       alive();
-      if (DUEL.foe && DUEL.phase === 'fight') DUEL.foe.netMove(m);
+      if (DUEL.foe && DUEL.phase === 'fight' && m.r === DUEL.round) DUEL.foe.netMove(m);
     })
     .on('res', r => duelNetRes(r))
     .on('rd', d => {
@@ -619,6 +620,7 @@ function duelNetTick(dt) {
       mx: r(me.moving ? me.want.mx : 0),
       mz: r(me.moving ? me.want.mz : 0),
       ck: N.host ? r(DUEL.clock) : undefined,
+      r: DUEL.round,
     });
   }
   if (DUEL.phase !== 'over' && performance.now() - N.lastRx > 7000) duelForfeit('انقطع اتصال خصمك');
