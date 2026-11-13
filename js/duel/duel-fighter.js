@@ -9,6 +9,7 @@ const DM = {
   heavy: { t: 1.1, hitFrom: 0.62, hitTo: 0.78, dmg: 26, st: 28, reach: 2.45, arc: 1.25 },
   dodge: { t: 0.5, iFrom: 0.04, iTo: 0.38, st: 22, spd: 5.4 },
   parry: 0.2,
+  execHp: 30, // a heavy blow on a reeling fighter at or below this health is an execution
   blockCost: 12,
   hp: 100,
   stMax: 100,
@@ -230,6 +231,17 @@ class Duelist {
     this.onMove && this.onMove({ k: 'heavy' });
     return true;
   }
+  /** Pull a heavy swing back before it falls (a feint): costs stamina, leaves the opponent guessing. */
+  feint(net) {
+    if (this.act !== 'heavy' || this.t > DM.heavy.hitFrom - 0.08) return false;
+    if (!net) this.spend(10);
+    this.start('idle');
+    this.play('idle', 0.14);
+    this.sword.userData.steel.emissive.setRGB(0, 0, 0);
+    DS.dodge();
+    if (!net) this.onMove && this.onMove({ k: 'feint' });
+    return true;
+  }
   /** Roll: (lx, lz) = direction in the fighter's own frame (x right, z forward); none = backwards. */
   dodge(lx, lz, wx, wz) {
     if (!this.free || this.st < DM.dodge.st * 0.5) return false;
@@ -249,6 +261,7 @@ class Duelist {
   }
   /** Online, on the opponent's copy: start the move its owner just started (no stamina checks — the owner did them). */
   netMove(m) {
+    if (m.k === 'feint') return this.feint(true);
     this.st = DM.stMax;
     if (!this.free) this.start('idle');
     if (m.k === 'light') {
@@ -299,7 +312,8 @@ class Duelist {
     this.kx = (ax / L) * kb;
     this.kz = (az / L) * kb;
     goreHit(this, from, kind);
-    const cut = goreDecide(this, kind);
+    const cut = this.execute && !(this.cuts & 1) ? 'head' : goreDecide(this, kind);
+    this.execute = false;
     if (cut) goreCut(this, cut, from);
     if (this.hp <= 0) {
       this.start('dead');
@@ -464,6 +478,26 @@ function duelResolve(a, d, kind) {
     DS.block();
     return 'block';
   }
-  d.damage(M.dmg, a, kind);
-  return 'hit';
+  // a clean hit, and what made it special:
+  //  - an execution: a heavy blow on a reeling or felled fighter low on health ends it, head first
+  //  - a riposte: any blow on a fighter reeling (from your perfect parry or a broken guard) cuts 60% deeper
+  //  - a combo: the third light blow of a chain cuts 40% deeper and drives the foe back
+  const reeling = d.act === 'stagger' || d.act === 'knock' || d.act === 'hit';
+  let dmg = M.dmg,
+    tag = 'hit';
+  if (kind === 'heavy' && reeling && d.hp <= DM.execHp) {
+    d.execute = true;
+    dmg = d.hp;
+    tag = 'exec';
+  } else if (d.act === 'stagger') {
+    dmg *= 1.6;
+    tag = 'riposte';
+  } else if (kind === 'light' && a.combo > 0 && a.combo % 3 === 0) {
+    dmg *= 1.4;
+    tag = 'combo';
+  }
+  d.damage(dmg, a, tag === 'combo' ? 'heavy' : kind);
+  return tag;
 }
+/** Outcomes that drew blood. */
+const DUEL_HITS = { hit: 1, riposte: 1, combo: 1, exec: 1 };

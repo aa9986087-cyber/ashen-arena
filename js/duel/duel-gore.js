@@ -11,7 +11,7 @@ const GORE_PARTS = {
   legR: { bit: 16, bone: 'calf_r', r: 0.045 },
   handL: { bit: 32, bone: 'hand_l', r: 0.03 },
 };
-const GORE = { scene: null, drops: [], decals: [], pieces: [], jets: [], screen: [], decalN: 0 };
+const GORE = { scene: null, sparks: [], drops: [], decals: [], pieces: [], jets: [], screen: [], decalN: 0 };
 const GORE_MAXD = 600,
   GORE_MAXS = 260;
 const goreCol = hex => new THREE.Color(hex).convertSRGBToLinear();
@@ -75,6 +75,20 @@ function goreInit(scene) {
   };
   GORE.splatMesh = decal(false, GORE_MAXS);
   GORE.poolMesh = decal(true, 24);
+  // sparks of steel on steel: short bright streaks
+  GORE.sparkMesh = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshBasicMaterial({
+      color: 0xffd27a,
+      blending: THREE.AdditiveBlending,
+      transparent: true,
+      depthWrite: false,
+    }),
+    160
+  );
+  GORE.sparkMesh.frustumCulled = false;
+  GORE.sparkMesh.count = 0;
+  scene.add(GORE.sparkMesh);
   GORE.capMat = new THREE.MeshStandardMaterial({ color: goreCol(0x5c0606), roughness: 0.22, metalness: 0.1 });
   GORE.boneMat = new THREE.MeshStandardMaterial({ color: goreCol(0xe8dcc4), roughness: 0.5 });
   GORE.capGeo = new THREE.SphereGeometry(1, 10, 8);
@@ -83,6 +97,7 @@ function goreInit(scene) {
 /** Wipe every drop, stain, limb and screen splash (a new match). */
 function goreClear() {
   GORE.drops.length = 0;
+  GORE.sparks.length = 0;
   GORE.decals.length = 0;
   GORE.jets.length = 0;
   GORE.screen.length = 0;
@@ -92,6 +107,28 @@ function goreClear() {
   if (GORE.dropMesh) GORE.dropMesh.count = GORE.splatMesh.count = GORE.poolMesh.count = 0;
   for (const f of [DUEL.me, DUEL.foe]) if (f) f.blood = 0;
   goreScreenDraw(true);
+}
+/** Blades meet: a burst of sparks where the swords cross (between the two, at sword height). */
+function goreSparks(a, d, n) {
+  if (!GORE.scene) return;
+  const x = a.x + (d.x - a.x) * 0.55,
+    z = a.z + (d.z - a.z) * 0.55;
+  for (let i = 0; i < n; i++) {
+    if (GORE.sparks.length >= 160) GORE.sparks.shift();
+    const v = 2 + Math.random() * 5,
+      th = Math.random() * Math.PI * 2,
+      up = Math.random() * 0.9 + 0.1;
+    GORE.sparks.push({
+      x,
+      y: 1.25 + rand(-0.1, 0.15),
+      z,
+      vx: Math.cos(th) * v * (1 - up * 0.5),
+      vy: up * v,
+      vz: Math.sin(th) * v * (1 - up * 0.5),
+      t: 0,
+      life: 0.18 + Math.random() * 0.3,
+    });
+  }
 }
 /** One droplet. */
 function goreDrop(x, y, z, vx, vy, vz, s) {
@@ -504,6 +541,31 @@ function goreUpdate(dt) {
       p.vz *= -0.3;
     }
   }
+  // sparks: fly, fall, fade by shrinking
+  const SP = GORE.sparks,
+    km = GORE.sparkMesh;
+  for (let i = SP.length - 1; i >= 0; i--) {
+    const p = SP[i];
+    p.t += dt;
+    if (p.t > p.life) {
+      SP.splice(i, 1);
+      continue;
+    }
+    p.vy -= 9 * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.z += p.vz * dt;
+  }
+  for (let i = 0; i < SP.length; i++) {
+    const p = SP[i],
+      sp = Math.hypot(p.vx, p.vy, p.vz),
+      k = 1 - p.t / p.life;
+    gQ.setFromUnitVectors(gUp, gV.set(p.vx, p.vy, p.vz).divideScalar(sp || 1));
+    gM.compose(gV.set(p.x, p.y, p.z), gQ, gS.set(0.012 * k, 0.03 + sp * 0.022 * k, 0.012 * k));
+    km.setMatrixAt(i, gM);
+  }
+  km.count = SP.length;
+  km.instanceMatrix.needsUpdate = true;
   // write the instances
   const dm = GORE.dropMesh;
   for (let i = 0; i < D.length; i++) {

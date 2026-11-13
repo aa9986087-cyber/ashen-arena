@@ -64,7 +64,7 @@ function duelPrepare() {
 /** Compile every shader of the arena (a few objects at a time, between frames) and upload every texture
     (one draw into a single pixel of the screen), so the first frame inside the arena has nothing left to prepare. */
 async function duelWarm() {
-  const pools = GORE.dropMesh ? [GORE.dropMesh, GORE.splatMesh, GORE.poolMesh] : [];
+  const pools = GORE.dropMesh ? [GORE.dropMesh, GORE.splatMesh, GORE.poolMesh, GORE.sparkMesh] : [];
   const cam = DUEL.cam,
     items = [];
   DUEL.scene.traverse(o => o.material && o.visible && items.push(o));
@@ -250,9 +250,17 @@ function duelFloat(t, cls) {
 }
 function duelOutcome(att, def, r) {
   const mine = att === DUEL.me;
-  if (r === 'hit') {
-    const heavy = att.act === 'heavy';
-    DUEL.shake = Math.max(DUEL.shake, heavy ? 0.35 : 0.18);
+  if (DUEL_HITS[r]) {
+    const heavy = att.act === 'heavy' || r !== 'hit';
+    DUEL.shake = Math.max(DUEL.shake, r === 'exec' ? 0.5 : heavy ? 0.35 : 0.18);
+    // hit-stop: the blade bites and the world holds for a beat
+    DUEL.hitStop = r === 'exec' ? 0.16 : heavy ? 0.09 : 0.05;
+    if (r === 'exec') {
+      DUEL.slow = 1.8;
+      duelFloat(mine ? 'إعدام! ☠️' : 'أُعدمت ☠️', 'brk');
+      DS.crowd(0.32);
+    } else if (r === 'riposte') duelFloat(mine ? 'ضربة مرتدة! ⚡' : 'ضربة مرتدة عليك', mine ? 'par' : 'brk');
+    else if (r === 'combo') duelFloat(mine ? 'كومبو ×3 🔥' : 'كومبو عليك', mine ? 'par' : 'brk');
     if (!mine) {
       pop($('dHurt'), 'on');
       goreScreen(heavy ? 4 : 2);
@@ -262,12 +270,19 @@ function duelOutcome(att, def, r) {
       Math.random() < (heavy ? 1 : 0.45)
     )
       goreScreen(heavy ? 2 : 1, true); // the spray reaches your eyes
-  } else if (r === 'block') duelFloat('صد!', 'blk');
-  else if (r === 'parry') {
-    duelFloat('صد مثالي!', 'par');
+  } else if (r === 'block') {
+    duelFloat('صد!', 'blk');
+    goreSparks(att, def, 16);
+    DUEL.hitStop = 0.04;
+  } else if (r === 'parry') {
+    duelFloat(def === DUEL.me ? 'صد مثالي! اضرب الحين ⚡' : 'صد مثالي!', 'par');
+    goreSparks(att, def, 42);
     DUEL.slow = 0.35;
+    DUEL.hitStop = 0.08;
   } else if (r === 'break') {
     duelFloat('كسر الصد!', 'brk');
+    goreSparks(att, def, 28);
+    DUEL.hitStop = 0.07;
     DUEL.shake = 0.3;
     if (!mine) goreScreen(1);
   } else if (r === 'miss' && !mine) duelFloat('تفادي!', 'blk');
@@ -322,7 +337,11 @@ function duelInput(dt = 0) {
   }
   me.want.mx = mx;
   me.want.mz = mz;
-  me.want.block = !!(k.ShiftLeft || k.ShiftRight || k.KeyL || DUEL.blockHeld || DUEL.rmb);
+  const blockNow = !!(k.ShiftLeft || k.ShiftRight || k.KeyL || DUEL.blockHeld || DUEL.rmb);
+  // pressing guard while a heavy swing is still rising pulls it back: a feint
+  if (blockNow && !DUEL.blockWas && me.act === 'heavy' && me.feint()) duelFloat('خدعة! 🎭', 'blk');
+  DUEL.blockWas = blockNow;
+  me.want.block = blockNow;
   // attack button: release before DUEL_HOLD = light, keep holding = heavy
   if (DUEL.atkDown >= 0 && !DUEL.heavyFired && performance.now() - DUEL.atkDown > DUEL_HOLD * 1000) {
     DUEL.heavyFired = true;
@@ -577,6 +596,10 @@ function duelFrame(rdt) {
 /** One tick of duel rules (no drawing): phases, the opponent, both fighters. */
 function duelStep(rdt) {
   let dt = rdt;
+  if (DUEL.hitStop > 0) {
+    DUEL.hitStop -= rdt;
+    dt *= 0.06;
+  }
   if (DUEL.slow > 0) {
     DUEL.slow -= rdt;
     dt *= 0.35;
