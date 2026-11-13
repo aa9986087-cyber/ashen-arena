@@ -8,27 +8,53 @@ async function liveConnect() {
   if (LIVE.ch || LIVE.busy) return;
   LIVE.busy = true;
   try {
-    LIVE.me = { id: myPid(), n: S.name || 'لاعب', k: 'idle' };
+    // presence is joined once ("I'm online") and never re-tracked: Supabase rate-limits presence updates hard.
+    // What each player is doing travels as an ordinary broadcast ('sts') every few seconds instead.
+    LIVE.me = { id: myPid(), n: S.name || 'لاعب' };
+    LIVE.st = {};
+    LIVE.peers = [];
     LIVE.ch = await netJoin('ashen-live', LIVE.me);
     LIVE.ch.onPresence(list => {
-      LIVE.list = list;
-      liveBadge();
-      if (!$('liveScr').hidden) liveDraw();
+      LIVE.peers = list;
+      liveMerge();
     });
-    LIVE.ch.on('watch', d => d.to === myPid() && liveWatched());
+    LIVE.ch
+      .on('sts', d => {
+        if (!d || !d.id || d.id === myPid()) return;
+        LIVE.st[d.id] = Object.assign(d, { t: Date.now() });
+        liveMerge();
+      })
+      .on('ask', () => (LIVE.force = true)) // someone opened the live list: answer at once
+      .on('watch', d => d.to === myPid() && liveWatched());
   } catch (e) {}
   LIVE.busy = false;
 }
-/** Update what we show the others (throttled; a change of kind goes out at once). */
+/** Online players (presence) joined with what they last said they were doing. */
+function liveMerge() {
+  const now = Date.now();
+  for (const id in LIVE.st) if (now - LIVE.st[id].t > 16000) delete LIVE.st[id];
+  const seen = new Set();
+  LIVE.list = (LIVE.peers || []).map(p => {
+    seen.add(p.id);
+    return Object.assign({ k: 'idle' }, p, LIVE.st[p.id] || {});
+  });
+  for (const id in LIVE.st) if (!seen.has(id)) LIVE.list.push(LIVE.st[id]); // heard from, even if presence lagged
+  liveBadge();
+  if (!$('liveScr').hidden) liveDraw();
+}
+/** Tell the others what we are doing: on a change at once, otherwise every 5 s (or when someone asks). */
 function liveSet(o) {
-  if (!LIVE.ch || !LIVE.me) return;
-  const now = performance.now(),
-    kindChanged = o.k !== LIVE.me.k;
-  if (!kindChanged && now - LIVE.trackT < 6000) return;
+  if (!LIVE.ch) return;
+  const now = performance.now();
+  if (now - (LIVE.mergeT || 0) > 5000) {
+    LIVE.mergeT = now;
+    liveMerge(); // drop players that went quiet
+  }
+  if (o.k === LIVE.k && !LIVE.force && now - LIVE.trackT < 5000) return;
   LIVE.trackT = now;
-  LIVE.ch.track(
-    Object.assign({ id: myPid(), n: S.name || 'لاعب' }, o, o.k === 'idle' ? { room: null, lvl: null } : {})
-  );
+  LIVE.force = false;
+  LIVE.k = o.k;
+  LIVE.ch.send('sts', Object.assign({ id: myPid(), n: S.name || 'لاعب' }, o));
 }
 function liveBadge() {
   const n = LIVE.list.length,
@@ -43,7 +69,10 @@ function liveOpen() {
   AU.play('select');
   go('liveScr');
   LIVE.sig = null;
-  liveConnect().then(liveDraw);
+  liveConnect().then(() => {
+    LIVE.ch && LIVE.ch.send('ask', {});
+    liveDraw();
+  });
   liveDraw();
 }
 function liveDraw() {
