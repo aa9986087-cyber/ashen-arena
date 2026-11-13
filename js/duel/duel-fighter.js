@@ -255,8 +255,8 @@ class Duelist {
       Chamber (knee up, bent), snap it straight forward, hold, put it down. */
   kickPose() {
     const [th, ca, sp] = this.kickBones;
-    // a runner leans into the stride
-    if (sp && this.lean > 0.01) {
+    // a runner leans into the stride (only without the sprint clip: that one leans by itself)
+    if (sp && this.lean > 0.01 && !this.acts.run) {
       gKq.setFromAxisAngle(gKx, -0.42 * this.lean);
       sp.quaternion.multiply(gKq);
       this.kickDirty = true;
@@ -498,9 +498,12 @@ class Duelist {
       vz = (fz * mz + fx * mx) * sp;
       this.moving = Math.min(1, m) * (mz < -0.1 ? -1 : 1);
       if (this.act === 'idle') {
-        if (m > 0.15) this.play('walk', 0.15, 0);
+        // a real sprint clip when running (Universal Animation Library), the walk otherwise
+        const run = this.running && this.acts.run;
+        if (m > 0.15) this.play(run ? 'run' : 'walk', run ? 0.2 : 0.15, 0);
         else this.play('idle', 0.2, 0);
-        if (m > 0.15) this.cur.timeScale = (mz < -0.1 ? -1 : 1) * clamp(m, 0.5, 1) * (this.running ? 2.05 : 1.1);
+        if (m > 0.15)
+          this.cur.timeScale = run ? 1.05 : (mz < -0.1 ? -1 : 1) * clamp(m, 0.5, 1) * (this.running ? 2.05 : 1.1);
       }
     } else {
       this.moving = 0;

@@ -29,7 +29,7 @@ const MODEL_FILES = {
   'boss-flame.glb': { to: 'boss5', size: 0.85 }, // wide wings
 };
 /** Bump to make browsers fetch updated model files. */
-const MODEL_VER = 7;
+const MODEL_VER = 8;
 const lin2s = v => (v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
 function texSampler(tex) {
   try {
