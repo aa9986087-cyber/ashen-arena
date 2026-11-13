@@ -26,6 +26,13 @@
   --sb: env(safe-area-inset-bottom, 0px);
   color-scheme: dark;
 }
+/* Samsung Internet (and Chrome's auto-dark) recolour pages unless the stylesheet itself handles dark mode:
+   this block tells them the game already is dark, so the gold and orange stay as designed. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: only dark;
+  }
+}
 * {
   box-sizing: border-box;
   margin: 0;
