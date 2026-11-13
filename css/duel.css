@@ -487,3 +487,20 @@ body.mouse #dActs {
   white-space: pre-line;
   text-align: center;
 }
+
+/* developer: delete buttons in the duel record */
+.dmDel {
+  flex: none;
+  width: 34px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 90, 74, 0.6);
+  background: rgba(120, 20, 20, 0.5);
+  color: #fff;
+  font-size: 15px;
+}
+.dmWipe {
+  margin-top: 10px;
+  width: 100%;
+  border-color: rgba(255, 90, 74, 0.7);
+}

@@ -143,7 +143,7 @@ function lobbyAsk(show, title, sub, yesT, noT, onNo, onYes) {
 async function duelRecord(a, b, winner, score) {
   if (NET_LOCAL) {
     const L = JSON.parse(localStorage.getItem('ashen_duels_local') || '[]');
-    L.unshift({ a, b, winner, score, created_at: new Date().toISOString() });
+    L.unshift({ id: Date.now(), a, b, winner, score, created_at: new Date().toISOString() });
     localStorage.setItem('ashen_duels_local', JSON.stringify(L.slice(0, 300)));
     return;
   }
@@ -161,7 +161,7 @@ async function lobbyDrawRec() {
   try {
     rows = NET_LOCAL
       ? JSON.parse(localStorage.getItem('ashen_duels_local') || '[]')
-      : await api('/rest/v1/duels?select=a,b,winner,score,created_at&order=id.desc&limit=300');
+      : await api('/rest/v1/duels?select=id,a,b,winner,score,created_at&order=id.desc&limit=300');
   } catch (e) {
     B.textContent = 'السجل غير متاح الحين';
     return;
@@ -190,6 +190,7 @@ async function lobbyDrawRec() {
       const r = el('div', 'dmPair' + (p.x === S.name || p.y === S.name ? ' me' : ''));
       // right-to-left row: x sits on the right, so its count is the right-hand number
       r.append(el('span', '', p.x), el('b', '', p.wy + ' : ' + p.wx), el('span', '', p.y));
+      if (S.dev) r.append(duelDelBtn('كل مبارزات ' + p.x + ' و ' + p.y, { a: p.x, b: p.y }));
       B.appendChild(r);
     });
   B.appendChild(el('h5', 'dmH', 'آخر المبارزات'));
@@ -200,8 +201,73 @@ async function lobbyDrawRec() {
       el('b', '', '🏆 ' + r.winner + ' (' + r.score + ')'),
       el('small', '', chatAgo(r.created_at))
     );
+    if (S.dev) d.append(duelDelBtn('مبارزة ' + r.a + ' ضد ' + r.b, { ids: [r.id] }));
     B.appendChild(d);
   });
+  if (S.dev) {
+    const w = el('button', 'btn sm dmWipe', '🧨 امسح سجل المبارزات كله');
+    w.onclick = () => duelDelConfirm(w, 'متأكد؟ اضغط مرة ثانية', {});
+    B.appendChild(w);
+  }
+}
+
+/* ---- developer: delete records (the server checks the developer code) */
+function duelDelBtn(what, q) {
+  const b = el('button', 'dmDel', '🗑');
+  b.title = 'احذف ' + what;
+  b.onclick = () => duelDelConfirm(b, '⚠️', q);
+  return b;
+}
+/** Two taps: the first arms the button, the second deletes. */
+function duelDelConfirm(b, armedText, q) {
+  if (!b.dataset.armed) {
+    b.dataset.armed = b.textContent;
+    b.textContent = armedText;
+    setTimeout(() => {
+      if (b.dataset.armed) {
+        b.textContent = b.dataset.armed;
+        delete b.dataset.armed;
+      }
+    }, 3000);
+    return;
+  }
+  delete b.dataset.armed;
+  duelAdminDelete(q);
+}
+async function duelAdminDelete(q) {
+  if (NET_LOCAL) {
+    let L = JSON.parse(localStorage.getItem('ashen_duels_local') || '[]');
+    const before = L.length;
+    L = q.ids
+      ? L.filter(r => !q.ids.includes(r.id))
+      : q.a
+        ? L.filter(r => !([r.a, r.b].sort().join('|') === [q.a, q.b].sort().join('|')))
+        : [];
+    localStorage.setItem('ashen_duels_local', JSON.stringify(L));
+    toast('🗑 انحذفت ' + (before - L.length) + ' مبارزة');
+    return lobbyDrawRec();
+  }
+  let key = S.devKey;
+  if (!key) key = (prompt('اكتب كود المطور للتأكيد') || '').toUpperCase().replace(/\s+/g, '');
+  if (!key) return;
+  try {
+    const n = await api('/rest/v1/rpc/admin_delete_duels', {
+      method: 'POST',
+      body: JSON.stringify({ p_key: key, p_ids: q.ids || null, p_a: q.a || null, p_b: q.b || null }),
+    });
+    S.devKey = key;
+    save();
+    toast('🗑 انحذفت ' + (n | 0) + ' مبارزة');
+  } catch (e) {
+    const m = String(e.message);
+    if (m.includes('400')) {
+      delete S.devKey;
+      save();
+      toast('كود المطور غير صحيح');
+    } else if (m.includes('404')) toast('خاصية الحذف ما انفعّلت في السيرفر للحين');
+    else toast('ما انحذف، تأكد من الإنترنت');
+  }
+  lobbyDrawRec();
 }
 $('dmBack').onclick = () => {
   lobbyClose();
