@@ -380,3 +380,110 @@ body.mouse #dActs {
   margin-top: 4px;
   color: #ffe2a8;
 }
+
+/* the ⚔️ menu: players online, the challenge dialog, the record */
+#dmTrain {
+  width: 100%;
+  font-size: 20px;
+  padding: 14px;
+}
+.dmP,
+.dmPair,
+.dmLast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(241, 231, 208, 0.15);
+}
+.dmP span {
+  flex: 1;
+  font-weight: 800;
+  font-size: 17px;
+}
+.dmPair span {
+  flex: 1;
+  font-weight: 700;
+}
+.dmPair span:last-child {
+  text-align: left;
+}
+.dmPair b {
+  font-family: var(--display);
+  font-size: 22px;
+  color: var(--gold);
+  min-width: 70px;
+  text-align: center;
+  direction: ltr;
+}
+.dmPair.me {
+  border-color: rgba(242, 160, 70, 0.6);
+  background: rgba(120, 60, 20, 0.35);
+}
+.dmLast {
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+.dmLast span {
+  flex: 1;
+}
+.dmLast b {
+  color: #ffe2a8;
+}
+.dmLast small {
+  opacity: 0.6;
+}
+.dmH {
+  margin: 12px 0 6px;
+  color: #f6c45a;
+  font-size: 14px;
+}
+#dmAsk {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 5, 12, 0.6);
+}
+#dmAsk[hidden] {
+  display: none;
+}
+.dmBox {
+  width: min(92vw, 380px);
+  padding: 22px 18px;
+  border-radius: 18px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(40, 30, 50, 0.98), rgba(16, 12, 24, 0.98));
+  border: 2px solid rgba(246, 196, 90, 0.7);
+  box-shadow: 0 0 40px rgba(242, 120, 40, 0.35);
+  animation: fadeUp 0.3s;
+}
+.dmBox b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 30px;
+  color: var(--gold);
+}
+.dmBox p {
+  margin: 8px 0 16px;
+  color: #ffe2a8;
+}
+.dmRow {
+  display: flex;
+  gap: 10px;
+}
+.dmRow .btn {
+  flex: 1;
+}
+.dmRow .btn[hidden] {
+  display: none;
+}
+#dOver p {
+  white-space: pre-line;
+  text-align: center;
+}

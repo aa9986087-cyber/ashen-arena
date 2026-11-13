@@ -108,7 +108,7 @@ function duelArena() {
 }
 
 /* ---- enter / leave */
-async function duelStart() {
+async function duelStart(online) {
   AU.init();
   hideScreens();
   $('hud').hidden = true;
@@ -139,17 +139,42 @@ async function duelStart() {
     return;
   }
   if (!DUEL.on) return;
-  DUEL.bot = new DuelBot(DUEL.foe, DUEL.me);
-  $('dLoad').hidden = true;
+  const me = DUEL.me,
+    foe = DUEL.foe;
+  // online: the opponent's copy follows the network and its owner judges our blows on it
+  foe.remote = !!online;
+  me.onMove = online ? m => DUEL.net && DUEL.net.ch.send('mv', m) : null;
+  foe.onHit = online
+    ? r => {
+        duelOutcome(foe, me, r);
+        DUEL.net && DUEL.net.ch.send('res', { o: r, k: foe.act });
+      }
+    : r => duelOutcome(foe, me, r);
+  DUEL.bot = online ? null : new DuelBot(foe, me);
   $('dNameMe').textContent = S.name || 'أنت';
-  $('dNameFoe').textContent = 'خصم التدريب';
+  $('dNameFoe').textContent = online ? DUEL.net.foeName : 'خصم التدريب';
+  $('dAgain').hidden = !!online;
   DUEL.score = [0, 0];
   DUEL.round = 0;
-  duelRound();
   MUS.on = true;
   MUS.boss = true;
+  if (online) {
+    duelMsg('بانتظار الخصم…', DUEL.net.foeName);
+    duelPlace();
+    return; // the handshake starts round 1
+  }
+  $('dLoad').hidden = true;
+  duelRound();
 }
 function duelExit() {
+  if (DUEL.net) {
+    try {
+      DUEL.net.ch.send('bye', {});
+    } catch (e) {}
+    const ch = DUEL.net.ch;
+    setTimeout(() => ch.close(), 300);
+    DUEL.net = null;
+  }
   DUEL.on = false;
   duelUnlock();
   $('duel').hidden = true;
@@ -160,16 +185,26 @@ function duelExit() {
   G.state = 'menu';
   go('menu');
 }
-function duelRound() {
-  DUEL.round++;
-  DUEL.me.reset(0, -3, 0);
-  DUEL.foe.reset(0, 3, Math.PI);
+/** Starting spots: the host (or the training player) on the south side, the guest on the north. */
+function duelPlace() {
+  const south = !DUEL.net || DUEL.net.host,
+    A = [0, -3, 0],
+    B = [0, 3, Math.PI];
+  DUEL.me.reset(...(south ? A : B));
+  DUEL.foe.reset(...(south ? B : A));
+}
+function duelRound(n) {
+  DUEL.round = n || DUEL.round + 1;
+  duelPlace();
   DUEL.clock = DUEL_ROUND;
   DUEL.phase = 'intro';
   DUEL.phaseT = 2.4;
+  DUEL.saidFight = false;
+  $('dLoad').hidden = true;
   duelMsg('الجولة ' + DUEL.round, DUEL.score[0] + ' - ' + DUEL.score[1]);
   DS.round(DUEL.round, DUEL.score[0] === DUEL_WIN - 1 && DUEL.score[1] === DUEL_WIN - 1);
   duelPips();
+  if (DUEL.net && DUEL.net.host) DUEL.net.ch.send('rd', { n: DUEL.round });
 }
 
 /* ---- feedback */
@@ -416,6 +451,7 @@ function duelFrame(rdt) {
   }
   duelInput();
   duelStep(rdt);
+  if (DUEL.net && DUEL.net.ready) duelNetTick(rdt);
   for (const t of DUEL.torches) {
     const k = 0.85 + Math.random() * 0.3;
     t.scale.setScalar(k);
@@ -435,10 +471,13 @@ function duelStep(rdt) {
   DUEL.shake = Math.max(0, DUEL.shake - rdt * 1.6);
   const me = DUEL.me,
     foe = DUEL.foe;
+  const judge = !DUEL.net || DUEL.net.host;
   if (DUEL.phase === 'fight') {
-    DUEL.bot.update(dt);
-    DUEL.clock -= dt;
-    if (me.hp <= 0 || foe.hp <= 0 || DUEL.clock <= 0) duelRoundEnd();
+    if (DUEL.bot) DUEL.bot.update(dt);
+    if (judge) {
+      DUEL.clock -= dt;
+      if (me.hp <= 0 || foe.hp <= 0 || DUEL.clock <= 0) duelRoundEnd();
+    }
   } else {
     me.want.mx = me.want.mz = foe.want.mx = foe.want.mz = 0;
     me.want.block = foe.want.block = false;
@@ -452,19 +491,27 @@ function duelStep(rdt) {
       DUEL.phase = 'fight';
       DUEL.saidFight = false;
     }
-    if (DUEL.phase === 'ko' && DUEL.phaseT <= 0) {
-      if (DUEL.score[0] >= DUEL_WIN || DUEL.score[1] >= DUEL_WIN) duelMatchEnd();
-      else duelRound();
+    if (DUEL.phase === 'ko' && DUEL.phaseT <= 0 && judge) {
+      if (DUEL.score[0] >= DUEL_WIN || DUEL.score[1] >= DUEL_WIN) {
+        duelMatchEnd();
+        if (DUEL.net) DUEL.net.ch.send('end', {});
+      } else duelRound();
     }
   }
   me.update(dt, foe);
   foe.update(dt, me);
 }
-function duelRoundEnd() {
+function duelRoundEnd(told) {
   const me = DUEL.me,
     foe = DUEL.foe;
-  const meWon = foe.hp <= 0 || (me.hp > 0 && DUEL.clock <= 0 && me.hp > foe.hp),
+  let meWon = foe.hp <= 0 || (me.hp > 0 && DUEL.clock <= 0 && me.hp > foe.hp),
     draw = DUEL.clock <= 0 && me.hp === foe.hp;
+  if (told) {
+    // the guest: the host's verdict, seen from our side
+    meWon = told.w === 'g';
+    draw = told.w === 'd';
+    DUEL.clock = told.to ? 0 : DUEL.clock;
+  } else if (DUEL.net) DUEL.net.ch.send('ko', { w: draw ? 'd' : meWon ? 'h' : 'g', to: DUEL.clock <= 0 ? 1 : 0 });
   if (!draw) DUEL.score[meWon ? 0 : 1]++;
   DUEL.phase = 'ko';
   DUEL.phaseT = 2.6;
@@ -476,13 +523,130 @@ function duelRoundEnd() {
   if (DUEL.clock <= 0) dPlay('v_time_over', 1, 1, 0.3);
   else if (draw) dPlay('v_its_a_tie', 1, 1, 0.3);
 }
-function duelMatchEnd() {
+function duelMatchEnd(why) {
+  if (DUEL.phase === 'over') return;
   const won = DUEL.score[0] >= DUEL_WIN;
+  if (DUEL.net && DUEL.net.host && !why) {
+    const me = S.name || 'لاعب',
+      foe = DUEL.net.foeName;
+    duelRecord(me, foe, won ? me : foe, DUEL.score[0] + '-' + DUEL.score[1]);
+  }
   DUEL.phase = 'over';
   $('dOver').hidden = false;
   $('dOverT').textContent = won ? '🏆 انتصرت!' : '💀 هُزمت';
-  $('dOverS').textContent = DUEL.score[0] + ' - ' + DUEL.score[1];
+  $('dOverS').textContent = (why ? why + '\n' : '') + DUEL.score[0] + ' - ' + DUEL.score[1];
   dPlay(won ? 'v_you_win' : 'v_you_lose', 1);
   DS.crowd(won ? 0.28 : 0.12);
 }
-$('mDuel').onclick = () => duelStart();
+
+/* ---- online match */
+/** Join the match channel, load the arena, then shake hands: the guest says hi until the host answers go. */
+async function duelStartOnline(room, host, foeName) {
+  let ch;
+  try {
+    ch = await netJoin('duel-' + room);
+  } catch (e) {
+    toast('ما قدرت أتصل بخصمك');
+    go('menu');
+    return;
+  }
+  const N = (DUEL.net = { ch, host, room, foeName, lastRx: performance.now(), sendT: 0, ready: false });
+  const alive = () => (N.lastRx = performance.now());
+  ch.on('st', s => {
+    alive();
+    if (DUEL.foe && DUEL.phase !== 'over') DUEL.foe.netState(s);
+    if (!host && s.ck !== undefined && DUEL.phase === 'fight') DUEL.clock = s.ck;
+  })
+    .on('mv', m => {
+      alive();
+      if (DUEL.foe && DUEL.phase === 'fight') DUEL.foe.netMove(m);
+    })
+    .on('res', r => duelNetRes(r))
+    .on('rd', d => {
+      alive();
+      if (!host && DUEL.ready) {
+        N.ready = true;
+        duelRound(d.n);
+      }
+    })
+    .on('ko', d => !host && DUEL.phase === 'fight' && duelRoundEnd(d))
+    .on('end', () => !host && duelMatchEnd())
+    .on('hi', () => {
+      alive();
+      if (host && DUEL.ready && DUEL.on) {
+        ch.send('go', {});
+        if (!N.ready) {
+          N.ready = true;
+          duelRound(1);
+        }
+      }
+    })
+    .on('go', () => {
+      alive();
+      N.ready = true;
+    })
+    .on('bye', () => duelForfeit('خصمك طلع من المبارزة'));
+  await duelStart(true);
+  if (!DUEL.on || DUEL.net !== N) return;
+  N.lastRx = performance.now();
+  if (!host) {
+    const hi = setInterval(() => {
+      if (DUEL.net !== N || N.ready) return clearInterval(hi);
+      ch.send('hi', {});
+    }, 400);
+  }
+  setTimeout(() => {
+    if (DUEL.net === N && !N.ready) {
+      toast('خصمك ما وصل للمبارزة');
+      duelExit();
+    }
+  }, 20000);
+}
+/** Send our fighter 20 times a second; give up on an opponent silent for 7 s. */
+function duelNetTick(dt) {
+  const N = DUEL.net,
+    me = DUEL.me;
+  if ((N.sendT -= dt) <= 0) {
+    N.sendT = 0.05;
+    const r = v => Math.round(v * 100) / 100;
+    N.ch.send('st', {
+      x: r(me.x),
+      z: r(me.z),
+      f: r(me.face),
+      a: me.act,
+      hp: Math.round(me.hp),
+      st: Math.round(me.st),
+      mx: r(me.moving ? me.want.mx : 0),
+      mz: r(me.moving ? me.want.mz : 0),
+      ck: N.host ? r(DUEL.clock) : undefined,
+    });
+  }
+  if (DUEL.phase !== 'over' && performance.now() - N.lastRx > 7000) duelForfeit('انقطع اتصال خصمك');
+}
+/** The defender judged our blow: apply what it means for us (the attacker). */
+function duelNetRes(r) {
+  const me = DUEL.me;
+  if (!me || DUEL.phase !== 'fight') return;
+  if (r.o === 'parry') {
+    me.stagger(r.k === 'heavy' ? 1.1 : 0.9);
+    DS.parry();
+  } else if (r.o === 'block') {
+    me.kx -= Math.sin(me.face) * 2.5;
+    me.kz -= Math.cos(me.face) * 2.5;
+    DS.block();
+  } else if (r.o === 'break') DS.breakGuard();
+  duelOutcome(me, DUEL.foe, r.o);
+}
+/** The opponent left: we win. */
+function duelForfeit(why) {
+  if (!DUEL.on || DUEL.phase === 'over') return;
+  DUEL.score[0] = DUEL_WIN;
+  duelPips();
+  duelMatchEnd(why);
+}
+// closing the tab mid-match: tell the opponent at once (otherwise it waits for the 7 s silence)
+addEventListener('pagehide', () => {
+  try {
+    if (DUEL.net) DUEL.net.ch.send('bye', {});
+  } catch (e) {}
+});

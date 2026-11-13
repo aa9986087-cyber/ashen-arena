@@ -164,6 +164,7 @@ class Duelist {
     this.reset(0, 0, 0);
   }
   reset(x, z, face) {
+    Object.assign(this, { nx: x, nz: z, nf: face, nmx: 0, nmz: 0 });
     Object.assign(this, { x, z, face, hp: DM.hp, st: DM.stMax, stT: 0, act: 'idle', t: 0, stun: 0, hitDone: false });
     Object.assign(this, { combo: 0, comboT: 0, kx: 0, kz: 0, dx: 0, dz: 0, blockT: 0, moving: 0 });
     this.want.mx = this.want.mz = 0;
@@ -210,6 +211,7 @@ class Duelist {
     if (this.comboT <= 0) this.combo = 0;
     this.play(['atk1', 'atk2', 'atk3'][this.combo++ % 3], 0.08, DM.light.t * 1.15, true);
     DS.light(this);
+    this.onMove && this.onMove({ k: 'light', c: this.combo });
     return true;
   }
   heavy() {
@@ -218,23 +220,63 @@ class Duelist {
     this.start('heavy');
     this.play('heavy', 0.1, DM.heavy.t * 1.6, true);
     DS.heavy(this);
+    this.onMove && this.onMove({ k: 'heavy' });
     return true;
   }
   /** Roll: (lx, lz) = direction in the fighter's own frame (x right, z forward); none = backwards. */
-  dodge(lx, lz) {
+  dodge(lx, lz, wx, wz) {
     if (!this.free || this.st < DM.dodge.st * 0.5) return false;
     if (!lx && !lz) lz = -1;
     const L = Math.hypot(lx, lz) || 1,
       f = this.face,
       fx = Math.sin(f),
       fz = Math.cos(f);
-    this.dx = (fx * lz - fz * lx) / L;
-    this.dz = (fz * lz + fx * lx) / L;
+    this.dx = wx !== undefined ? wx : (fx * lz - fz * lx) / L;
+    this.dz = wz !== undefined ? wz : (fz * lz + fx * lx) / L;
     this.spend(DM.dodge.st);
     this.start('dodge');
     this.play('roll', 0.06, DM.dodge.t, true);
     DS.dodge();
+    this.onMove && this.onMove({ k: 'dodge', dx: +this.dx.toFixed(3), dz: +this.dz.toFixed(3) });
     return true;
+  }
+  /** Online, on the opponent's copy: start the move its owner just started (no stamina checks — the owner did them). */
+  netMove(m) {
+    this.st = DM.stMax;
+    if (!this.free) this.start('idle');
+    if (m.k === 'light') {
+      this.combo = Math.max(0, (m.c | 0) - 1);
+      this.comboT = 1;
+      this.light();
+    } else if (m.k === 'heavy') this.heavy();
+    else if (m.k === 'dodge') this.dodge(0, -1, m.dx, m.dz);
+  }
+  /** Online, on the opponent's copy: the owner's broadcast state (position, health, stamina, guard, reactions). */
+  netState(s) {
+    this.nx = s.x;
+    this.nz = s.z;
+    this.nf = s.f;
+    this.nmx = s.mx;
+    this.nmz = s.mz;
+    this.hp = s.hp;
+    this.st = s.st;
+    this.want.block = s.a === 'block';
+    if (s.a === this.act) return;
+    if (s.a === 'dead') {
+      this.start('dead');
+      this.play('death', 0.1, 0, true);
+      DS.death(this);
+    } else if (s.a === 'hit' || s.a === 'knock') {
+      this.start(s.a);
+      this.stun = s.a === 'knock' ? 0.75 : 0.4;
+      this.play(s.a, 0.05, this.stun * 1.4, true);
+      DS.hurt(this, s.a === 'knock');
+    } else if (s.a === 'stagger') this.stagger(0.9);
+    else if (
+      s.a === 'idle' &&
+      (this.act === 'hit' || this.act === 'knock' || this.act === 'stagger' || this.act === 'dead')
+    )
+      this.start('idle');
   }
   /** Took a hit (kind: light | heavy | chip). */
   damage(v, from, kind) {
@@ -267,8 +309,15 @@ class Duelist {
     if ((this.stT -= dt) <= 0)
       this.st = Math.min(DM.stMax, this.st + DM.stRegen * dt * (this.act === 'block' ? 0.5 : 1));
     // lock-on: always turn toward the opponent, slowly while swinging (side-steps can dodge a heavy)
-    const turn =
-      this.act === 'light' ? 3 : this.act === 'heavy' ? 1.8 : this.act === 'dodge' || this.act === 'dead' ? 0 : 10;
+    const turn = this.remote
+      ? 0
+      : this.act === 'light'
+        ? 3
+        : this.act === 'heavy'
+          ? 1.8
+          : this.act === 'dodge' || this.act === 'dead'
+            ? 0
+            : 10;
     this.face += clamp(wrapAng(Math.atan2(foe.x - this.x, foe.z - this.z) - this.face), -turn * dt, turn * dt);
     const fx = Math.sin(this.face),
       fz = Math.cos(this.face);
@@ -283,8 +332,8 @@ class Duelist {
     } else if (!this.want.block && this.act === 'block') this.start('idle');
     if (this.act === 'block') this.blockT += dt;
     if (this.free) {
-      let mx = this.want.mx,
-        mz = this.want.mz;
+      let mx = this.remote ? this.nmx || 0 : this.want.mx,
+        mz = this.remote ? this.nmz || 0 : this.want.mz;
       const m = Math.hypot(mx, mz);
       if (m > 1) {
         mx /= m;
@@ -311,7 +360,13 @@ class Duelist {
       this.act === 'heavy' && this.t < DM.heavy.hitTo ? Math.min(1, this.t / DM.heavy.hitFrom) * 0.18 : 0,
       0
     );
-    if ((this.act === 'light' || this.act === 'heavy') && !this.hitDone && this.t >= M.hitFrom && this.t <= M.hitTo) {
+    if (
+      !foe.remote &&
+      (this.act === 'light' || this.act === 'heavy') &&
+      !this.hitDone &&
+      this.t >= M.hitFrom &&
+      this.t <= M.hitTo
+    ) {
       const dx = foe.x - this.x,
         dz = foe.z - this.z;
       if (Math.hypot(dx, dz) < M.reach && Math.abs(wrapAng(Math.atan2(dx, dz) - this.face)) < M.arc) {
@@ -326,6 +381,19 @@ class Duelist {
     }
     if ((this.act === 'hit' || this.act === 'knock' || this.act === 'stagger') && this.t >= this.stun)
       this.start('idle');
+    if (this.remote) {
+      // the opponent's copy glides to where its owner says it is
+      const k = Math.min(1, dt * 14);
+      if (this.nx !== undefined) {
+        this.x += (this.nx - this.x) * k;
+        this.z += (this.nz - this.z) * k;
+        this.face += wrapAng(this.nf - this.face) * k;
+      }
+      this.mixer.update(dt);
+      this.root.position.set(this.x, 0, this.z);
+      this.root.rotation.y = this.face;
+      return;
+    }
     // move, knock-back, stay apart and inside the ring
     const kd = Math.max(0, 1 - 7 * dt);
     this.x += (vx + this.kx) * dt;
