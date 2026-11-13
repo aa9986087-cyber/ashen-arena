@@ -16,6 +16,7 @@ const DUEL = {
   clock: 60,
   view: 'fp',
   eyeY: 1.62,
+  pitch: 0, // free look up (+) and down (-), radians
   shake: 0,
   slow: 0,
   atkDown: -1, // time the attack button went down (-1 = up); a long press becomes a heavy swing
@@ -159,6 +160,7 @@ async function duelStart(online, watch) {
   me.freeLook = !watch;
   foe.freeLook = false;
   duelLock(false);
+  DUEL.pitch = 0;
   $('dNameMe').textContent = watch ? DUEL.watch.a : S.name || 'أنت';
   $('dNameFoe').textContent = watch ? DUEL.watch.b : online ? DUEL.net.foeName : 'خصم التدريب';
   $('dAgain').hidden = !!online || !!watch;
@@ -293,6 +295,7 @@ function duelHud() {
 /** 🎯: lock the view on the opponent (on) or move freely (off). Turning by hand unlocks it. */
 function duelLock(on) {
   DUEL.lock = on;
+  if (!on && DUEL.pitch === undefined) DUEL.pitch = 0;
   if (DUEL.me && !DUEL.watch) DUEL.me.freeLook = !on;
   $('dLock').classList.toggle('on', on);
 }
@@ -300,12 +303,16 @@ function duelInput(dt = 0) {
   const me = DUEL.me,
     k = IN.k;
   // turning: finger / middle-mouse drag, or Q E (allowed in the countdown too, to look around)
-  const keyTurn = (k.KeyQ ? 1 : 0) - (k.KeyE ? 1 : 0);
-  if (DUEL.yaw || keyTurn) {
+  const keyTurn = (k.KeyQ ? 1 : 0) - (k.KeyE ? 1 : 0),
+    keyTilt = (k.KeyR ? 1 : 0) - (k.KeyG ? 1 : 0);
+  if (DUEL.yaw || DUEL.tilt || keyTurn || keyTilt) {
     if (DUEL.lock) duelLock(false);
-    if (me.act !== 'dead') me.face = wrapAng(me.face - DUEL.yaw * 0.0062 + keyTurn * 2.6 * dt);
-    DUEL.yaw = 0;
+    if (me.act !== 'dead') me.face = wrapAng(me.face - (DUEL.yaw || 0) * 0.0062 + keyTurn * 2.6 * dt);
+    // up and down: the view only (the fighter stays upright), short of straight up or down
+    DUEL.pitch = clamp(DUEL.pitch - (DUEL.tilt || 0) * 0.0055 + keyTilt * 1.6 * dt, -0.75, 1.0);
+    DUEL.yaw = DUEL.tilt = 0;
   }
+  if (DUEL.lock) DUEL.pitch *= Math.max(0, 1 - dt * 6); // 🎯 levels the view on the opponent
   if (DUEL.phase !== 'fight') return; // no moves during the countdown or after a knock-out
   let mx = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0),
     mz = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0);
@@ -361,7 +368,7 @@ $('dPad').addEventListener('pointerdown', e => {
     document.body.classList.remove('mouse');
     // right half (away from the buttons): drag to turn
     if (e.clientX >= innerWidth * 0.5 && !DUEL.look) {
-      DUEL.look = { id: e.pointerId, x: e.clientX };
+      DUEL.look = { id: e.pointerId, x: e.clientX, y: e.clientY };
       return;
     }
     // left half: floating joystick
@@ -380,14 +387,16 @@ $('dPad').addEventListener('pointerdown', e => {
   if (e.button === 2) DUEL.rmb = true;
   if (e.button === 1) {
     e.preventDefault();
-    DUEL.look = { id: e.pointerId, x: e.clientX };
+    DUEL.look = { id: e.pointerId, x: e.clientX, y: e.clientY };
   }
 });
 addEventListener('pointermove', e => {
   const Lk = DUEL.look;
   if (Lk && e.pointerId === Lk.id) {
     DUEL.yaw = (DUEL.yaw || 0) + (e.clientX - Lk.x);
+    DUEL.tilt = (DUEL.tilt || 0) + (e.clientY - Lk.y);
     Lk.x = e.clientX;
+    Lk.y = e.clientY;
   }
   const J = DUEL.joy;
   if (!J || e.pointerId !== J.id) return;
@@ -516,11 +525,23 @@ function duelCamera(dt) {
     DUEL.eyeY += (eye - DUEL.eyeY) * Math.min(1, dt * 10);
     cam.position.set(me.x + fx * 0.12, DUEL.eyeY, me.z + fz * 0.12);
   } else {
-    cam.position.set(me.x - fx * 3.1 - fz * 0.75, 2.15, me.z - fz * 3.1 + fx * 0.75);
+    // over the shoulder: looking up drops the camera low behind you, looking down lifts it over your head
+    const pp = me.freeLook ? DUEL.pitch : 0,
+      back = 3.1 * Math.cos(pp * 0.7);
+    cam.position.set(
+      me.x - fx * back - fz * 0.75,
+      Math.max(0.35, 2.15 - Math.sin(pp) * 2.2),
+      me.z - fz * back + fx * 0.75
+    );
   }
-  if (me.freeLook)
-    dT.set(me.x + fx * 6, fp ? 1.35 : 1.1, me.z + fz * 6); // where you're facing
-  else dT.set(foe.x, fp ? 1.25 : 1.1, foe.z);
+  if (me.freeLook) {
+    // where you're facing, raised or lowered by the look pitch
+    const p = DUEL.pitch,
+      c = Math.cos(p);
+    if (fp)
+      dT.set(cam.position.x + fx * c * 6, cam.position.y + Math.sin(p) * 6 - 0.27 * c, cam.position.z + fz * c * 6);
+    else dT.set(me.x + fx * 6 * c, 1.1 + Math.sin(p) * 6, me.z + fz * 6 * c);
+  } else dT.set(foe.x, fp ? 1.25 : 1.1, foe.z);
   if (!fp) dT.lerp(dV.set(me.x, 1.1, me.z), 0.35);
   dLook.lerp(dT, Math.min(1, dt * 12));
   const s = DUEL.shake;
