@@ -610,3 +610,12 @@ textarea.txt {
   top: -6px;
   inset-inline-end: -6px;
 }
+
+/* developer moderation: selectable messages */
+#chatMod {
+  margin-bottom: 6px;
+}
+.cm.sel {
+  outline: 2px solid #ff5a4a;
+  background: rgba(150, 20, 20, 0.55);
+}

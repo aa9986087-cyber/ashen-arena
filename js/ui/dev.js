@@ -23,6 +23,7 @@ async function tryDevCode(txt) {
     return true;
   }
   S.dev = 1;
+  S.devKey = c; // sent with chat moderation calls; the server checks it
   save();
   enableDev();
   $('giftIn').value = '';
@@ -70,8 +71,24 @@ function buildDev() {
       if (typeof menuState === 'function') menuState();
     })
   );
+  let wipeArm = false;
+  const wipe = labBtn(T, '🧨 امسح كل رسائل الشات', async () => {
+    if (!wipeArm) {
+      wipeArm = true;
+      wipe.textContent = '⚠️ اضغط مرة ثانية للتأكيد';
+      setTimeout(() => {
+        wipeArm = false;
+        wipe.textContent = '🧨 امسح كل رسائل الشات';
+      }, 3000);
+      return;
+    }
+    wipeArm = false;
+    wipe.textContent = '🧨 امسح كل رسائل الشات';
+    await chatAdminDelete(null);
+  });
   labBtn(T, '🚪 أطفئ وضع المطور', () => {
     S.dev = 0;
+    delete S.devKey;
     save();
     toast('انطفى وضع المطور. ترجع تفعله بنفس الكود');
     setTimeout(() => location.reload(), 900);

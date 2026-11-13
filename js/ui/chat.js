@@ -2,6 +2,8 @@
 /* Public chat: one shared room for everyone playing, stored on the same Supabase project as the leaderboard.
    Messages are read straight from the `chat` table and sent through the `send_chat` RPC (rate limited on the server). */
 const CHAT = {
+  sel: new Set(), // developer: messages picked for deletion
+  pick: false,
   rows: [],
   lastId: 0,
   seenId: +localStorage.getItem('ashen_chat_seen') || 0,
@@ -58,8 +60,16 @@ function chatDraw() {
       ? '⚠️ الشات غير متاح الحين، تأكد من الإنترنت.'
       : '🌐 غرفة واحدة لكل اللاعبين' + (recent.size ? ' · نشطين آخر 10 دقائق: ' + recent.size : '');
   if (CHAT.ok && !CHAT.rows.length) L.appendChild(el('p', 'note', 'ما فيه رسائل للحين. كن أول من يكتب!'));
+  for (const id of CHAT.sel) if (!CHAT.rows.some(r => r.id === id)) CHAT.sel.delete(id);
+  chatModBar();
   for (const r of CHAT.rows) {
-    const m = el('div', 'cm' + (r.name === S.name ? ' me' : ''));
+    const m = el('div', 'cm' + (r.name === S.name ? ' me' : '') + (CHAT.sel.has(r.id) ? ' sel' : ''));
+    if (CHAT.pick)
+      m.onclick = () => {
+        CHAT.sel.has(r.id) ? CHAT.sel.delete(r.id) : CHAT.sel.add(r.id);
+        m.classList.toggle('sel', CHAT.sel.has(r.id));
+        chatModBar();
+      };
     m.append(el('b', '', r.name), el('small', '', chatAgo(r.created_at)), el('p', '', r.msg));
     L.appendChild(m);
   }
@@ -113,6 +123,71 @@ async function chatSend() {
   $('chatSend').disabled = false;
   inp.focus();
   chatLoad();
+}
+/* ---- developer moderation: pick messages and delete them (the server checks the developer code) */
+let wipeAllArm = false;
+function chatModBar() {
+  const B = $('chatMod');
+  B.hidden = !S.dev;
+  if (!S.dev) return;
+  B.innerHTML = '';
+  labBtn(B, CHAT.pick ? '✖️ إلغاء التحديد' : '☑️ حدد رسائل', () => {
+    CHAT.pick = !CHAT.pick;
+    CHAT.sel.clear();
+    chatDraw();
+  });
+  if (CHAT.pick)
+    labBtn(B, '🗑 احذف المحدد (' + CHAT.sel.size + ')', async () => {
+      if (!CHAT.sel.size) return toast('اضغط على الرسائل اللي تبي تحذفها أول');
+      if (await chatAdminDelete([...CHAT.sel])) {
+        CHAT.sel.clear();
+        CHAT.pick = false;
+      }
+    });
+  labBtn(B, wipeAllArm ? '⚠️ متأكد؟ اضغط مرة ثانية' : '🧨 احذف الكل', async () => {
+    if (!wipeAllArm) {
+      wipeAllArm = true;
+      chatModBar();
+      setTimeout(() => {
+        wipeAllArm = false;
+        if (!$('chat').hidden) chatModBar();
+      }, 3000);
+      return;
+    }
+    wipeAllArm = false;
+    await chatAdminDelete(null);
+  });
+}
+/** Delete the given message ids (or all when null). Returns true on success. */
+async function chatAdminDelete(ids) {
+  let key = S.devKey;
+  if (!key) {
+    key = (prompt('اكتب كود المطور للتأكيد') || '').toUpperCase().replace(/\s+/g, '');
+    if (!key) return false;
+  }
+  try {
+    const n = await api('/rest/v1/rpc/admin_delete_chat', {
+      method: 'POST',
+      body: JSON.stringify({ p_key: key, p_ids: ids }),
+    });
+    S.devKey = key;
+    save();
+    AU.play('select');
+    toast('🗑 انحذفت ' + (n | 0) + ' رسالة');
+    CHAT.lastId = -1;
+    await chatLoad();
+    chatDraw();
+    return true;
+  } catch (err) {
+    const m = String(err.message);
+    if (m.includes('404')) toast('خاصية الحذف ما انفعّلت في السيرفر للحين (ملف chat-admin.sql)');
+    else if (m.includes('400')) {
+      delete S.devKey;
+      save();
+      toast('كود المطور غير صحيح');
+    } else toast('ما انحذفت، تأكد من الإنترنت');
+    return false;
+  }
 }
 $('mChat').onclick = () => {
   AU.init();
