@@ -27,6 +27,7 @@ const DSND_FILES = [
   'break0',
 ];
 function duelSoundsLoad() {
+  if (AU.ctx) sfxBuild(); // the designed combat sounds (duel-sfx.js)
   if (DSND.loading || !AU.ctx) return DSND.loading;
   DSND.loading = Promise.all(
     DSND_FILES.map(async n => {
@@ -166,33 +167,42 @@ function dCrowd(dur, v) {
 /** Duel sound cues; `who` is the fighter (each has its own voice pitch). */
 const DS = {
   light(who) {
-    dWhoosh(0.24, 0.55, 0.12);
+    sfxPlay('whoosh', 0.6, sfxRnd(0.95, 1.1), 0.12, 0.12) || dWhoosh(0.24, 0.55, 0.12);
     if (Math.random() < 0.75) dVoice(who.pitch * rand(0.95, 1.08), 0.17, 0.5, [700, 1200], 0.75);
   },
   heavy(who) {
     dVoice(who.pitch * 0.92, 0.5, 0.6, [820, 1250], 0.62); // the wind-up war cry
-    dWhoosh(0.4, 0.8, DM.heavy.hitFrom - 0.25);
+    sfxPlay('whooshH', 0.8, 1, DM.heavy.hitFrom - 0.28, 0.15) || dWhoosh(0.4, 0.8, DM.heavy.hitFrom - 0.25);
   },
   dodge() {
-    dWhoosh(0.3, 0.35);
+    sfxPlay('whoosh', 0.4, 0.7, 0, 0.1) || dWhoosh(0.3, 0.35);
   },
   hurt(who, heavy) {
-    dPlay(dOne('hit', 3), heavy ? 1 : 0.8, rand(0.9, 1.1));
+    sfxPlay(heavy ? 'chop' : 'slice', heavy ? 1 : 0.9, 1, 0, heavy ? 0.3 : 0.22) ||
+      dPlay(dOne('hit', 3), heavy ? 1 : 0.8, rand(0.9, 1.1));
     dVoice(who.pitch * 1.3, heavy ? 0.4 : 0.24, 0.55, [600, 1000], 0.8);
   },
+  /** A boot in the chest: a thud, leather, rattling plates, and a winded grunt. */
+  kick(who) {
+    sfxPlay('kick', 1, 1, 0, 0.2) || dPlay(dOne('hit', 3), 0.7, 0.8);
+    dVoice(who.pitch * 1.2, 0.22, 0.5, [650, 1050], 0.7);
+  },
   block() {
-    dPlay(dOne('block', 3), 0.9, rand(0.95, 1.1));
+    sfxPlay('clash', 0.85, 1, 0, 0.3) || dPlay(dOne('block', 3), 0.9, rand(0.95, 1.1));
   },
   parry() {
+    if (sfxPlay('parry', 1, 1, 0, 0.4)) return;
     dPlay(dOne('clash', 3), 1, 1.15);
     dPlay('clash1', 0.5, 1.7, 0.06);
   },
   breakGuard() {
+    if (sfxPlay('break', 1, 1, 0, 0.35)) return;
     dPlay('break0', 1);
     dPlay(dOne('clash', 3), 0.7, 0.8);
   },
   death(who) {
     dVoice(who.pitch * 1.15, 0.95, 0.6, [620, 980], 0.45);
+    sfxPlay('fall', 0.85, 1, 0.6, 0.3); // the body hits the stones
   },
   /** The killing blow: a deep boom under a slowed impact, a few heartbeats, then the crowd erupts. */
   finisher() {
@@ -214,7 +224,7 @@ const DS = {
       o.stop(t + at + dur + 0.05);
     };
     tone(120, 30, 0, 1.7, 0.9);
-    dPlay(dOne('hit', 3), 1, 0.5);
+    sfxPlay('chop', 1, 0.55, 0, 0.5) || dPlay(dOne('hit', 3), 1, 0.5);
     for (const k of [0.6, 0.82, 1.5, 1.72, 2.4, 2.62]) tone(62, 40, k, 0.2, k % 1 < 0.7 ? 0.7 : 0.45);
     setTimeout(() => DS.crowd(0.36), 2300);
   },

@@ -382,7 +382,7 @@ class Duelist {
       this.start('kicked');
       this.stun = 0.55;
       this.play('hit', 0.05, this.stun * 1.4, true);
-      DS.hurt(this, false);
+      DS.kick(this);
     } else if (s.a === 'hit' || s.a === 'knock') {
       this.start(s.a);
       this.stun = s.a === 'knock' ? 0.75 : 0.4;
@@ -416,7 +416,7 @@ class Duelist {
         DS.death(this);
         return;
       }
-      DS.hurt(this, false);
+      DS.kick(this);
       this.start('kicked'); // its own state: the other side mustn't draw blood for it
       this.stun = 0.55;
       this.play('hit', 0.05, this.stun * 1.4, true);
