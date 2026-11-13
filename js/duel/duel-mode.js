@@ -214,6 +214,7 @@ function duelExit() {
 /** Starting spots: the host (or the training player) on the south side, the guest on the north. */
 function duelPlace() {
   if (DUEL.kc) duelKillcamEnd(); // a new round starts: the cinematic of the last one is over
+  if (DUEL.fin) finEnd();
   const south = !DUEL.net || DUEL.net.host,
     A = [0, -3, 0],
     B = [0, 3, Math.PI];
@@ -347,7 +348,7 @@ function duelKillcamEnd() {
   if ($('dMsg').querySelector('b').textContent) pop($('dMsg'), 'show'); // the round's verdict, now that it can be seen
 }
 function duelInput(dt = 0) {
-  if (DUEL.kc) return;
+  if (DUEL.kc || DUEL.fin) return;
   const me = DUEL.me,
     k = IN.k;
   // turning: finger / middle-mouse drag, or Q E (allowed in the countdown too, to look around)
@@ -594,6 +595,13 @@ function duelCamera(dt) {
     cam.updateProjectionMatrix();
     return;
   }
+  if (DUEL.fin) {
+    for (const m of me.fpHide) m.visible = !m.userData.cut;
+    finCamera(dt, cam);
+    if (cam.aspect !== W / H) cam.aspect = W / H;
+    cam.updateProjectionMatrix();
+    return;
+  }
   if (DUEL.kc) {
     // the cinematic: cut to a low shot beside the fallen fighter, drifting around and up as he goes down
     for (const m of me.fpHide) m.visible = !m.userData.cut;
@@ -664,8 +672,11 @@ function duelFrame(rdt) {
   if (DUEL.watch) {
     DUEL.shake = 0;
     const ts = DUEL.kc ? duelKcScale() : 1;
-    DUEL.me.update(rdt * ts, DUEL.foe);
-    DUEL.foe.update(rdt * ts, DUEL.me);
+    if (DUEL.fin) finStep(rdt * finScale());
+    else {
+      DUEL.me.update(rdt * ts, DUEL.foe);
+      DUEL.foe.update(rdt * ts, DUEL.me);
+    }
     if (performance.now() - DUEL.watch.lastRx > 8000 && DUEL.phase !== 'over') duelWatchEnd('انقطع البث');
   } else {
     duelInput(rdt);
@@ -673,17 +684,22 @@ function duelFrame(rdt) {
     if (DUEL.net && DUEL.net.ready) duelNetTick(rdt);
   }
   // a fighter just fell: the killing blow plays as a cinematic
+  if (DUEL.fin) {
+    const F = DUEL.fin;
+    F.real += rdt;
+    if (F.real > (F.hit >= 0 ? F.hit + 2.9 : 7)) finEnd();
+  }
   for (const [f, o] of [
     [DUEL.me, DUEL.foe],
     [DUEL.foe, DUEL.me],
   ])
-    if (f.act === 'dead' && !f.kcSeen) {
+    if (!DUEL.fin && f.act === 'dead' && !f.kcSeen) {
       f.kcSeen = true;
       duelKillcam(f, o);
     }
   if (DUEL.kc && (DUEL.kc.t += rdt) >= DUEL.kc.dur) duelKillcamEnd();
   arenaTick(rdt);
-  goreUpdate(rdt * (DUEL.kc ? duelKcScale() : DUEL.slow > 0 ? 0.35 : 1));
+  goreUpdate(rdt * (DUEL.fin ? finScale() : DUEL.kc ? duelKcScale() : DUEL.slow > 0 ? 0.35 : 1));
   duelCamera(rdt);
   duelHud();
   renderer.render(DUEL.scene, DUEL.cam);
@@ -700,12 +716,13 @@ function duelStep(rdt) {
     dt *= 0.35;
   }
   if (DUEL.kc) dt = rdt * duelKcScale(); // the killing blow's own clock
+  if (DUEL.fin) dt = rdt * finScale();
   DUEL.shake = Math.max(0, DUEL.shake - rdt * 1.6);
   const me = DUEL.me,
     foe = DUEL.foe;
   const judge = !DUEL.net || DUEL.net.host;
   if (DUEL.phase === 'fight') {
-    if (DUEL.bot) DUEL.bot.update(dt);
+    if (DUEL.bot && !DUEL.fin) DUEL.bot.update(dt);
     if (judge) {
       DUEL.clock -= dt;
       if (me.hp <= 0 || foe.hp <= 0 || DUEL.clock <= 0) duelRoundEnd();
@@ -730,8 +747,11 @@ function duelStep(rdt) {
       } else duelRound();
     }
   }
-  me.update(dt, foe);
-  foe.update(dt, me);
+  if (DUEL.fin) finStep(dt);
+  else {
+    me.update(dt, foe);
+    foe.update(dt, me);
+  }
 }
 function duelRoundEnd(told) {
   const me = DUEL.me,
@@ -752,7 +772,7 @@ function duelRoundEnd(told) {
   }
   if (!draw) DUEL.score[meWon ? 0 : 1]++;
   DUEL.phase = 'ko';
-  DUEL.phaseT = 3.5; // room for the killing-blow cinematic
+  DUEL.phaseT = DUEL.fin ? 6.2 : 3.5; // room for the killing-blow cinematic
   DUEL.slow = 1.1;
   duelPips();
   if (draw) duelMsg('تعادل', 'الوقت انتهى بنفس الصحة');
@@ -861,6 +881,7 @@ function duelNetTick(dt) {
       ck: N.host ? r(DUEL.clock) : undefined,
       cu: me.cuts || undefined,
       rn: me.running ? 1 : undefined,
+      fv: me.act === 'dead' && me.finV !== undefined ? me.finV : undefined,
       r: DUEL.round,
       h: N.host ? 1 : 0,
     });

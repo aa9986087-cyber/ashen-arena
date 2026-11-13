@@ -360,6 +360,7 @@ class Duelist {
   }
   /** Online, on the opponent's copy: the owner's broadcast state (position, health, stamina, guard, reactions). */
   netState(s) {
+    if (DUEL.fin) return; // a finisher is playing: it moves both fighters itself
     // limbs its owner lost (the owner decides, everyone else copies)
     if (s.cu & ~this.cuts) for (const k in GORE_PARTS) if (s.cu & GORE_PARTS[k].bit) goreCut(this, k);
     this.nx = s.x;
@@ -373,11 +374,13 @@ class Duelist {
     this.want.block = s.a === 'block';
     if (s.a === this.act) return;
     const other = this === DUEL.me ? DUEL.foe : DUEL.me;
-    if (s.a === 'dead' || s.a === 'hit' || s.a === 'knock') goreHit(this, other, s.a === 'hit' ? 'light' : 'heavy');
+    if (s.a === 'hit' || s.a === 'knock') goreHit(this, other, s.a === 'hit' ? 'light' : 'heavy');
     if (s.a === 'dead') {
-      this.start('dead');
-      this.play('death', 0.1, 0, true);
-      DS.death(this);
+      if (!duelFinisher(this, other, s.fv)) {
+        this.start('dead');
+        this.play('death', 0.1, 0, true);
+        DS.death(this);
+      }
     } else if (s.a === 'kicked') {
       this.start('kicked');
       this.stun = 0.55;
@@ -408,6 +411,11 @@ class Duelist {
       kb = kind === 'heavy' ? 7 : kind === 'kick' ? 9 : 3;
     this.kx = (ax / L) * kb;
     this.kz = (az / L) * kb;
+    // the killing blow: a staged finisher plays it out (the wound comes when its blade gets there)
+    if (this.hp <= 0 && typeof duelFinisher === 'function' && duelFinisher(this, from, finPick(this, this.execute))) {
+      this.execute = false;
+      return;
+    }
     if (kind === 'kick') {
       // a boot, not a blade: no blood, no limbs; a stumble back
       if (this.hp <= 0) {

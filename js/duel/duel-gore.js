@@ -10,6 +10,7 @@ const GORE_PARTS = {
   legL: { bit: 8, bone: 'calf_l', r: 0.045 },
   legR: { bit: 16, bone: 'calf_r', r: 0.045 },
   handL: { bit: 32, bone: 'hand_l', r: 0.03 },
+  shoulderL: { bit: 64, bone: 'upperarm_l', r: 0.05 },
 };
 const GORE = { scene: null, sparks: [], drops: [], decals: [], pieces: [], jets: [], screen: [], decalN: 0 };
 const GORE_MAXD = 600,
