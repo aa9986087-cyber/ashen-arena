@@ -270,6 +270,12 @@ function duelOutcome(att, def, r) {
       Math.random() < (heavy ? 1 : 0.45)
     )
       goreScreen(heavy ? 2 : 1, true); // the spray reaches your eyes
+  } else if (r === 'kick' || r === 'kickbreak') {
+    DUEL.shake = Math.max(DUEL.shake, 0.22);
+    DUEL.hitStop = 0.06;
+    if (r === 'kickbreak') duelFloat(mine ? 'رفسة كسرت صده! 🦶 اضرب' : 'رفسك وكسر صدك!', mine ? 'par' : 'brk');
+    else duelFloat(mine ? 'رفسة! 🦶' : 'انرفست!', mine ? 'blk' : 'brk');
+    if (!mine) pop($('dHurt'), 'on');
   } else if (r === 'block') {
     duelFloat('صد!', 'blk');
     goreSparks(att, def, 16);
@@ -372,6 +378,7 @@ addEventListener('keydown', e => {
     duelDodge();
   }
   if (e.code === 'KeyV') duelToggleView();
+  if (e.code === 'KeyU' && DUEL.phase === 'fight') DUEL.me.kick();
   if (e.code === 'KeyF' || e.code === 'Tab') {
     e.preventDefault();
     duelLock(!DUEL.lock);
@@ -475,6 +482,7 @@ press(
   () => (DUEL.blockHeld = false)
 );
 press('dDodge', duelDodge);
+press('dKick', () => DUEL.phase === 'fight' && DUEL.me.kick());
 press('dLock', () => duelLock(!DUEL.lock));
 $('dView').onclick = () => duelToggleView();
 /** Landscape: full screen + orientation lock where the browser allows it (Android). Where it doesn't (iPhone

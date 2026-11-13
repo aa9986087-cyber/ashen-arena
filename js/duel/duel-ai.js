@@ -60,6 +60,8 @@ class DuelBot {
         )
           me.heavy();
         else if (foe.act === 'stagger' || foe.act === 'hit') me.light();
+        else if (foe.act === 'block' && d < DM.kick.reach - 0.1 && r < 0.4)
+          me.kick(); // boot through the guard
         else if (foe.act === 'block' && me.st > DM.heavy.st && r < 0.55) me.heavy();
         else if (r < 0.5 && me.st > DM.light.st) me.light();
         else if (r < 0.62 && me.st > DM.heavy.st) {

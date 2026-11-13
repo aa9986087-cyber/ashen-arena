@@ -7,6 +7,7 @@ const DUEL_URL = MODEL_DIR + 'duelist.glb';
 const DM = {
   light: { t: 0.56, hitFrom: 0.2, hitTo: 0.32, dmg: 10, st: 14, reach: 2.25, arc: 1.1 },
   heavy: { t: 1.1, hitFrom: 0.62, hitTo: 0.78, dmg: 26, st: 28, reach: 2.45, arc: 1.25 },
+  kick: { t: 0.62, hitFrom: 0.2, hitTo: 0.34, dmg: 5, st: 18, reach: 1.95, arc: 0.9 },
   dodge: { t: 0.5, iFrom: 0.04, iTo: 0.38, st: 22, spd: 5.4 },
   parry: 0.2,
   execHp: 30, // a heavy blow on a reeling fighter at or below this health is an execution
@@ -133,6 +134,9 @@ function duelGrip(hand, sword) {
   // in the curl of the fingers: a little short of the knuckles, a little in front of the palm
   sword.position.copy(fingers.multiplyScalar(0.72)).add(palm.multiplyScalar(0.03));
 }
+const gKq = new THREE.Quaternion(),
+  gKx = new THREE.Vector3(1, 0, 0),
+  gKz = new THREE.Vector3(0, 0, 1);
 class Duelist {
   /** gltf: a freshly parsed duelist.glb; tint: hue (degrees) for the cloth, so the two fighters are told apart. */
   constructor(gltf, tint, pitch = 110) {
@@ -156,6 +160,11 @@ class Duelist {
       if (o.isBone && o.name === 'hand_r' && !this.hand) this.hand = o;
       if (o.isBone && o.name === 'Head' && !this.headBone) this.headBone = o;
     });
+    // the kick bends these bones by hand; idle clips may not animate them, so their rest pose is kept to restore
+    const kb = {};
+    this.root.traverse(o => o.isBone && (kb[o.name] = o));
+    this.kickBones = [kb.thigh_r, kb.calf_r, kb.spine_01];
+    this.kickRest = this.kickBones.map(b => b && b.quaternion.clone());
     this.sword = duelSword();
     if (this.hand) {
       this.hand.add(this.sword);
@@ -222,6 +231,60 @@ class Duelist {
     this.onMove && this.onMove({ k: 'light', c: this.combo });
     return true;
   }
+  /** A front kick: short and weak, but it breaks a raised guard (and a heavy blow still rising) and shoves. */
+  kick() {
+    if (!this.free || this.st < DM.kick.st * 0.5) return false;
+    this.spend(DM.kick.st);
+    this.start('kick');
+    this.play('idle', 0.1);
+    DS.dodge();
+    this.onMove && this.onMove({ k: 'kick' });
+    return true;
+  }
+  /** The kick has no clip in the model: bend the right leg on top of whatever plays.
+      Chamber (knee up, bent), snap it straight forward, hold, put it down. */
+  kickPose() {
+    if (this.act !== 'kick') return;
+    const [th, ca, sp] = this.kickBones;
+    if (!th || !ca) return;
+    this.kickDirty = true;
+    const t = this.t,
+      ease = v => v * v * (3 - 2 * v);
+    let lift, bend;
+    if (t < 0.16) {
+      const k = ease(t / 0.16);
+      lift = 1.55 * k;
+      bend = 1.5 * k;
+    } else if (t < 0.28) {
+      const k = ease((t - 0.16) / 0.12);
+      lift = 1.55 + 0.45 * k;
+      bend = 1.5 - 1.6 * k;
+    } else if (t < 0.4) {
+      lift = 2.0;
+      bend = -0.1;
+    } else {
+      const k = 1 - ease(Math.min(1, (t - 0.4) / 0.22));
+      lift = 2.0 * k;
+      bend = -0.1 * k;
+    }
+    gKq.setFromAxisAngle(gKx, -lift);
+    th.quaternion.multiply(gKq);
+    gKq.setFromAxisAngle(gKz, -0.25 * lift);
+    th.quaternion.multiply(gKq);
+    gKq.setFromAxisAngle(gKz, bend);
+    ca.quaternion.multiply(gKq);
+    if (sp) {
+      // lean back a little to balance the leg
+      gKq.setFromAxisAngle(gKx, 0.14 * lift);
+      sp.quaternion.multiply(gKq);
+    }
+  }
+  /** Put the kicking leg back to rest before the clips write this frame (they may not touch these bones). */
+  kickReset() {
+    if (!this.kickDirty) return;
+    this.kickDirty = false;
+    this.kickBones.forEach((b, i) => b && b.quaternion.copy(this.kickRest[i]));
+  }
   heavy() {
     if (this.armless || !this.free || this.st < DM.heavy.st * 0.5) return false;
     this.spend(DM.heavy.st);
@@ -262,6 +325,11 @@ class Duelist {
   /** Online, on the opponent's copy: start the move its owner just started (no stamina checks — the owner did them). */
   netMove(m) {
     if (m.k === 'feint') return this.feint(true);
+    if (m.k === 'kick') {
+      this.st = DM.stMax;
+      if (!this.free) this.start('idle');
+      return this.kick();
+    }
     this.st = DM.stMax;
     if (!this.free) this.start('idle');
     if (m.k === 'light') {
@@ -290,6 +358,11 @@ class Duelist {
       this.start('dead');
       this.play('death', 0.1, 0, true);
       DS.death(this);
+    } else if (s.a === 'kicked') {
+      this.start('kicked');
+      this.stun = 0.55;
+      this.play('hit', 0.05, this.stun * 1.4, true);
+      DS.hurt(this, false);
     } else if (s.a === 'hit' || s.a === 'knock') {
       this.start(s.a);
       this.stun = s.a === 'knock' ? 0.75 : 0.4;
@@ -298,7 +371,11 @@ class Duelist {
     } else if (s.a === 'stagger') this.stagger(0.9);
     else if (
       s.a === 'idle' &&
-      (this.act === 'hit' || this.act === 'knock' || this.act === 'stagger' || this.act === 'dead')
+      (this.act === 'hit' ||
+        this.act === 'knock' ||
+        this.act === 'kicked' ||
+        this.act === 'stagger' ||
+        this.act === 'dead')
     )
       this.start('idle');
   }
@@ -308,9 +385,23 @@ class Duelist {
     const ax = this.x - from.x,
       az = this.z - from.z,
       L = Math.hypot(ax, az) || 1,
-      kb = kind === 'heavy' ? 7 : 3;
+      kb = kind === 'heavy' ? 7 : kind === 'kick' ? 9 : 3;
     this.kx = (ax / L) * kb;
     this.kz = (az / L) * kb;
+    if (kind === 'kick') {
+      // a boot, not a blade: no blood, no limbs; a stumble back
+      if (this.hp <= 0) {
+        this.start('dead');
+        this.play('death', 0.1, 0, true);
+        DS.death(this);
+        return;
+      }
+      DS.hurt(this, false);
+      this.start('kicked'); // its own state: the other side mustn't draw blood for it
+      this.stun = 0.55;
+      this.play('hit', 0.05, this.stun * 1.4, true);
+      return;
+    }
     goreHit(this, from, kind);
     const cut = this.execute && !(this.cuts & 1) ? 'head' : goreDecide(this, kind);
     this.execute = false;
@@ -342,12 +433,12 @@ class Duelist {
       ? 0
       : this.freeLook
         ? // free movement: you turn yourself; a swing only bends a little toward a foe already in front of you
-          (this.act === 'light' || this.act === 'heavy') &&
+          (this.act === 'light' || this.act === 'heavy' || this.act === 'kick') &&
           Math.abs(toFoe) < 1.1 &&
           Math.hypot(foe.x - this.x, foe.z - this.z) < DM.heavy.reach + 1.2
           ? 3.5
           : 0
-        : this.act === 'light'
+        : this.act === 'light' || this.act === 'kick'
           ? 3
           : this.act === 'heavy'
             ? 1.8
@@ -398,7 +489,7 @@ class Duelist {
     );
     if (
       !foe.remote &&
-      (this.act === 'light' || this.act === 'heavy') &&
+      (this.act === 'light' || this.act === 'heavy' || this.act === 'kick') &&
       !this.hitDone &&
       this.t >= M.hitFrom &&
       this.t <= M.hitTo
@@ -415,7 +506,10 @@ class Duelist {
       if (this.act === 'light') this.comboT = 0.7;
       this.start('idle');
     }
-    if ((this.act === 'hit' || this.act === 'knock' || this.act === 'stagger') && this.t >= this.stun)
+    if (
+      (this.act === 'hit' || this.act === 'knock' || this.act === 'kicked' || this.act === 'stagger') &&
+      this.t >= this.stun
+    )
       this.start('idle');
     if (this.remote) {
       // the opponent's copy glides to where its owner says it is
@@ -425,7 +519,9 @@ class Duelist {
         this.z += (this.nz - this.z) * k;
         this.face += wrapAng(this.nf - this.face) * k;
       }
+      this.kickReset();
       this.mixer.update(dt);
+      this.kickPose();
       this.root.position.set(this.x, 0, this.z);
       this.root.rotation.y = this.face;
       return;
@@ -448,7 +544,9 @@ class Duelist {
       this.x *= DM.arena / r;
       this.z *= DM.arena / r;
     }
+    this.kickReset();
     this.mixer.update(dt);
+    this.kickPose();
     this.root.position.set(this.x, 0, this.z);
     this.root.rotation.y = this.face;
   }
@@ -458,6 +556,21 @@ function duelResolve(a, d, kind) {
   const M = DM[kind];
   if (d.act === 'dead') return 'none';
   if (d.act === 'dodge' && d.t > DM.dodge.iFrom && d.t < DM.dodge.iTo) return 'miss';
+  if (kind === 'kick') {
+    // the boot goes through a raised guard (and stops a heavy blow still rising): the defender reels open
+    const ax = d.x - a.x,
+      az = d.z - a.z,
+      L = Math.hypot(ax, az) || 1;
+    if (d.act === 'block' || (d.act === 'heavy' && d.t < DM.heavy.hitFrom)) {
+      d.stagger(0.95);
+      d.kx = (ax / L) * 8;
+      d.kz = (az / L) * 8;
+      DS.breakGuard();
+      return 'kickbreak';
+    }
+    d.damage(DM.kick.dmg, a, 'kick');
+    return 'kick';
+  }
   if (d.act === 'block' && Math.abs(wrapAng(Math.atan2(a.x - d.x, a.z - d.z) - d.face)) < 1.4) {
     if (d.blockT < DM.parry) {
       a.stagger(kind === 'heavy' ? 1.1 : 0.9);
@@ -482,7 +595,7 @@ function duelResolve(a, d, kind) {
   //  - an execution: a heavy blow on a reeling or felled fighter low on health ends it, head first
   //  - a riposte: any blow on a fighter reeling (from your perfect parry or a broken guard) cuts 60% deeper
   //  - a combo: the third light blow of a chain cuts 40% deeper and drives the foe back
-  const reeling = d.act === 'stagger' || d.act === 'knock' || d.act === 'hit';
+  const reeling = d.act === 'stagger' || d.act === 'knock' || d.act === 'hit' || d.act === 'kicked';
   let dmg = M.dmg,
     tag = 'hit';
   if (kind === 'heavy' && reeling && d.hp <= DM.execHp) {
