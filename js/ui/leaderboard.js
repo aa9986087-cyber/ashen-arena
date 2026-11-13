@@ -69,7 +69,8 @@ async function api(path, opt) {
     )
   );
   if (!r.ok) throw new Error('http ' + r.status);
-  return r.json();
+  const t = await r.text(); // RPCs that return void answer with an empty body
+  return t ? JSON.parse(t) : null;
 }
 async function loadOnline() {
   try {

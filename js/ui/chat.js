@@ -90,23 +90,27 @@ function closeChat() {
     show('pause', true);
   } else go('menu');
 }
+let chatBusy = false;
 async function chatSend() {
   const inp = $('chatIn'),
     msg = inp.value.trim();
-  if (!msg) return;
+  if (!msg || chatBusy) return; // one send at a time: no double posts from a double tap
   if (!S.name) {
     askName();
     return;
   }
-  inp.disabled = true;
+  chatBusy = true;
+  inp.value = ''; // clear right away; put it back only if sending fails
+  $('chatSend').disabled = true;
   try {
     await api('/rest/v1/rpc/send_chat', { method: 'POST', body: JSON.stringify({ p_name: S.name, p_msg: msg }) });
-    inp.value = '';
     AU.play('select');
   } catch (err) {
-    toast(CHAT.ok === false ? 'الشات غير متاح الحين' : 'لحظة، لا ترسل بسرعة 🙂');
+    if (!inp.value) inp.value = msg;
+    toast(String(err.message).includes('400') ? 'لحظة، لا ترسل بسرعة 🙂' : 'ما انرسلت، تأكد من الإنترنت');
   }
-  inp.disabled = false;
+  chatBusy = false;
+  $('chatSend').disabled = false;
   inp.focus();
   chatLoad();
 }
