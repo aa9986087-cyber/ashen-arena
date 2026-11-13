@@ -187,6 +187,8 @@ async function duelStart(online, watch) {
 }
 function duelExit() {
   DUEL.intro = DUEL.fin = DUEL.kc = null;
+  DUEL.rotWait = 0;
+  $('dRotate').hidden = true;
   $('duel').classList.remove('cine', 'intro');
   document.documentElement.classList.remove('cine');
   if (DUEL.watch) {
@@ -234,9 +236,8 @@ function duelRound(n) {
   DUEL.saidFight = false;
   $('dLoad').hidden = true;
   if (DUEL.round === 1) {
-    // the walk-out first: the countdown waits for it
-    DUEL.phaseT += INTRO_T;
-    duelIntroStart();
+    // the walk-out first (after a moment to turn the phone): the countdown waits for it
+    DUEL.phaseT += duelIntroQueue();
   } else {
     duelMsg('الجولة ' + DUEL.round, DUEL.score[0] + ' - ' + DUEL.score[1]);
     DS.round(DUEL.round, DUEL.score[0] === DUEL_WIN - 1 && DUEL.score[1] === DUEL_WIN - 1);
@@ -357,7 +358,7 @@ function duelKillcamEnd() {
   if ($('dMsg').querySelector('b').textContent) pop($('dMsg'), 'show'); // the round's verdict, now that it can be seen
 }
 function duelInput(dt = 0) {
-  if (DUEL.kc || DUEL.fin || DUEL.intro) return;
+  if (DUEL.kc || DUEL.fin || DUEL.intro || DUEL.rotWait > 0) return;
   const me = DUEL.me,
     k = IN.k;
   // turning: finger / middle-mouse drag, or Q E (allowed in the countdown too, to look around)
@@ -434,7 +435,8 @@ function duelPt(e) {
 }
 // mouse on the duel layer: left = attack (hold = heavy), right = block
 $('dPad').addEventListener('pointerdown', e => {
-  // training: a tap skips the walk-out
+  // training: a tap ends the "turn your phone" wait, then skips the walk-out
+  if (DUEL.rotWait > 0 && !DUEL.net && !DUEL.watch) return duelRotDone();
   if (DUEL.intro && !DUEL.net && !DUEL.watch) return duelIntroEnd();
   const P = duelPt(e);
   if (e.pointerType === 'touch') {
@@ -719,6 +721,7 @@ function duelFrame(rdt) {
     duelStep(rdt);
     if (DUEL.net && DUEL.net.ready) duelNetTick(rdt);
   }
+  duelRotTick(rdt);
   // a fighter just fell: the killing blow plays as a cinematic
   if (DUEL.fin) {
     const F = DUEL.fin;

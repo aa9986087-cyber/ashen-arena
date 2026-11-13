@@ -10,6 +10,30 @@ const INTRO = [
   [3.9, 6.3, 'b'],
   [6.3, INTRO_T, 'vs'],
 ];
+/** On a phone, a moment to turn it sideways before the walk-out starts (the duel is already turned to landscape). */
+const INTRO_ROT = 2.6;
+const duelTouch = () => matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+/** Round 1 begins: first "turn your phone" (phones only), then the walk-out. Returns the seconds it adds. */
+function duelIntroQueue() {
+  if (!duelTouch()) {
+    duelIntroStart();
+    return INTRO_T;
+  }
+  DUEL.rotWait = INTRO_ROT;
+  $('dRotate').hidden = false;
+  return INTRO_T + INTRO_ROT;
+}
+/** Per frame while waiting for the phone to be turned. */
+function duelRotTick(rdt) {
+  if (!(DUEL.rotWait > 0)) return;
+  DUEL.rotWait -= rdt;
+  if (DUEL.rotWait <= 0) duelRotDone();
+}
+function duelRotDone() {
+  DUEL.rotWait = 0;
+  $('dRotate').hidden = true;
+  duelIntroStart();
+}
 function duelIntroStart() {
   const me = DUEL.me,
     foe = DUEL.foe;
@@ -180,6 +204,8 @@ function duelIntroEnd() {
   $('dIntro').className = '';
   // a skipped intro (training) shortens the countdown to the usual one
   if (DUEL.phase === 'intro') DUEL.phaseT = Math.min(DUEL.phaseT, 2.4);
+  DUEL.rotWait = 0;
+  $('dRotate').hidden = true;
   duelMsg('الجولة 1', ARENA_NAME);
   DS.round(1, false);
 }
