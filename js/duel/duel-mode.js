@@ -81,6 +81,10 @@ async function duelStart(online, watch) {
       }
     : r => duelOutcome(foe, me, r);
   DUEL.bot = online || watch ? null : new DuelBot(foe, me);
+  // you move freely (turn by dragging / Q E); 🎯 locks your view on the opponent
+  me.freeLook = !watch;
+  foe.freeLook = false;
+  duelLock(false);
   $('dNameMe').textContent = watch ? DUEL.watch.a : S.name || 'أنت';
   $('dNameFoe').textContent = watch ? DUEL.watch.b : online ? DUEL.net.foeName : 'خصم التدريب';
   $('dAgain').hidden = !!online || !!watch;
@@ -212,10 +216,23 @@ function duelHud() {
 }
 
 /* ---- input */
-function duelInput() {
-  if (DUEL.phase !== 'fight') return; // no moves during the countdown or after a knock-out
+/** 🎯: lock the view on the opponent (on) or move freely (off). Turning by hand unlocks it. */
+function duelLock(on) {
+  DUEL.lock = on;
+  if (DUEL.me && !DUEL.watch) DUEL.me.freeLook = !on;
+  $('dLock').classList.toggle('on', on);
+}
+function duelInput(dt = 0) {
   const me = DUEL.me,
     k = IN.k;
+  // turning: finger / middle-mouse drag, or Q E (allowed in the countdown too, to look around)
+  const keyTurn = (k.KeyQ ? 1 : 0) - (k.KeyE ? 1 : 0);
+  if (DUEL.yaw || keyTurn) {
+    if (DUEL.lock) duelLock(false);
+    if (me.act !== 'dead') me.face = wrapAng(me.face - DUEL.yaw * 0.0062 + keyTurn * 2.6 * dt);
+    DUEL.yaw = 0;
+  }
+  if (DUEL.phase !== 'fight') return; // no moves during the countdown or after a knock-out
   let mx = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0),
     mz = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0);
   if (DUEL.joy) {
@@ -255,6 +272,10 @@ addEventListener('keydown', e => {
     duelDodge();
   }
   if (e.code === 'KeyV') duelToggleView();
+  if (e.code === 'KeyF' || e.code === 'Tab') {
+    e.preventDefault();
+    duelLock(!DUEL.lock);
+  }
   if (e.code === 'Escape') duelExit();
 });
 addEventListener('keyup', e => {
@@ -264,6 +285,11 @@ addEventListener('keyup', e => {
 $('dPad').addEventListener('pointerdown', e => {
   if (e.pointerType === 'touch') {
     document.body.classList.remove('mouse');
+    // right half (away from the buttons): drag to turn
+    if (e.clientX >= innerWidth * 0.5 && !DUEL.look) {
+      DUEL.look = { id: e.pointerId, x: e.clientX };
+      return;
+    }
     // left half: floating joystick
     if (e.clientX < innerWidth * 0.5 && !DUEL.joy) {
       DUEL.joy = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: 0, z: 0 };
@@ -278,8 +304,17 @@ $('dPad').addEventListener('pointerdown', e => {
   document.body.classList.add('mouse');
   if (e.button === 0) duelAtkDown();
   if (e.button === 2) DUEL.rmb = true;
+  if (e.button === 1) {
+    e.preventDefault();
+    DUEL.look = { id: e.pointerId, x: e.clientX };
+  }
 });
 addEventListener('pointermove', e => {
+  const Lk = DUEL.look;
+  if (Lk && e.pointerId === Lk.id) {
+    DUEL.yaw = (DUEL.yaw || 0) + (e.clientX - Lk.x);
+    Lk.x = e.clientX;
+  }
   const J = DUEL.joy;
   if (!J || e.pointerId !== J.id) return;
   let dx = e.clientX - J.x0,
@@ -295,6 +330,7 @@ addEventListener('pointermove', e => {
   $('dJoy').firstElementChild.style.transform = `translate(${dx}px,${dy}px)`;
 });
 const duelJoyEnd = e => {
+  if (DUEL.look && e.pointerId === DUEL.look.id && (e.pointerType === 'touch' || e.button === 1)) DUEL.look = null;
   if (DUEL.joy && e.pointerId === DUEL.joy.id) {
     DUEL.joy = null;
     $('dJoy').hidden = true;
@@ -331,6 +367,7 @@ press(
   () => (DUEL.blockHeld = false)
 );
 press('dDodge', duelDodge);
+press('dLock', () => duelLock(!DUEL.lock));
 $('dView').onclick = () => duelToggleView();
 /** Landscape: full screen + orientation lock where the browser allows it (Android); otherwise ask to rotate. */
 $('dLand').onclick = async () => {
@@ -407,7 +444,9 @@ function duelCamera(dt) {
   } else {
     cam.position.set(me.x - fx * 3.1 - fz * 0.75, 2.15, me.z - fz * 3.1 + fx * 0.75);
   }
-  dT.set(foe.x, fp ? 1.25 : 1.1, foe.z);
+  if (me.freeLook)
+    dT.set(me.x + fx * 6, fp ? 1.35 : 1.1, me.z + fz * 6); // where you're facing
+  else dT.set(foe.x, fp ? 1.25 : 1.1, foe.z);
   if (!fp) dT.lerp(dV.set(me.x, 1.1, me.z), 0.35);
   dLook.lerp(dT, Math.min(1, dt * 12));
   const s = DUEL.shake;
@@ -430,7 +469,7 @@ function duelFrame(rdt) {
     DUEL.foe.update(rdt, DUEL.me);
     if (performance.now() - DUEL.watch.lastRx > 8000 && DUEL.phase !== 'over') duelWatchEnd('انقطع البث');
   } else {
-    duelInput();
+    duelInput(rdt);
     duelStep(rdt);
     if (DUEL.net && DUEL.net.ready) duelNetTick(rdt);
   }

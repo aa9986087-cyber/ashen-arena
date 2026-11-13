@@ -323,16 +323,24 @@ class Duelist {
     if ((this.stT -= dt) <= 0)
       this.st = Math.min(DM.stMax, this.st + DM.stRegen * dt * (this.act === 'block' ? 0.5 : 1));
     // lock-on: always turn toward the opponent, slowly while swinging (side-steps can dodge a heavy)
+    const toFoe = wrapAng(Math.atan2(foe.x - this.x, foe.z - this.z) - this.face);
     const turn = this.remote
       ? 0
-      : this.act === 'light'
-        ? 3
-        : this.act === 'heavy'
-          ? 1.8
-          : this.act === 'dodge' || this.act === 'dead'
-            ? 0
-            : 10;
-    this.face += clamp(wrapAng(Math.atan2(foe.x - this.x, foe.z - this.z) - this.face), -turn * dt, turn * dt);
+      : this.freeLook
+        ? // free movement: you turn yourself; a swing only bends a little toward a foe already in front of you
+          (this.act === 'light' || this.act === 'heavy') &&
+          Math.abs(toFoe) < 1.1 &&
+          Math.hypot(foe.x - this.x, foe.z - this.z) < DM.heavy.reach + 1.2
+          ? 3.5
+          : 0
+        : this.act === 'light'
+          ? 3
+          : this.act === 'heavy'
+            ? 1.8
+            : this.act === 'dodge' || this.act === 'dead'
+              ? 0
+              : 10;
+    this.face += clamp(toFoe, -turn * dt, turn * dt);
     const fx = Math.sin(this.face),
       fz = Math.cos(this.face);
     let vx = 0,
