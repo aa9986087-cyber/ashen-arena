@@ -600,16 +600,6 @@ textarea.txt {
   flex: 1;
   padding: 10px 12px;
 }
-#mChat {
-  position: relative;
-  font-size: 14px;
-  padding: 9px;
-}
-#mChat .badge {
-  position: absolute;
-  top: -6px;
-  inset-inline-end: -6px;
-}
 
 /* developer moderation: selectable messages */
 #chatMod {

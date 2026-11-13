@@ -34,9 +34,12 @@ function render(dt, now) {
     camera.position.set(p.x + rand(-sk, sk), ch + rand(-sk, sk) * 0.5, p.z + cd + rand(-sk, sk));
     camera.lookAt(p.x, 0, p.z - 1);
   } else {
-    const a = now * 0.00012;
-    camera.position.set(Math.sin(a) * 13, 6.5, Math.cos(a) * 13);
-    camera.lookAt(0, 1.6, 0);
+    // menu: slow orbit around the hero; on a portrait phone come closer so the hero fills the free middle
+    const a = now * 0.00012,
+      pr = W < H,
+      R = pr ? 8.5 : 13;
+    camera.position.set(Math.sin(a) * R, pr ? 4.4 : 6.5, Math.cos(a) * R);
+    camera.lookAt(0, pr ? 1.5 : 1.6, 0);
   }
   updateAtmosphere();
   sun.position.set(p.x + 12, 26, p.z + 9);
