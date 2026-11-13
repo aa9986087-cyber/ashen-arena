@@ -151,7 +151,9 @@ function liveSnap() {
   const b = G.boss && !G.boss.dead ? G.boss : null;
   return {
     ts: r2(performance.now() / 1000), // our clock: the viewer plays snapshots back on this timeline
-    p: [r2(p.x), r2(p.z), r1(p.face), Math.round(p.hp), p.maxHp, p.moving ? 1 : 0],
+    p: [r2(p.x), r2(p.z), r1(p.face), Math.round(p.hp), p.maxHp, p.moving ? 1 : 0, r2(p.swing || 0)],
+    ev: LIVE.ev.splice(0),
+    co: G.coins,
     c: S.char,
     w: G.weapons[0].id,
     e: E,
@@ -202,6 +204,59 @@ function liveTick(dt) {
     LIVE.sendT = 0.1;
     LIVE.stream.send('snap', liveSnap());
   }
+}
+
+/* ---- fight events for viewers: the effect helpers are wrapped so that, while we stream, each outermost call
+   (a damage number, a sword arc, a kill burst, lightning, an explosion…) is recorded and replayed by the viewer */
+const LIVE_FX = [
+  'text',
+  'ring',
+  'parts',
+  'slashFx',
+  'vfxStorm',
+  'vfxSkyBolt',
+  'vfxBolt',
+  'vfxTornado',
+  'vfxBlackHole',
+  'vfxToxic',
+  'vfxFrostBurst',
+  'vfxHeal',
+  'vfxPhoenix',
+  'vfxBladeWhirl',
+  'vfxExplosion',
+  'vfxSparks',
+];
+LIVE.ev = [];
+LIVE.depth = 0;
+const liveArg = a =>
+  typeof a === 'number'
+    ? Math.round(a * 100) / 100
+    : Array.isArray(a)
+      ? a.map(liveArg)
+      : a && typeof a === 'object'
+        ? {
+            x: liveArg(a.x),
+            z: liveArg(a.z),
+            d: liveArg(a.d),
+            col: a.col && liveArg(a.col),
+            w: a.w,
+            life: a.life,
+            rough: a.rough,
+          }
+        : a;
+for (const name of LIVE_FX) {
+  const orig = window[name];
+  if (typeof orig !== 'function') continue;
+  window[name] = function (...args) {
+    if (LIVE.stream && LIVE.depth === 0 && LIVE.ev.length < 60)
+      LIVE.ev.push([LIVE_FX.indexOf(name), args.map(liveArg)]);
+    LIVE.depth++;
+    try {
+      return orig.apply(this, args);
+    } finally {
+      LIVE.depth--;
+    }
+  };
 }
 
 /* ---- watching someone's run: snapshots are buffered and played back ~0.2 s behind, interpolating
@@ -295,6 +350,24 @@ function liveWatchStep(dt) {
     k = span > 0 ? Math.min(1, Math.max(0, (Wt.vt - sa.ts) / span)) : 1;
   const s = sb,
     p = G.p;
+  for (const q of B)
+    if (q.ts <= Wt.vt && q.ts > (Wt.evTs || 0)) {
+      Wt.evTs = q.ts;
+      for (const [fi, args] of q.ev || []) {
+        const fn = window[LIVE_FX[fi]];
+        try {
+          if (fn) fn(...args);
+        } catch (e) {}
+      }
+    }
+  const age = (list, life) => {
+    for (const q of list) q.l += dt;
+    return list.filter(q => q.l < life(q));
+  };
+  G.texts = age(G.texts, () => FX_LIFE.text);
+  G.rings = age(G.rings, q => q.d);
+  G.slashes = age(G.slashes, () => FX_LIFE.slash);
+  G.bolts = age(G.bolts, () => FX_LIFE.bolt);
   // hero (borrowed for drawing) and stage
   if (Wt.char !== s.c + s.w) {
     Wt.char = s.c + s.w;
@@ -317,6 +390,8 @@ function liveWatchStep(dt) {
   if (p.moving) p.walk += dt * 10;
   p.hp = P[3];
   p.maxHp = P[4];
+  p.swing = P[6] || 0;
+  G.coins = s.co | 0;
   Object.assign(G, { lvl: s.l, kills: s.k, t: s.t, wave: s.wv, depth: s.d, bossName: s.bn, xp: 0, need: 1 });
   // enemies: matched by id between the two snapshots, so each one glides along its own path
   const prev = new Map();
@@ -375,12 +450,12 @@ function liveWatchStep(dt) {
   G.bossOn = !!bo;
   G.enemies = bo ? list.concat([bo]) : list;
   // shots fly on from their snapshot position at their own speed
-  const age = Math.max(0, Wt.vt - s.ts);
+  const shotAge = Math.max(0, Wt.vt - s.ts);
   G.shots.length = 0;
   for (let o = 0; o < s.sh.length; o += 6)
     G.shots.push({
-      x: s.sh[o] + s.sh[o + 3] * age,
-      z: s.sh[o + 1] + s.sh[o + 4] * age,
+      x: s.sh[o] + s.sh[o + 3] * shotAge,
+      z: s.sh[o + 1] + s.sh[o + 4] * shotAge,
       kind: s.sh[o + 2],
       vx: s.sh[o + 3],
       vz: s.sh[o + 4],

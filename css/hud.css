@@ -647,3 +647,8 @@ body.mouse .act.big {
     box-shadow: 0 0 14px rgba(255, 70, 70, 0.75);
   }
 }
+
+#watchBar,
+#watchBar * {
+  pointer-events: auto;
+}

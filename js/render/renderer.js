@@ -369,7 +369,7 @@ function render(dt, now) {
       m.material.opacity = 0.85 * (1 - k);
     }
   });
-  vfxUpdate(G.state === 'play' ? dt : 0);
+  vfxUpdate(G.state === 'play' || G.state === 'watch' ? dt : 0);
   drawScene();
   // 2D overlay
   fx.setTransform(DPR, 0, 0, DPR, 0, 0);
