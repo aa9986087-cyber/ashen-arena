@@ -694,3 +694,11 @@ textarea.txt {
 .pcSeen {
   margin-top: 10px;
 }
+
+/* rows that open a player's card when tapped anywhere */
+.tapRow {
+  cursor: pointer;
+}
+.tapRow:active {
+  filter: brightness(1.25);
+}

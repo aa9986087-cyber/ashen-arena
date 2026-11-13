@@ -102,6 +102,8 @@ function drawBoard() {
   if (!list.length) L.appendChild(el('p', '', 'ما فيه نتائج للحين. العب جولة وسجّل أول رقم.'));
   list.forEach((e, i) => {
     const r = el('div', 'rk' + (e.n === S.name ? ' me' : ''));
+    r.classList.add('tapRow');
+    r.onclick = () => profileOpen(e.n); // the whole row opens the player's card, not only the name
     r.append(
       el('i', '', i + 1),
       profileLink(el('span', '', e.n), e.n),
