@@ -127,6 +127,7 @@ async function duelStart(online, watch) {
   $('dOver').hidden = true;
   G.state = 'duel';
   DUEL.on = true;
+  duelForceLandscape(); // while the tap that started the duel still counts as a user gesture
   // a touch screen needs the on-screen buttons from the first second
   if (matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) document.body.classList.remove('mouse');
   renderer.outputEncoding = THREE.sRGBEncoding; // the duel models are lit in sRGB
@@ -547,9 +548,31 @@ $('dLand').onclick = async () => {
     } else toast('الشاشة بالعرض الحين 👍');
   }
 };
-// the phone itself turned to landscape (rotation lock off): the turned duel would be sideways twice, undo it
+/** The duel is played in landscape, always: on phones, full screen + orientation lock where the browser allows it
+    (Android); and whenever the screen is still upright (iPhone, or the lock refused), the duel is turned sideways. */
+function duelForceLandscape() {
+  const touch = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+  if (!touch) return;
+  const d = document.documentElement;
+  Promise.resolve(
+    !document.fullscreenElement && d.requestFullscreen ? d.requestFullscreen({ navigationUI: 'hide' }) : null
+  )
+    .then(() =>
+      screen.orientation && screen.orientation.lock ? screen.orientation.lock('landscape') : Promise.reject()
+    )
+    .then(() => (DUEL.locked = true))
+    .catch(() => {});
+  duelKeepLandscape();
+}
+function duelKeepLandscape() {
+  const touch = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+  if (DUEL.on && touch && innerHeight > innerWidth && !duelRotated()) duelSetRot(true);
+}
 addEventListener('resize', () => {
+  // the phone itself turned to landscape: the turned duel would be sideways twice, undo it…
   if (duelRotated() && innerWidth > innerHeight) duelSetRot(false);
+  // …and turned back upright mid-duel: turn the duel again
+  else duelKeepLandscape();
 });
 function duelUnlock() {
   if (duelRotated()) duelSetRot(false);
