@@ -106,12 +106,23 @@ async function profileOpen(name) {
     row('🦸', 'أبطال مفتوحة', (s.h || 1) + ' / ' + Object.keys(CHARS).length);
     row('🏆', 'إنجازات', (s.ach || 0) + ' / ' + ACH.length);
   }
-  if (score) row('📊', 'رقمه في الصدارة', score.kills + ' قتلة · مستوى ' + score.lvl);
+  if (!prof && score) {
+    // no profile yet (hasn't played since profiles arrived): build the card from the leaderboard record
+    B.appendChild(el('p', 'pcReach', '🗺️ ' + profileReach({ mb: score.bosses })));
+    row('💀', 'أحسن جولة', score.kills + ' قتلة');
+    row('⭐', 'أعلى مستوى', score.lvl);
+    row('⏱', 'أطول جولة', fmtT(score.t || 0));
+    row('👑', 'زعماء في جولة وحدة', score.bosses || 0);
+  } else if (score) row('📊', 'رقمه في الصدارة', score.kills + ' قتلة · مستوى ' + score.lvl);
   if (duels.length) {
     const w = duels.filter(r => r.winner === name).length;
     row('⚔️', 'المبارزات', w + ' فوز · ' + (duels.length - w) + ' خسارة');
   }
   if (prof && !mine) B.appendChild(el('p', 'note pcSeen', 'آخر ظهور ' + chatAgo(prof.updated_at)));
+  if (!prof)
+    B.appendChild(
+      el('p', 'note pcSeen', 'باقي معلوماته (الأبطال، الإنجازات، مجموع القتلات) تطلع بعد ما يلعب بالتحديث الجديد.')
+    );
 }
 $('pcClose').onclick = () => ($('pcard').hidden = true);
 $('pcard').onclick = e => {
