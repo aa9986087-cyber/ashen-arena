@@ -57,10 +57,24 @@ function hit(e, dmg, o) {
   if (G.ups.rage && G.p.hp < G.p.maxHp * 0.35) dmg *= 1 + 0.25 * G.ups.rage;
   if (crit && G.ups.vamp) heal(G.ups.vamp);
   if (e.boss || e.elite) dmg *= G.p.bossMul || 1;
-  if (crit && G.ups.ice && !e.boss) e.frz = Math.max(e.frz || 0, 0.4 + 0.25 * G.ups.ice);
+  if (crit && G.ups.ice && !e.boss) {
+    e.frz = Math.max(e.frz || 0, 0.4 + 0.25 * G.ups.ice);
+    vfxSparks(e.x, 1, e.z, 8, [0.7, 1.1, 1.8], 4, 0.3, 0.45);
+  }
   if (G.ups.shock && !o.aoe && ++G.shockN >= 14 - 2 * G.ups.shock) {
     G.shockN = 0;
     ring(e.x, e.z, 0.3, 3 * G.p.area, 0.3, [0.5, 0.9, 1.5]);
+    for (let i = 0; i < 5; i++) {
+      const a = Math.random() * TAU,
+        R = 3 * G.p.area;
+      vfxBolt(
+        [
+          [e.x, 1, e.z],
+          [e.x + Math.cos(a) * R, 0.4, e.z + Math.sin(a) * R],
+        ],
+        { w: 0.4, life: 0.16, rough: 0.4 }
+      );
+    }
     AU.play('bolt');
     eachInRadius(
       e.x,
@@ -165,9 +179,55 @@ function drop(x, z, kind, v) {
   }
   G.picks.push({ x, z, k: kind, v, mag: false, t: Math.random() * 6 });
 }
-function explode(x, z, R, dmg, quiet) {
-  ring(x, z, 0.3, R, 0.35, [1, 0.6, 0.2]);
-  parts(x, 0.6, z, quiet ? 8 : 16, 1, 0.6, 0.2, 9, 0.3);
+/** look: 'fire' (default) | 'elec' | 'void' | 'wind' — how the blast is drawn. */
+function explode(x, z, R, dmg, quiet, look) {
+  if (look === 'elec') {
+    ring(x, z, 0.3, R, 0.3, [0.5, 0.8, 1.6]);
+    vfxP({ x, y: 0.6, z, life: 0.25, s: R * 1.6, s1: R * 2.2, r: 0.6, g: 0.85, b: 1.8 });
+    vfxSparks(x, 0.5, z, 26, [0.6, 0.9, 1.8], 9, 0.3, 0.5);
+    for (let i = 0; i < 4; i++) {
+      const a = Math.random() * TAU;
+      vfxBolt(
+        [
+          [x, 0.4, z],
+          [x + Math.cos(a) * R, 0.2, z + Math.sin(a) * R],
+        ],
+        { w: 0.5, life: 0.18, rough: 0.35 }
+      );
+    }
+  } else if (look === 'void') {
+    ring(x, z, 0.3, R, 0.4, [0.8, 0.4, 1.4]);
+    vfxP({ x, y: 1.2, z, life: 0.3, s: R * 1.8, s1: R * 2.6, r: 1, g: 0.4, b: 1.8 });
+    vfxSparks(x, 1.2, z, 40, [1, 0.45, 1.8], 12, 0.35, 0.7);
+    vfxSmoke(x, 0.6, z, 8, [0.18, 0.05, 0.3, 0.55], R * 0.5, 2.2, 1.2, 0.8);
+  } else if (look === 'wind') {
+    ring(x, z, 0.3, R, 0.35, [0.9, 0.9, 0.8]);
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * TAU;
+      vfxP({
+        smoke: 1,
+        x,
+        y: 0.5,
+        z,
+        vx: Math.cos(a) * R * 3,
+        vy: rand(0.3, 1.2),
+        vz: Math.sin(a) * R * 3,
+        life: rand(0.5, 0.8),
+        s: 1.2,
+        s1: 2.4,
+        r: 0.7,
+        g: 0.68,
+        b: 0.6,
+        a: 0.5,
+        drag: 3,
+        fade: 1,
+      });
+    }
+    vfxSparks(x, 0.8, z, 12, [1.2, 1.2, 1.1], 8, 0.22, 0.4);
+  } else {
+    ring(x, z, 0.3, R, 0.35, [1, 0.6, 0.2]);
+    vfxExplosion(x, z, R, R > 6);
+  }
   if (!quiet) {
     AU.play('boom');
     shake(0.35);
@@ -210,8 +270,26 @@ function eRing(x, z, n, spd, dmg, off = 0, shift = 0) {
 function eFan(x, z, ang, k, step, spd, dmg) {
   for (let j = -k; j <= k; j++) eShot(x, z, ang + j * step, spd, dmg);
 }
-function zone(x, z, r, delay, dmg, friendly) {
-  G.zones.push({ x, z, r, l: 0, d: delay, dmg, f: friendly, sty: friendly ? 0 : eSrc });
+/** kind (friendly zones): 'meteor' / 'star' fall as burning rocks, 'sky' is lightning from a storm cloud. */
+function zone(x, z, r, delay, dmg, friendly, kind) {
+  const q = { x, z, r, l: 0, d: delay, dmg, f: friendly, sty: friendly ? 0 : eSrc, kind };
+  G.zones.push(q);
+  if (kind === 'sky') vfxStorm(x, z, delay + 0.45);
+  else if (kind === 'meteor' || kind === 'star')
+    vfxEmit(
+      x,
+      z,
+      delay,
+      (em, dt) => {
+        // ride along the falling rock (same path the renderer draws it on)
+        const k = Math.min(1, q.l / q.d);
+        em.mx = q.x + (1 - k) * 6;
+        em.my = (1 - k) * 26 + 1;
+        em.mz = q.z - (1 - k) * 4;
+        vfxMeteorTrail(em, dt);
+      },
+      { size: kind === 'meteor' ? 1.3 : 0.8 }
+    );
 }
 function slashFx(ang, tier, R) {
   G.slashes.push({ a: ang, tier, R, l: 0 });
@@ -385,7 +463,8 @@ function fire(w, ang) {
     ring(p.x, p.z, 0.5, 3, 0.25, [1, 0.8, 0.2]);
   }
 }
-function boltStrike(n, dmg, fromX, fromZ) {
+/** Lightning that jumps between enemies. sky: the bolt card — it falls from a storm cloud onto the first one. */
+function boltStrike(n, dmg, fromX, fromZ, sky) {
   if (G.ups.thunderlord) {
     n += 2;
     dmg *= 2;
@@ -407,6 +486,18 @@ function boltStrike(n, dmg, fromX, fromZ) {
   if (pts.length > 1) {
     G.bolts.push({ pts, l: 0 });
     AU.play('bolt');
+    const lord = G.ups.thunderlord,
+      col = lord ? [1.3, 0.8, 1.9] : [0.45, 0.75, 1.6],
+      w = lord ? 1.5 : 1;
+    let from = 0;
+    if (sky) {
+      vfxStorm(pts[1][0], pts[1][1], 0.9, lord);
+      vfxSkyBolt(pts[1][0], pts[1][1], { col, w: w * 1.2 });
+      from = 1;
+    }
+    const chain = pts.slice(from).map(q => [q[0], 1.2, q[1]]);
+    if (chain.length > 1) vfxBolt(chain, { col, w, life: 0.3 });
+    for (const q of pts.slice(1)) vfxSparks(q[0], 1.1, q[1], 5, col, 5, 0.25, 0.35);
   }
 }
 function dash() {
@@ -424,7 +515,10 @@ function dash() {
   p.dashCd = p.dashMax;
   p.inv = Math.max(p.inv, 0.3);
   AU.play('dash');
-  if (G.ups.vortexdash) G.holes.push({ x: p.x, z: p.z, l: 0, d: 1.2, mini: 1 });
+  if (G.ups.vortexdash) {
+    G.holes.push({ x: p.x, z: p.z, l: 0, d: 1.2, mini: 1 });
+    vfxTornado(p.x, p.z, 1.25, 0.9);
+  }
   parts(p.x, 1, p.z, 10, 0.8, 0.9, 1, 5, 0.2, 0.35);
 }
 function hurt(d) {
@@ -453,6 +547,7 @@ function hurt(d) {
     G.secondT = 60;
     heal(p.maxHp * (0.2 + 0.1 * G.ups.second));
     ring(p.x, p.z, 0.4, 4, 0.5, [0.4, 1.5, 0.6]);
+    vfxHeal(p.x, p.z, 36);
     text(p.x, p.z - 1, 'نفَس ثانٍ', '#6dff8a', true);
   }
   if (p.hp <= 0 && G.ups.phoenix && !G.phoenixUsed) {
@@ -465,6 +560,7 @@ function hurt(d) {
     AU.play('legend');
     shake(1);
     explode(p.x, p.z, 10, 320 * p.dmgMul);
+    vfxPhoenix(p.x, p.z);
     eachInRadius(p.x, p.z, 10, e => (e.burn = 4));
     return;
   }

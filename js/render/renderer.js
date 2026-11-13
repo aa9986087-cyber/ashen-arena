@@ -101,7 +101,23 @@ function render(dt, now) {
   // enemies
   bossAura.visible = false;
   if (G.tslowT > 0) TINT.splice(0, 3, 0.7, 0.85, 1.4);
+  const fxOn = G.state === 'play';
   for (const e of G.enemies) {
+    if (fxOn && e.burn > 0 && Math.random() < dt * (e.boss ? 14 : 5))
+      vfxFlame(e.x, e.z, e.boss ? 3.5 : 1.6, e.boss ? 3 : 1);
+    if (fxOn && e.frz > 0 && Math.random() < dt * 5)
+      vfxP({
+        x: e.x + rand(-0.5, 0.5),
+        y: rand(0.4, 1.8),
+        z: e.z + rand(-0.5, 0.5),
+        vy: -0.4,
+        life: 0.7,
+        s: 0.3,
+        s1: 0.05,
+        r: 0.8,
+        g: 1.1,
+        b: 1.7,
+      });
     if (e.boss) {
       const s = e.scale,
         b = bossMesh;
@@ -281,7 +297,7 @@ function render(dt, now) {
   });
   holePool.forEach((m, i) => {
     const h = G.holes[i];
-    m.visible = !!h;
+    m.visible = !!h && !h.mini;
     if (h) {
       const k = Math.min(1, h.l * 3),
         s = 1.6 * k + 0.25 * Math.sin(now * 0.02);
@@ -324,7 +340,7 @@ function render(dt, now) {
     const q = G.zones[i],
       b = ballPool[i];
     m.visible = !!q;
-    b.visible = !!q;
+    b.visible = !!q && q.kind !== 'sky';
     if (q) {
       const k = q.l / q.d;
       m.position.set(q.x, 0.1, q.z);
@@ -353,6 +369,7 @@ function render(dt, now) {
       m.material.opacity = 0.85 * (1 - k);
     }
   });
+  vfxUpdate(G.state === 'play' ? dt : 0);
   drawScene();
   // 2D overlay
   fx.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -360,28 +377,6 @@ function render(dt, now) {
   if (playing) {
     fx.lineJoin = 'round';
     fx.lineCap = 'round';
-    for (const b of G.bolts) {
-      const al = 1 - b.l / FX_LIFE.bolt;
-      fx.globalAlpha = al;
-      fx.shadowColor = '#7fd0ff';
-      fx.shadowBlur = 14;
-      fx.strokeStyle = '#eaf8ff';
-      fx.lineWidth = 3;
-      fx.beginPath();
-      for (let i = 0; i < b.pts.length; i++) {
-        const a = proj(b.pts[i][0], 1.2, b.pts[i][1]);
-        if (!i) fx.moveTo(a[0], a[1]);
-        else {
-          const pr = proj(b.pts[i - 1][0], 1.2, b.pts[i - 1][1]);
-          for (let j = 1; j <= 4; j++) {
-            const t = j / 4,
-              jx = j < 4 ? rand(-9, 9) : 0;
-            fx.lineTo(pr[0] + (a[0] - pr[0]) * t + jx, pr[1] + (a[1] - pr[1]) * t + jx);
-          }
-        }
-      }
-      fx.stroke();
-    }
     fx.shadowBlur = 0;
     fx.textAlign = 'center';
     for (const q of G.texts) {

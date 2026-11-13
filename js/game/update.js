@@ -11,8 +11,10 @@ function updExpansionAbilities(dt) {
     tm = G.tm,
     every = (k, t) => (tm[k] -= dt) <= 0 && ((tm[k] = t), true),
     near = R => G.enemies.filter(e => !e.dead && (e.x - p.x) ** 2 + (e.z - p.z) ** 2 < R * R);
-  if (u.spikes && p.moving && every('spikes', 0.35))
+  if (u.spikes && p.moving && every('spikes', 0.35)) {
     G.clouds.push({ x: p.x, z: p.z, r: 1.5 * p.area, l: 0, d: 2.2, tick: 0, dmg: 4 + 3 * u.spikes, col: 0x9a5aff });
+    vfxToxic(p.x, p.z, 1.3 * p.area, 1.4, true);
+  }
   if (u.mines && every('mines', 3.6 - 0.5 * u.mines)) G.mines.push({ x: p.x, z: p.z, t: 0 });
   for (const m of G.mines) {
     m.t += dt;
@@ -24,6 +26,26 @@ function updExpansionAbilities(dt) {
   G.mines = G.mines.filter(m => !m.done);
   if (u.firering && every('firering', 6)) {
     ring(p.x, p.z, 0.5, 6 * p.area, 0.5, [1.6, 0.6, 0.15]);
+    for (let i = 0; i < 70; i++) {
+      const a = (i / 70) * TAU,
+        sp = 6 * p.area * rand(1.6, 2.1);
+      vfxP({
+        x: p.x,
+        y: rand(0.2, 0.9),
+        z: p.z,
+        vx: Math.cos(a) * sp,
+        vy: rand(1, 2.5),
+        vz: Math.sin(a) * sp,
+        life: rand(0.45, 0.6),
+        s: rand(0.9, 1.4),
+        s1: 0.3,
+        r: 1.7,
+        g: rand(0.45, 0.75),
+        b: 0.1,
+        drag: 2.2,
+      });
+    }
+    vfxSmoke(p.x, 0.4, p.z, 10, [0.15, 0.1, 0.08, 0.4], 6 * p.area * 0.6, 1.8, 1, 1.2);
     AU.play('nova');
     eachInRadius(p.x, p.z, 6 * p.area, e => {
       hit(e, (10 + 6 * u.firering) * p.dmgMul, { aoe: 1, quiet: 1, noCrit: 1, burn: 1 });
@@ -83,27 +105,44 @@ function updExpansionAbilities(dt) {
     const pool = near(18);
     for (let k = 0; k < 1 + u.skystrike && pool.length; k++) {
       const e = pool.splice((Math.random() * pool.length) | 0, 1)[0];
-      zone(e.x, e.z, 2.2 * p.area, 0.3, (35 + 20 * u.skystrike) * p.dmgMul * (u.thunderlord ? 2 : 1), true);
+      zone(e.x, e.z, 2.2 * p.area, 0.55, (35 + 20 * u.skystrike) * p.dmgMul * (u.thunderlord ? 2 : 1), true, 'sky');
     }
     AU.play('bolt');
   }
   if (u.guardian && every('guardian', 9 - u.guardian)) {
     p.inv = Math.max(p.inv, 1);
     ring(p.x, p.z, 0.5, 4, 0.5, [1.6, 1.4, 0.6]);
+    vfxP({ x: p.x, y: 1.4, z: p.z, life: 0.5, s: 7, s1: 9, r: 1.6, g: 1.3, b: 0.5, a: 0.6 });
+    for (let i = 0; i < 24; i++)
+      vfxP({
+        x: p.x,
+        y: 0.3,
+        z: p.z,
+        life: 1,
+        s: 0.4,
+        s1: 0.1,
+        r: 1.8,
+        g: 1.5,
+        b: 0.6,
+        orbit: { cx: p.x, cz: p.z, ang: (i / 24) * TAU, rad: 2.4, w: 2, rise: 2.4 },
+      });
     eachInRadius(p.x, p.z, 4, (e, ang) => hit(e, 10 * p.dmgMul, { aoe: 1, quiet: 1, noCrit: 1, kb: 12, ang }));
   }
   if (u.frostnova && every('frostnova', 7)) {
     ring(p.x, p.z, 0.5, 6 * p.area, 0.6, [0.6, 1, 1.6]);
+    vfxFrostBurst(p.x, p.z, 6 * p.area);
     AU.play('shield');
     eachInRadius(p.x, p.z, 6 * p.area, e => (e.frz = Math.max(e.frz || 0, e.boss ? 0.5 : 1.2 + 0.3 * u.frostnova)));
   }
   if (u.regenburst && every('regenburst', 10)) {
     heal(p.maxHp * (0.05 + 0.03 * u.regenburst));
     ring(p.x, p.z, 0.4, 3, 0.5, [0.4, 1.6, 0.6]);
+    vfxHeal(p.x, p.z, 30);
   }
   if (u.whirl && every('whirl', 5 - 0.5 * u.whirl)) {
     const R = 4 * p.area;
     slashFx(0, 2, R);
+    vfxTornado(p.x, p.z, 0.55, R / 4, [0.8, 0.82, 0.9]).follow = 1;
     AU.play('sword');
     eachInRadius(p.x, p.z, R, (e, ang) => hit(e, (20 + 12 * u.whirl) * p.dmgMul, { kb: 8, ang }));
   }
@@ -111,10 +150,25 @@ function updExpansionAbilities(dt) {
     for (let k = 0; k < 10; k++) {
       const a = Math.random() * TAU,
         r = rand(3, 12);
-      zone(p.x + Math.cos(a) * r, p.z + Math.sin(a) * r, 2.4 * p.area, 0.5 + k * 0.1, 80 * p.dmgMul, true);
+      zone(p.x + Math.cos(a) * r, p.z + Math.sin(a) * r, 2.4 * p.area, 0.5 + k * 0.1, 80 * p.dmgMul, true, 'star');
     }
   if (u.timewarp && every('timewarp', 20)) {
     G.warpT = 5;
+    vfxEmit(p.x, p.z, 5, (em, dt) => {
+      for (let i = vfxRate(em, dt, 30); i > 0; i--)
+        vfxP({
+          x: G.p.x,
+          y: rand(0.2, 2),
+          z: G.p.z,
+          life: 0.6,
+          s: 0.35,
+          s1: 0.1,
+          r: 1.8,
+          g: 1.4,
+          b: 0.5,
+          orbit: { cx: G.p.x, cz: G.p.z, ang: Math.random() * TAU, rad: 1.3, w: 7, rise: 0.8 },
+        });
+    });
     banner('تسارع الزمن', '', 1);
     ring(p.x, p.z, 0.5, 6, 0.6, [1.4, 1.2, 0.4]);
   }
@@ -267,7 +321,7 @@ function update(dt) {
     tm.bolt -= dt;
     if (tm.bolt <= 0 && G.enemies.length) {
       tm.bolt = Math.max(0.9, 2.7 - 0.32 * u.bolt);
-      boltStrike(2 + u.bolt + (u.aura ? 2 : 0), 16 * (1 + 0.24 * u.bolt) * p.dmgMul, p.x, p.z);
+      boltStrike(2 + u.bolt + (u.aura ? 2 : 0), 16 * (1 + 0.24 * u.bolt) * p.dmgMul, p.x, p.z, true);
     }
   }
   if (u.nova) {
@@ -276,6 +330,26 @@ function update(dt) {
       tm.nova = 5.2 - 0.5 * u.nova;
       const R = (4 + 0.55 * u.nova) * p.area;
       ring(p.x, p.z, 0.6, R, 0.4, [0.8, 0.6, 1]);
+      vfxP({ x: p.x, y: 1, z: p.z, life: 0.25, s: R * 1.2, s1: R * 2, r: 1, g: 0.8, b: 1.6 });
+      for (let i = 0; i < 48; i++) {
+        const a = (i / 48) * TAU;
+        vfxP({
+          x: p.x,
+          y: 0.6,
+          z: p.z,
+          vx: Math.cos(a) * R * 2.6,
+          vz: Math.sin(a) * R * 2.6,
+          vy: rand(0, 1),
+          life: 0.4,
+          s: 0.7,
+          s1: 0.2,
+          r: 1.1,
+          g: 0.85,
+          b: 1.7,
+          drag: 2,
+        });
+      }
+      vfxSmoke(p.x, 0.3, p.z, 8, [0.5, 0.45, 0.6, 0.35], R * 0.6, 1.6, 0.8, 0.3);
       AU.play('nova');
       eachInRadius(p.x, p.z, R, (e, ang) => hit(e, (20 + 9 * u.nova) * p.dmgMul, { aoe: 1, kb: 10, ang, quiet: 1 }));
     }
@@ -295,7 +369,16 @@ function update(dt) {
     tm.aura -= dt;
     if (tm.aura <= 0) {
       tm.aura = 0.4;
+      let arcs = 0;
       eachInRadius(p.x, p.z, auraRadius(), e => {
+        if (arcs++ < 3)
+          vfxBolt(
+            [
+              [p.x, 1.2, p.z],
+              [e.x, 1, e.z],
+            ],
+            { w: 0.45, life: 0.16, rough: 0.35 }
+          );
         hit(e, (4 + 3 * u.aura) * p.dmgMul, { aoe: 1, quiet: 1, noCrit: 1 });
         if (u.bolt && Math.random() < 0.08) boltStrike(2, 18 * p.dmgMul, e.x, e.z);
       });
@@ -308,7 +391,7 @@ function update(dt) {
       const pool = G.enemies.filter(e => !e.dead && (e.x - p.x) ** 2 + (e.z - p.z) ** 2 < 324);
       if (pool.length) {
         const e = G.boss && Math.random() < 0.5 ? G.boss : pick(pool);
-        zone(e.x, e.z, 4.4 * p.area, 0.8, (60 + 30 * u.meteor) * p.dmgMul, true);
+        zone(e.x, e.z, 4.4 * p.area, 0.8, (60 + 30 * u.meteor) * p.dmgMul, true, 'meteor');
       }
     }
   }
@@ -319,6 +402,7 @@ function update(dt) {
       const near = G.enemies.filter(e => !e.dead && (e.x - p.x) ** 2 + (e.z - p.z) ** 2 < 196);
       if (near.length) {
         const e = pick(near);
+        vfxToxic(e.x, e.z, (2.6 + 0.4 * u.poison) * p.area, 3);
         G.clouds.push({
           x: e.x,
           z: e.z,
@@ -346,7 +430,9 @@ function update(dt) {
       const near = G.enemies.filter(e => !e.dead && (e.x - p.x) ** 2 + (e.z - p.z) ** 2 < 256);
       if (near.length) {
         const e = pick(near);
-        G.holes.push({ x: e.x, z: e.z, l: 0, d: 2.4 });
+        const h = { x: e.x, z: e.z, l: 0, d: 2.4 };
+        G.holes.push(h);
+        vfxBlackHole(h);
         AU.play('nova');
       }
     }
@@ -365,12 +451,14 @@ function update(dt) {
         e.z += dz * f;
       }
     }
-    if (Math.random() < dt * 6) ring(h.x, h.z, 9, 0.5, 0.5, [0.6, 0.3, 1]);
+    if (!h.mini && Math.random() < dt * 6) ring(h.x, h.z, 9, 0.5, 0.5, [0.6, 0.3, 1]);
     if (h.l >= h.d) {
       h.done = 1;
-      if (h.mini) explode(h.x, h.z, 3 * p.area, (40 + 25 * (u.vortexdash || 1)) * p.dmgMul, true);
-      else explode(h.x, h.z, 5 * p.area, 140 * p.dmgMul);
-      ring(h.x, h.z, 0.5, 7, 0.6, [0.8, 0.4, 1]);
+      if (h.mini) explode(h.x, h.z, 3 * p.area, (40 + 25 * (u.vortexdash || 1)) * p.dmgMul, true, 'wind');
+      else {
+        explode(h.x, h.z, 5 * p.area, 140 * p.dmgMul, false, 'void');
+        ring(h.x, h.z, 0.5, 7, 0.6, [0.8, 0.4, 1]);
+      }
     }
   }
   G.holes = G.holes.filter(h => !h.done);
@@ -380,6 +468,7 @@ function update(dt) {
       tm.tslow = 15;
       G.tslowT = 4;
       ring(p.x, p.z, 1, 18, 0.8, [0.5, 0.7, 1.3]);
+      vfxFrostBurst(p.x, p.z, 6);
       banner('إبطاء الزمن', '', 1);
     }
   }
@@ -544,8 +633,10 @@ function update(dt) {
     z.l += dt;
     if (z.l >= z.d) {
       z.done = true;
-      if (z.f) explode(z.x, z.z, z.r, z.dmg);
-      else {
+      if (z.f) {
+        if (z.kind === 'sky') vfxSkyBolt(z.x, z.z, { w: 1.6, col: G.ups.thunderlord ? [1.3, 0.8, 1.9] : undefined });
+        explode(z.x, z.z, z.r, z.dmg, false, z.kind === 'sky' ? 'elec' : 'fire');
+      } else {
         ring(z.x, z.z, 0.3, z.r, 0.3, [1, 0.3, 0.2]);
         parts(z.x, 0.6, z.z, 14, 1, 0.4, 0.2, 9, 0.3);
         AU.play('boom');

@@ -3,6 +3,7 @@
 let G = null;
 const IN = { k: {}, md: false, atk: false, mx: 0, mz: 0, sx: 0, sy: 0, joy: null, jx: 0, jz: 0, touch: false };
 function newRun() {
+  vfxClear();
   const ch = CHARS[S.char];
   G = {
     state: 'menu',

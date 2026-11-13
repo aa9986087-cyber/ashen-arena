@@ -1,23 +1,24 @@
 'use strict';
 /* Particles, floating text, rings, screen shake, banners and toasts. */
+/** Glowing sparks (drawn by the VFX engine, js/render/vfx.js). */
 function parts(x, y, z, n, r, g, b, spd, size, life) {
-  const cap = S.set.qual ? 560 : 260;
-  for (let i = 0; i < n && G.parts.length < cap; i++) {
+  for (let i = 0; i < n; i++) {
     const a = Math.random() * TAU,
       s = rand(0.3, 1) * spd;
-    G.parts.push({
+    vfxP({
       x,
       y,
       z,
       vx: Math.cos(a) * s,
       vy: rand(1, 5) * (spd / 6),
       vz: Math.sin(a) * s,
-      l: 0,
-      m: rand(0.5, 1) * (life || 0.6),
-      s: size || 0.2,
-      r,
-      g,
-      b,
+      life: rand(0.5, 1) * (life || 0.6),
+      s: (size || 0.2) * 3,
+      r: r * 1.4,
+      g: g * 1.4,
+      b: b * 1.4,
+      grav: 12,
+      drag: 1,
     });
   }
 }
