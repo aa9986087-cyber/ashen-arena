@@ -17,6 +17,7 @@ const DM = {
   stRegen: 32,
   stDelay: 0.7,
   walk: 2.6,
+  jog: 3.8, // stick pushed well forward: a jog, free of stamina
   run: 5.3, // sprint (stick pushed all the way forward / C): drains stamina
   runCost: 14,
   back: 2.0,
@@ -491,19 +492,30 @@ class Duelist {
         this.st = Math.max(0, this.st - DM.runCost * dt);
         this.stT = DM.stDelay;
       }
+      // between a walk and the sprint: a jog when the stick is pushed well forward
+      this.jogging = !this.running && this.act === 'idle' && mz > 0.5 && m > 0.7 && !!this.acts.jog;
       const sp =
-        (this.act === 'block' ? DM.blockWalk : this.running ? DM.run : mz < -0.1 ? DM.back : DM.walk) *
-        (this.armless ? 0.65 : 1);
+        (this.act === 'block'
+          ? DM.blockWalk
+          : this.running
+            ? DM.run
+            : this.jogging
+              ? DM.jog
+              : mz < -0.1
+                ? DM.back
+                : DM.walk) * (this.armless ? 0.65 : 1);
       vx = (fx * mz - fz * mx) * sp;
       vz = (fz * mz + fx * mx) * sp;
       this.moving = Math.min(1, m) * (mz < -0.1 ? -1 : 1);
       if (this.act === 'idle') {
         // a real sprint clip when running (Universal Animation Library), the walk otherwise
-        const run = this.running && this.acts.run;
-        if (m > 0.15) this.play(run ? 'run' : 'walk', run ? 0.2 : 0.15, 0);
+        const run = this.running && this.acts.run,
+          jog = this.jogging;
+        if (m > 0.15) this.play(run ? 'run' : jog ? 'jog' : 'walk', run || jog ? 0.2 : 0.15, 0);
         else this.play('idle', 0.2, 0);
         if (m > 0.15)
-          this.cur.timeScale = run ? 1.05 : (mz < -0.1 ? -1 : 1) * clamp(m, 0.5, 1) * (this.running ? 2.05 : 1.1);
+          this.cur.timeScale =
+            run || jog ? 1.05 : (mz < -0.1 ? -1 : 1) * clamp(m, 0.5, 1) * (this.running ? 2.05 : 1.1);
       }
     } else {
       this.moving = 0;
