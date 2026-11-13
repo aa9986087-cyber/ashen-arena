@@ -153,6 +153,7 @@ function buildLab() {
 function openLab() {
   if (!LAB || G.state !== 'play') return;
   G.state = 'lab';
+  G.lab = true; // a run touched by test tools never reaches the leaderboard
   buildLab();
   show('lab', true);
 }
