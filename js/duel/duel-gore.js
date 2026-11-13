@@ -302,12 +302,27 @@ function goreCut(f, key, a) {
   // a burst, then the stump pumps blood in pulses
   gV2.set(ax, 0.6, az).normalize();
   goreSpray(pivot, gV2, 90, 5.5, 0.6);
-  GORE.jets.push({ f, cap, bone: parent, t: 0, dur: 5, rate: 70, acc: 0, pump: 1 });
+  const disarmed = key === 'armR' && f.act !== 'dead' && f.hp > 0;
+  GORE.jets.push({ f, cap, bone: parent, t: 0, dur: disarmed ? 14 : 5, rate: disarmed ? 55 : 70, acc: 0, pump: 1 });
   GORE.jets.push({ piece: GORE.pieces[GORE.pieces.length - 1], t: 0, dur: 2.5, rate: 35, acc: 0, pump: 1 });
   // cut while still standing: it bleeds for a while (the owner's copy loses the health), and both sides are told
   if (f.act !== 'dead' && f.hp > 0) {
-    f.bleedT = 5;
-    if (!DUEL.watch) duelFloat(f === DUEL.me ? 'انقطعت يدك! 🩸' : 'بترت يده! 🩸', 'brk');
+    f.bleedT = disarmed ? 99 : 5;
+    if (!DUEL.watch)
+      duelFloat(
+        disarmed
+          ? f === DUEL.me
+            ? 'طاح سيفك مع يدك! 🩸 تفادى'
+            : 'قطعت يد سيفه! 🩸 خلّص عليه'
+          : f === DUEL.me
+            ? 'انقطعت يدك! 🩸'
+            : 'بترت يده! 🩸',
+        'brk'
+      );
+    if (disarmed) {
+      f.want.block = false;
+      if (f.act === 'block') f.start('idle');
+    }
   }
   if (f === DUEL.me && !DUEL.watch) goreScreen(5);
   else if (DUEL.view === 'fp' && !DUEL.watch && Math.hypot(f.x - DUEL.me.x, f.z - DUEL.me.z) < 2.6) goreScreen(3, true);
@@ -338,26 +353,38 @@ function goreReset(f) {
 /** The defender's own copy decides what a blow cuts off (sent to the other side with the fighter's state). */
 function goreDecide(d, kind) {
   const r = Math.random();
+  const has = k => d.cuts & GORE_PARTS[k].bit;
   if (d.hp <= 0) {
-    if (kind === 'heavy') return r < 0.5 ? 'head' : r < 0.7 ? 'armR' : r < 0.85 ? 'legL' : 'legR';
-    return r < 0.3 ? 'armR' : r < 0.6 ? 'armL' : r < 0.85 ? 'head' : 'legR';
+    let k;
+    if (kind === 'heavy') k = r < 0.5 ? 'head' : r < 0.7 ? 'armR' : r < 0.85 ? 'legL' : 'legR';
+    else k = r < 0.3 ? 'armR' : r < 0.6 ? 'armL' : r < 0.85 ? 'head' : 'legR';
+    return has(k) ? (has('head') ? null : 'head') : k;
   }
-  // mid-fight the off hand can go at any time: a heavy blow sometimes takes the forearm, a light one the hand
-  // (the sword arm, legs and head only go with the killing blow: without them the fight couldn't go on)
-  if (d.cuts & GORE_PARTS.armL.bit) return null;
-  if (kind === 'heavy' && r < 0.3) return 'armL';
-  if (kind === 'light' && r < 0.1 && !(d.cuts & GORE_PARTS.handL.bit)) return 'handL';
+  // mid-fight: the sword arm now and then (the fighter is left helpless and bleeding out), the off arm or hand more often
+  // (legs and head only go with the killing blow)
+  if (!has('armR') && r < (kind === 'heavy' ? 0.12 : 0.04)) return 'armR';
+  if (has('armL')) return null;
+  if (kind === 'heavy' && r < 0.4) return 'armL';
+  if (kind === 'light' && r < 0.14 && !has('handL')) return 'handL';
   return null;
 }
 /* ---- per frame */
 function goreUpdate(dt) {
   if (!GORE.scene || dt <= 0) return;
   const g = 11.5;
-  // a fresh stump drains health for a few seconds (never below 5: the blood loss alone doesn't end the round)
+  // a fresh stump drains health for a few seconds (never below 5); a lost sword arm bleeds out, and that kills
   for (const f of [DUEL.me, DUEL.foe])
     if (f && f.bleedT > 0) {
       f.bleedT -= dt;
-      if (!f.remote && f.act !== 'dead' && DUEL.phase === 'fight') f.hp = Math.max(Math.min(f.hp, 5), f.hp - 2.4 * dt);
+      if (f.remote || f.act === 'dead' || DUEL.phase !== 'fight') continue;
+      if (f.cuts & GORE_PARTS.armR.bit) {
+        f.hp = Math.max(0, f.hp - 6 * dt);
+        if (f.hp <= 0) {
+          f.start('dead');
+          f.play('death', 0.1, 0, true);
+          DS.death(f);
+        }
+      } else f.hp = Math.max(Math.min(f.hp, 5), f.hp - 2.4 * dt);
     }
   // fighters bleeding: a dead body spreads a pool, a badly hurt one drips
   for (const f of [DUEL.me, DUEL.foe]) {

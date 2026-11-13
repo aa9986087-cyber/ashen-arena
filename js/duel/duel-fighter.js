@@ -207,8 +207,12 @@ class Duelist {
     this.t = 0;
     this.hitDone = false;
   }
+  /** The sword fell with the sword arm: no swings, no guard. */
+  get armless() {
+    return !!(this.cuts & 4);
+  }
   light() {
-    if (!this.free || this.st < DM.light.st * 0.5) return false;
+    if (this.armless || !this.free || this.st < DM.light.st * 0.5) return false;
     this.spend(DM.light.st);
     this.start('light');
     if (this.comboT <= 0) this.combo = 0;
@@ -218,7 +222,7 @@ class Duelist {
     return true;
   }
   heavy() {
-    if (!this.free || this.st < DM.heavy.st * 0.5) return false;
+    if (this.armless || !this.free || this.st < DM.heavy.st * 0.5) return false;
     this.spend(DM.heavy.st);
     this.start('heavy');
     this.play('heavy', 0.1, DM.heavy.t * 1.6, true);
@@ -334,7 +338,7 @@ class Duelist {
     let vx = 0,
       vz = 0;
     // block: hold to raise, release to lower
-    if (this.want.block && this.act === 'idle') {
+    if (this.want.block && this.act === 'idle' && !this.armless) {
       this.start('block');
       this.blockT = this.preBlock || 0; // the bot can raise its guard 'early' (a plain block, not a parry)
       this.preBlock = 0;
@@ -349,7 +353,7 @@ class Duelist {
         mx /= m;
         mz /= m;
       }
-      const sp = this.act === 'block' ? DM.blockWalk : mz < -0.1 ? DM.back : DM.walk;
+      const sp = (this.act === 'block' ? DM.blockWalk : mz < -0.1 ? DM.back : DM.walk) * (this.armless ? 0.65 : 1);
       vx = (fx * mz - fz * mx) * sp;
       vz = (fz * mz + fx * mx) * sp;
       this.moving = Math.min(1, m) * (mz < -0.1 ? -1 : 1);
