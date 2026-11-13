@@ -15,6 +15,7 @@ const DUEL = {
   phaseT: 0,
   clock: 60,
   view: 'fp',
+  eyeY: 1.62,
   shake: 0,
   slow: 0,
   atkDown: -1, // time the attack button went down (-1 = up); a long press becomes a heavy swing
@@ -119,12 +120,13 @@ async function duelStart() {
   // a touch screen needs the on-screen buttons from the first second
   if (matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) document.body.classList.remove('mouse');
   renderer.outputEncoding = THREE.sRGBEncoding; // the duel models are lit in sRGB
+  duelSoundsLoad();
   try {
     if (!DUEL.ready) {
       DUEL.scene = duelArena();
       const [a, b] = await Promise.all([duelLoad(), duelLoad()]);
-      DUEL.me = new Duelist(a, 212); // blue cloth: you
-      DUEL.foe = new Duelist(b, 2); // red cloth: the opponent
+      DUEL.me = new Duelist(a, 212, 118); // blue cloth: you
+      DUEL.foe = new Duelist(b, 2, 96); // red cloth, deeper voice: the opponent
       DUEL.scene.add(DUEL.me.root, DUEL.foe.root);
       DUEL.me.onHit = r => duelOutcome(DUEL.me, DUEL.foe, r);
       DUEL.foe.onHit = r => duelOutcome(DUEL.foe, DUEL.me, r);
@@ -149,6 +151,7 @@ async function duelStart() {
 }
 function duelExit() {
   DUEL.on = false;
+  duelUnlock();
   $('duel').hidden = true;
   renderer.outputEncoding = THREE.LinearEncoding;
   scene.traverse(o => o.material && (o.material.needsUpdate = true));
@@ -165,6 +168,7 @@ function duelRound() {
   DUEL.phase = 'intro';
   DUEL.phaseT = 2.4;
   duelMsg('الجولة ' + DUEL.round, DUEL.score[0] + ' - ' + DUEL.score[1]);
+  DS.round(DUEL.round, DUEL.score[0] === DUEL_WIN - 1 && DUEL.score[1] === DUEL_WIN - 1);
   duelPips();
 }
 
@@ -336,6 +340,25 @@ press(
 );
 press('dDodge', duelDodge);
 $('dView').onclick = () => duelToggleView();
+/** Landscape: full screen + orientation lock where the browser allows it (Android); otherwise ask to rotate. */
+$('dLand').onclick = async () => {
+  try {
+    const d = document.documentElement;
+    if (!document.fullscreenElement && d.requestFullscreen) await d.requestFullscreen({ navigationUI: 'hide' });
+    await screen.orientation.lock('landscape');
+    DUEL.locked = true;
+  } catch (e) {
+    toast('لف جوالك بالعرض 🔄 (جهازك ما يسمح للمواقع تقلب الشاشة)');
+  }
+};
+function duelUnlock() {
+  if (!DUEL.locked) return;
+  DUEL.locked = false;
+  try {
+    screen.orientation.unlock();
+    if (document.fullscreenElement) document.exitFullscreen();
+  } catch (e) {}
+}
 $('dExit').onclick = () => duelExit();
 $('dAgain').onclick = () => {
   $('dOver').hidden = true;
@@ -364,14 +387,13 @@ function duelCamera(dt) {
     f = me.face,
     fx = Math.sin(f),
     fz = Math.cos(f);
-  for (const m of me.headMeshes) m.visible = !fp;
+  for (const m of me.fpHide) m.visible = !fp;
   cam.fov = fp ? 72 : 55;
   if (fp) {
-    me.headBone.getWorldPosition(dV);
-    dV.x += fx * 0.14;
-    dV.z += fz * 0.14;
-    dV.y += 0.06;
-    cam.position.copy(dV);
+    // a steady eye: tied to where the fighter stands, not to the head bone (hit and fall clips swing the head around)
+    const eye = me.act === 'dodge' ? 1.05 : me.act === 'knock' ? 1.4 : 1.62;
+    DUEL.eyeY += (eye - DUEL.eyeY) * Math.min(1, dt * 10);
+    cam.position.set(me.x + fx * 0.12, DUEL.eyeY, me.z + fz * 0.12);
   } else {
     cam.position.set(me.x - fx * 3.1 - fz * 0.75, 2.15, me.z - fz * 3.1 + fx * 0.75);
   }
@@ -424,7 +446,7 @@ function duelStep(rdt) {
     if (DUEL.phase === 'intro' && DUEL.phaseT <= 0.9 && !DUEL.saidFight) {
       DUEL.saidFight = true;
       duelMsg('قاتل!', '', 'go');
-      AU.play('boss');
+      dPlay('v_go', 1);
     }
     if (DUEL.phase === 'intro' && DUEL.phaseT <= 0) {
       DUEL.phase = 'fight';
@@ -450,7 +472,9 @@ function duelRoundEnd() {
   duelPips();
   if (draw) duelMsg('تعادل', 'الوقت انتهى بنفس الصحة');
   else duelMsg(meWon ? 'فزت بالجولة' : 'خسرت الجولة', DUEL.score[0] + ' - ' + DUEL.score[1], meWon ? 'win' : 'lose');
-  AU.play(meWon ? 'level' : 'hurt');
+  DS.crowd(meWon ? 0.22 : 0.14);
+  if (DUEL.clock <= 0) dPlay('v_time_over', 1, 1, 0.3);
+  else if (draw) dPlay('v_its_a_tie', 1, 1, 0.3);
 }
 function duelMatchEnd() {
   const won = DUEL.score[0] >= DUEL_WIN;
@@ -458,6 +482,7 @@ function duelMatchEnd() {
   $('dOver').hidden = false;
   $('dOverT').textContent = won ? '🏆 انتصرت!' : '💀 هُزمت';
   $('dOverS').textContent = DUEL.score[0] + ' - ' + DUEL.score[1];
-  AU.play(won ? 'win' : 'over');
+  dPlay(won ? 'v_you_win' : 'v_you_lose', 1);
+  DS.crowd(won ? 0.28 : 0.12);
 }
 $('mDuel').onclick = () => duelStart();

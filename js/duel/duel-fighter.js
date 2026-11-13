@@ -114,20 +114,41 @@ function duelRecolor(tex, hue) {
   duelTexCache.set(key, t);
   return t;
 }
+/** Seat the sword in the fist, from the hand's own finger joints: the grip sits in front of the palm (thumb side),
+    the blade leaves the fist on the index-finger side (pinky → index), its edge leading along the fingers. */
+function duelGrip(hand, sword) {
+  const j = n => (hand.children.find(c => c.name === n) || {}).position;
+  const I = j('index_01_r'),
+    P = j('pinky_01_r'),
+    T = j('thumb_01_r');
+  if (!I || !P || !T) return;
+  const across = I.clone().sub(P).normalize(), // blade axis
+    fingers = I.clone().add(P).multiplyScalar(0.5),
+    fwd = fingers.clone().normalize(),
+    palm = new THREE.Vector3().crossVectors(fwd, across).normalize();
+  if (palm.dot(T) < 0) palm.negate(); // the palm faces the thumb's side
+  const edge = new THREE.Vector3().crossVectors(across, palm).normalize();
+  sword.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(edge, across, palm));
+  // in the curl of the fingers: a little short of the knuckles, a little in front of the palm
+  sword.position.copy(fingers.multiplyScalar(0.72)).add(palm.multiplyScalar(0.03));
+}
 class Duelist {
   /** gltf: a freshly parsed duelist.glb; tint: hue (degrees) for the cloth, so the two fighters are told apart. */
-  constructor(gltf, tint) {
+  constructor(gltf, tint, pitch = 110) {
+    this.pitch = pitch; // voice pitch (Hz) of this fighter's grunts
     this.root = gltf.scene;
     this.mixer = new THREE.AnimationMixer(this.root);
     this.acts = {};
     for (const a of gltf.animations) this.acts[a.name] = this.mixer.clipAction(a);
-    this.headMeshes = []; // hidden in first person so the camera does not see the inside of the hood
+    this.headMeshes = []; // head, hood, hair: hidden in first person
+    this.fpHide = []; // everything but the arms: hidden in first person (you see your arms and sword)
     this.root.traverse(o => {
       if (o.isMesh) {
         o.castShadow = true;
         o.frustumCulled = false;
         if (/Hood|SuperHero|Hair|Beard|Eyebrow|Eyes|Plane/i.test(o.name) || /hair|beard/i.test(o.material.name))
           this.headMeshes.push(o);
+        if (!/Arms/i.test(o.name)) this.fpHide.push(o);
         if (tint !== undefined && /Ranger/i.test(o.name) && o.material.map)
           o.material.map = duelRecolor(o.material.map, tint);
       }
@@ -135,8 +156,10 @@ class Duelist {
       if (o.isBone && o.name === 'Head' && !this.headBone) this.headBone = o;
     });
     this.sword = duelSword();
-    this.sword.rotation.set(0, 0, -Math.PI / 2);
-    if (this.hand) this.hand.add(this.sword);
+    if (this.hand) {
+      this.hand.add(this.sword);
+      duelGrip(this.hand, this.sword);
+    }
     this.want = { mx: 0, mz: 0, block: false };
     this.reset(0, 0, 0);
   }
@@ -186,7 +209,7 @@ class Duelist {
     this.start('light');
     if (this.comboT <= 0) this.combo = 0;
     this.play(['atk1', 'atk2', 'atk3'][this.combo++ % 3], 0.08, DM.light.t * 1.15, true);
-    AU.play('sword');
+    DS.light(this);
     return true;
   }
   heavy() {
@@ -194,6 +217,7 @@ class Duelist {
     this.spend(DM.heavy.st);
     this.start('heavy');
     this.play('heavy', 0.1, DM.heavy.t * 1.6, true);
+    DS.heavy(this);
     return true;
   }
   /** Roll: (lx, lz) = direction in the fighter's own frame (x right, z forward); none = backwards. */
@@ -209,7 +233,7 @@ class Duelist {
     this.spend(DM.dodge.st);
     this.start('dodge');
     this.play('roll', 0.06, DM.dodge.t, true);
-    AU.play('dash');
+    DS.dodge();
     return true;
   }
   /** Took a hit (kind: light | heavy | chip). */
@@ -224,8 +248,10 @@ class Duelist {
     if (this.hp <= 0) {
       this.start('dead');
       this.play('death', 0.1, 0, true);
+      DS.death(this);
       return;
     }
+    DS.hurt(this, kind === 'heavy');
     this.start(kind === 'heavy' ? 'knock' : 'hit');
     this.stun = kind === 'heavy' ? 0.75 : 0.4;
     this.play(kind === 'heavy' ? 'knock' : 'hit', 0.05, this.stun * 1.4, true);
@@ -293,11 +319,6 @@ class Duelist {
         this.onHit && this.onHit(duelResolve(this, foe, this.act));
       }
     }
-    if (this.act === 'heavy' && this.t > 0.2 && this.t < 0.3 && !this.heavySnd) {
-      this.heavySnd = 1;
-      AU.play('sword');
-    }
-    if (this.act !== 'heavy') this.heavySnd = 0;
     // end of timed states
     if (M && this.t >= M.t) {
       if (this.act === 'light') this.comboT = 0.7;
@@ -337,23 +358,22 @@ function duelResolve(a, d, kind) {
     if (d.blockT < DM.parry) {
       a.stagger(kind === 'heavy' ? 1.1 : 0.9);
       d.st = Math.min(DM.stMax, d.st + 15);
-      AU.play('shield');
+      DS.parry();
       return 'parry';
     }
     if (kind === 'heavy' || d.st < DM.blockCost) {
       d.stagger(0.8);
       d.damage(M.dmg * 0.3, a, 'chip');
       if (d.act !== 'dead') d.stagger(0.8);
-      AU.play('boom');
+      DS.breakGuard();
       return 'break';
     }
     d.spend(DM.blockCost);
     a.kx -= Math.sin(a.face) * 2.5;
     a.kz -= Math.cos(a.face) * 2.5;
-    AU.play('clang');
+    DS.block();
     return 'block';
   }
   d.damage(M.dmg, a, kind);
-  AU.play(kind === 'heavy' ? 'boom' : 'hit');
   return 'hit';
 }
