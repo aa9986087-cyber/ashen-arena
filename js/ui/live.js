@@ -151,6 +151,7 @@ function liveSnap() {
   const b = G.boss && !G.boss.dead ? G.boss : null;
   return {
     ts: r2(performance.now() / 1000), // our clock: the viewer plays snapshots back on this timeline
+    vr: BUILD,
     p: [r2(p.x), r2(p.z), r1(p.face), Math.round(p.hp), p.maxHp, p.moving ? 1 : 0, r2(p.swing || 0)],
     ev: LIVE.ev.splice(0),
     co: G.coins,
@@ -350,6 +351,10 @@ function liveWatchStep(dt) {
     k = span > 0 ? Math.min(1, Math.max(0, (Wt.vt - sa.ts) / span)) : 1;
   const s = sb,
     p = G.p;
+  if (!Wt.vrWarned && BUILD && (s.vr || 0) < BUILD) {
+    Wt.vrWarned = 1; // an old build streams positions only, without the fight
+    $('watchName').textContent = '👁️ تشاهد ' + Wt.name + ' · ⚠️ نسخته قديمة، خله يحدّث اللعبة';
+  }
   for (const q of B)
     if (q.ts <= Wt.vt && q.ts > (Wt.evTs || 0)) {
       Wt.evTs = q.ts;
@@ -469,3 +474,16 @@ $('liveBack').onclick = () => go('menu');
 $('watchExit').onclick = () => liveWatchStop();
 $('viewers').onclick = () => toast('👁️ يشاهدونك: ' + ($('viewers').title || ''));
 setTimeout(liveConnect, 2500);
+
+/* ---- a newer build on the site? (phones keep old files for a while): offer a one-tap update */
+async function checkUpdate() {
+  if (!BUILD || NET_LOCAL) return;
+  try {
+    const html = await (await fetch('index.html?_=' + Date.now(), { cache: 'no-store' })).text(),
+      m = html.match(/config\.js\?v=(\d+)/);
+    if (m && +m[1] > BUILD) $('mUpdate').hidden = false;
+  } catch (e) {}
+}
+$('mUpdate').onclick = () => location.reload();
+setTimeout(checkUpdate, 8000);
+setInterval(checkUpdate, 120000);

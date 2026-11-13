@@ -427,3 +427,11 @@
   font-size: 12px;
   opacity: 0.75;
 }
+
+#mUpdate {
+  border-color: #2fbf5a;
+  background: linear-gradient(180deg, #1f6b3a, #134226);
+  font-size: 15px;
+  padding: 10px;
+  animation: viewersGlow 1.6s ease-in-out infinite;
+}
