@@ -30,84 +30,6 @@ try {
   DUEL.view = localStorage.getItem('ashen_duel_view') || 'fp';
 } catch (e) {}
 
-/* ---- arena */
-function duelArena() {
-  const s = new THREE.Scene();
-  s.background = new THREE.Color(0x120f18);
-  s.fog = new THREE.Fog(0x120f18, 14, 40);
-  s.add(new THREE.HemisphereLight(0xbfc8ff, 0x2a1c14, 0.55));
-  const key = new THREE.DirectionalLight(0xffe2c0, 0.9);
-  key.position.set(6, 14, 4);
-  key.castShadow = true;
-  key.shadow.mapSize.set(1024, 1024);
-  Object.assign(key.shadow.camera, { left: -11, right: 11, top: 11, bottom: -11, near: 1, far: 40 });
-  key.shadow.bias = -0.0008;
-  s.add(key);
-  // stone floor: a canvas texture of worn flagstones
-  const c = document.createElement('canvas');
-  c.width = c.height = 512;
-  const x = c.getContext('2d');
-  x.fillStyle = '#4a4440';
-  x.fillRect(0, 0, 512, 512);
-  for (let i = 0; i < 8; i++)
-    for (let j = 0; j < 8; j++) {
-      const v = 60 + Math.random() * 30;
-      x.fillStyle = `rgb(${v + 8},${v + 2},${v - 4})`;
-      x.fillRect(i * 64 + 2 + (j % 2) * 16, j * 64 + 2, 60, 60);
-    }
-  for (let i = 0; i < 2500; i++) {
-    x.fillStyle = `rgba(0,0,0,${Math.random() * 0.12})`;
-    x.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(5, 5);
-  tex.encoding = THREE.sRGBEncoding;
-  const floor = new THREE.Mesh(
-    new THREE.CircleGeometry(11, 48),
-    new THREE.MeshStandardMaterial({ map: tex, roughness: 0.92 })
-  );
-  floor.rotation.x = -Math.PI / 2;
-  floor.receiveShadow = true;
-  s.add(floor);
-  const ringMat = new THREE.MeshStandardMaterial({ color: 0x6b5a48, roughness: 0.85 });
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(DM.arena + 0.9, 0.35, 8, 64), ringMat);
-  ring.rotation.x = Math.PI / 2;
-  ring.position.y = 0.15;
-  ring.receiveShadow = true;
-  s.add(ring);
-  // pillars with torches around the ring
-  DUEL.torches = [];
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2 + 0.2,
-      px = Math.cos(a) * (DM.arena + 2.4),
-      pz = Math.sin(a) * (DM.arena + 2.4);
-    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 4.2, 10), ringMat);
-    p.position.set(px, 2.1, pz);
-    p.castShadow = true;
-    s.add(p);
-    const flame = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffa040 }));
-    flame.position.set(px * 0.93, 3.2, pz * 0.93);
-    s.add(flame);
-    DUEL.torches.push(flame);
-    if (i % 2 === 0) {
-      const l = new THREE.PointLight(0xff9a40, 0.9, 13, 2);
-      l.position.copy(flame.position);
-      s.add(l);
-      flame.userData.light = l;
-    }
-  }
-  // distant dark crowd stands: a ring of steps
-  const steps = new THREE.Mesh(
-    new THREE.CylinderGeometry(19, 16, 3, 48, 1, true),
-    new THREE.MeshStandardMaterial({ color: 0x241e22, roughness: 1, side: THREE.BackSide })
-  );
-  steps.position.y = 1.5;
-  s.add(steps);
-  goreInit(s);
-  return s;
-}
-
 /* ---- enter / leave */
 async function duelStart(online, watch) {
   AU.init();
@@ -124,6 +46,8 @@ async function duelStart(online, watch) {
   duelSoundsLoad();
   try {
     if (!DUEL.ready) {
+      // the arena's name and banners are drawn in the game's display font: wait for it
+      await Promise.race([document.fonts.load('80px Lalezar'), new Promise(r => setTimeout(r, 2500))]).catch(() => {});
       DUEL.scene = duelArena();
       const [a, b] = await Promise.all([duelLoad(), duelLoad()]);
       DUEL.me = new Duelist(a, 212, 118); // blue cloth: you
@@ -223,7 +147,8 @@ function duelRound(n) {
   DUEL.phaseT = 2.4;
   DUEL.saidFight = false;
   $('dLoad').hidden = true;
-  duelMsg('الجولة ' + DUEL.round, DUEL.score[0] + ' - ' + DUEL.score[1]);
+  if (DUEL.round === 1) duelMsg(ARENA_NAME, 'الجولة 1');
+  else duelMsg('الجولة ' + DUEL.round, DUEL.score[0] + ' - ' + DUEL.score[1]);
   DS.round(DUEL.round, DUEL.score[0] === DUEL_WIN - 1 && DUEL.score[1] === DUEL_WIN - 1);
   duelPips();
   if (DUEL.net && DUEL.net.host) DUEL.net.ch.send('rd', { n: DUEL.round });
@@ -509,11 +434,7 @@ function duelFrame(rdt) {
     duelStep(rdt);
     if (DUEL.net && DUEL.net.ready) duelNetTick(rdt);
   }
-  for (const t of DUEL.torches) {
-    const k = 0.85 + Math.random() * 0.3;
-    t.scale.setScalar(k);
-    if (t.userData.light) t.userData.light.intensity = 0.75 * k;
-  }
+  arenaTick(rdt);
   goreUpdate(DUEL.slow > 0 ? rdt * 0.35 : rdt);
   duelCamera(rdt);
   duelHud();
