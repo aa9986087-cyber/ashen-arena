@@ -343,6 +343,8 @@ function duelInput(dt = 0) {
   }
   me.want.mx = mx;
   me.want.mz = mz;
+  // sprint: the stick pushed all the way forward, or hold C
+  me.want.run = !!(k.KeyC || (DUEL.joy && Math.hypot(DUEL.joy.x, DUEL.joy.z) > 0.92 && DUEL.joy.z > 0.55));
   const blockNow = !!(k.ShiftLeft || k.ShiftRight || k.KeyL || DUEL.blockHeld || DUEL.rmb);
   // pressing guard while a heavy swing is still rising pulls it back: a feint
   if (blockNow && !DUEL.blockWas && me.act === 'heavy' && me.feint()) duelFloat('خدعة! 🎭', 'blk');
@@ -566,12 +568,15 @@ function duelCamera(dt) {
     return;
   }
   for (const m of me.fpHide) m.visible = !fp && !m.userData.cut;
-  cam.fov = fp ? 72 : 55;
+  // a sprint widens the view a touch and bobs the eye with the stride
+  DUEL.runFx = (DUEL.runFx || 0) + ((me.running ? 1 : 0) - (DUEL.runFx || 0)) * Math.min(1, dt * 6);
+  cam.fov = (fp ? 72 : 55) + DUEL.runFx * 7;
   if (fp) {
     // a steady eye: tied to where the fighter stands, not to the head bone (hit and fall clips swing the head around)
     const eye = me.act === 'dodge' ? 1.05 : me.act === 'knock' ? 1.4 : 1.62;
     DUEL.eyeY += (eye - DUEL.eyeY) * Math.min(1, dt * 10);
-    cam.position.set(me.x + fx * 0.12, DUEL.eyeY, me.z + fz * 0.12);
+    const bob = DUEL.runFx * Math.sin((performance.now() / 1000) * 15) * 0.04;
+    cam.position.set(me.x + fx * 0.12, DUEL.eyeY + bob, me.z + fz * 0.12);
   } else {
     // over the shoulder: looking up drops the camera low behind you, looking down lifts it over your head
     const pp = me.freeLook ? DUEL.pitch : 0,
@@ -793,6 +798,7 @@ function duelNetTick(dt) {
       mz: r(me.moving ? me.want.mz : 0),
       ck: N.host ? r(DUEL.clock) : undefined,
       cu: me.cuts || undefined,
+      rn: me.running ? 1 : undefined,
       r: DUEL.round,
       h: N.host ? 1 : 0,
     });
@@ -841,14 +847,20 @@ async function duelStartWatch(room, a, b) {
   ch.on('st', s => {
     W.lastRx = performance.now();
     if (!DUEL.me || DUEL.phase === 'over') return;
-    if (s.r && s.r !== DUEL.round) {
-      DUEL.round = s.r;
-      duelPips();
+    if (s.r) {
+      // a late message from the round before (it may still carry a cut limb): ignore it
+      if (s.r < DUEL.round) return;
+      // the round moved on and we missed its start: start it here (whole fighters again)
+      if (s.r > DUEL.round) {
+        DUEL.round = s.r;
+        duelPlace();
+        duelPips();
+      }
     }
     fighter(s.h).netState(s);
     if (s.h && s.ck !== undefined) DUEL.clock = s.ck;
   })
-    .on('mv', m => DUEL.me && DUEL.phase !== 'over' && fighter(m.h).netMove(m))
+    .on('mv', m => DUEL.me && DUEL.phase !== 'over' && !(m.r < DUEL.round) && fighter(m.h).netMove(m))
     .on('rd', d => {
       if (!DUEL.me) return;
       DUEL.round = d.n;

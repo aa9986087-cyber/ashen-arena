@@ -72,6 +72,7 @@ class DuelBot {
       }
     }
     me.want.mz = d > 2.0 ? 1 : d < 1.4 ? -0.7 : 0;
+    me.want.run = d > 4.5; // close the distance at a run
     me.want.mx = this.strafe;
   }
 }

@@ -461,7 +461,7 @@ function duelArena() {
     color: new THREE.Color(0x6a5c50).convertSRGBToLinear(),
     roughness: 0.85,
   });
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(DM.arena + 0.9, 0.32, 8, 72), curbMat);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(10.75, 0.32, 8, 72), curbMat);
   ring.rotation.x = Math.PI / 2;
   ring.position.y = 0.12;
   ring.receiveShadow = true;
@@ -526,7 +526,7 @@ function duelArena() {
     const a = (i / 8) * Math.PI * 2 + 0.2,
       cx = Math.cos(a),
       cz = Math.sin(a),
-      R = DM.arena + 2.5;
+      R = 11.4;
     if (Math.abs(wrapAng(a - Math.PI / 2)) < 0.35) continue; // the gate stands there
     const p = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.52, 4.4, 12), pillarMat);
     p.position.set(cx * R, 2.2, cz * R);

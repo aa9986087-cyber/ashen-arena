@@ -17,9 +17,11 @@ const DM = {
   stRegen: 32,
   stDelay: 0.7,
   walk: 2.6,
+  run: 5.3, // sprint (stick pushed all the way forward / C): drains stamina
+  runCost: 14,
   back: 2.0,
   blockWalk: 1.2,
-  arena: 8.5,
+  arena: 10,
 };
 let duelBuf = null; // the glb bytes: fetched once, parsed once per fighter (so each has its own skeleton and materials)
 async function duelLoad() {
@@ -221,8 +223,16 @@ class Duelist {
   get armless() {
     return !!(this.cuts & 4);
   }
+  /** A swing thrown out of a sprint carries the run into it: a lunge forward. */
+  lunge() {
+    if (!this.running) return;
+    this.running = false;
+    this.kx += Math.sin(this.face) * 5;
+    this.kz += Math.cos(this.face) * 5;
+  }
   light() {
     if (this.armless || !this.free || this.st < DM.light.st * 0.5) return false;
+    this.lunge();
     this.spend(DM.light.st);
     this.start('light');
     if (this.comboT <= 0) this.combo = 0;
@@ -244,8 +254,14 @@ class Duelist {
   /** The kick has no clip in the model: bend the right leg on top of whatever plays.
       Chamber (knee up, bent), snap it straight forward, hold, put it down. */
   kickPose() {
-    if (this.act !== 'kick') return;
     const [th, ca, sp] = this.kickBones;
+    // a runner leans into the stride
+    if (sp && this.lean > 0.01) {
+      gKq.setFromAxisAngle(gKx, -0.42 * this.lean);
+      sp.quaternion.multiply(gKq);
+      this.kickDirty = true;
+    }
+    if (this.act !== 'kick') return;
     if (!th || !ca) return;
     this.kickDirty = true;
     const t = this.t,
@@ -287,6 +303,7 @@ class Duelist {
   }
   heavy() {
     if (this.armless || !this.free || this.st < DM.heavy.st * 0.5) return false;
+    this.lunge();
     this.spend(DM.heavy.st);
     this.start('heavy');
     this.play('heavy', 0.1, DM.heavy.t * 1.6, true);
@@ -348,6 +365,7 @@ class Duelist {
     this.nf = s.f;
     this.nmx = s.mx;
     this.nmz = s.mz;
+    this.running = !!s.rn;
     this.hp = s.hp;
     this.st = s.st;
     this.want.block = s.a === 'block';
@@ -466,16 +484,37 @@ class Duelist {
         mx /= m;
         mz /= m;
       }
-      const sp = (this.act === 'block' ? DM.blockWalk : mz < -0.1 ? DM.back : DM.walk) * (this.armless ? 0.65 : 1);
+      // sprint: only forward, only on your feet with breath left (the owner decides; a copy is told)
+      if (!this.remote)
+        this.running = !!this.want.run && this.act === 'idle' && mz > 0.5 && this.st > 2 && !this.armless;
+      if (this.running && !this.remote) {
+        this.st = Math.max(0, this.st - DM.runCost * dt);
+        this.stT = DM.stDelay;
+      }
+      const sp =
+        (this.act === 'block' ? DM.blockWalk : this.running ? DM.run : mz < -0.1 ? DM.back : DM.walk) *
+        (this.armless ? 0.65 : 1);
       vx = (fx * mz - fz * mx) * sp;
       vz = (fz * mz + fx * mx) * sp;
       this.moving = Math.min(1, m) * (mz < -0.1 ? -1 : 1);
       if (this.act === 'idle') {
         if (m > 0.15) this.play('walk', 0.15, 0);
         else this.play('idle', 0.2, 0);
-        if (m > 0.15) this.cur.timeScale = (mz < -0.1 ? -1 : 1) * clamp(m, 0.5, 1) * 1.1;
+        if (m > 0.15) this.cur.timeScale = (mz < -0.1 ? -1 : 1) * clamp(m, 0.5, 1) * (this.running ? 2.05 : 1.1);
       }
-    } else this.moving = 0;
+    } else {
+      this.moving = 0;
+      if (!this.remote) this.running = false;
+    }
+    // weight: speed builds up and bleeds off instead of snapping (a roll and knock-backs stay instant)
+    if (this.act !== 'dodge') {
+      const k = 1 - Math.exp(-(Math.hypot(vx, vz) > Math.hypot(this.vx || 0, this.vz || 0) ? 9 : 12) * dt);
+      this.vx = (this.vx || 0) + (vx - (this.vx || 0)) * k;
+      this.vz = (this.vz || 0) + (vz - (this.vz || 0)) * k;
+      vx = this.vx;
+      vz = this.vz;
+    } else this.vx = this.vz = 0;
+    this.lean = (this.lean || 0) + ((this.running ? 1 : 0) - (this.lean || 0)) * Math.min(1, dt * 7);
     if (this.act === 'dodge' && this.t < DM.dodge.t * 0.85) {
       vx = this.dx * DM.dodge.spd;
       vz = this.dz * DM.dodge.spd;
