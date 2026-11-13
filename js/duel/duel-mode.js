@@ -104,6 +104,7 @@ function duelArena() {
   );
   steps.position.y = 1.5;
   s.add(steps);
+  goreInit(s);
   return s;
 }
 
@@ -139,6 +140,7 @@ async function duelStart(online, watch) {
     return;
   }
   if (!DUEL.on) return;
+  goreClear();
   const me = DUEL.me,
     foe = DUEL.foe;
   // online: the opponent's copy follows the network and its owner judges our blows on it
@@ -244,8 +246,17 @@ function duelFloat(t, cls) {
 function duelOutcome(att, def, r) {
   const mine = att === DUEL.me;
   if (r === 'hit') {
-    DUEL.shake = Math.max(DUEL.shake, att.act === 'heavy' ? 0.35 : 0.18);
-    if (!mine) pop($('dHurt'), 'on');
+    const heavy = att.act === 'heavy';
+    DUEL.shake = Math.max(DUEL.shake, heavy ? 0.35 : 0.18);
+    if (!mine) {
+      pop($('dHurt'), 'on');
+      goreScreen(heavy ? 4 : 2);
+    } else if (
+      DUEL.view === 'fp' &&
+      Math.hypot(att.x - def.x, att.z - def.z) < 2.4 &&
+      Math.random() < (heavy ? 1 : 0.45)
+    )
+      goreScreen(heavy ? 2 : 1, true); // the spray reaches your eyes
   } else if (r === 'block') duelFloat('صد!', 'blk');
   else if (r === 'parry') {
     duelFloat('صد مثالي!', 'par');
@@ -253,6 +264,7 @@ function duelOutcome(att, def, r) {
   } else if (r === 'break') {
     duelFloat('كسر الصد!', 'brk');
     DUEL.shake = 0.3;
+    if (!mine) goreScreen(1);
   } else if (r === 'miss' && !mine) duelFloat('تفادي!', 'blk');
 }
 function duelPips() {
@@ -419,6 +431,7 @@ $('dAgain').onclick = () => {
   $('dOver').hidden = true;
   DUEL.score = [0, 0];
   DUEL.round = 0;
+  goreClear();
   duelRound();
 };
 $('dLeave').onclick = () => duelExit();
@@ -443,7 +456,7 @@ function duelCamera(dt) {
     fx = Math.sin(f),
     fz = Math.cos(f);
   if (DUEL.watch) {
-    for (const m of me.fpHide) m.visible = true;
+    for (const m of me.fpHide) m.visible = !m.userData.cut;
     const mx = (me.x + foe.x) / 2,
       mz = (me.z + foe.z) / 2,
       ax = foe.x - me.x,
@@ -459,7 +472,7 @@ function duelCamera(dt) {
     cam.updateProjectionMatrix();
     return;
   }
-  for (const m of me.fpHide) m.visible = !fp;
+  for (const m of me.fpHide) m.visible = !fp && !m.userData.cut;
   cam.fov = fp ? 72 : 55;
   if (fp) {
     // a steady eye: tied to where the fighter stands, not to the head bone (hit and fall clips swing the head around)
@@ -501,6 +514,7 @@ function duelFrame(rdt) {
     t.scale.setScalar(k);
     if (t.userData.light) t.userData.light.intensity = 0.75 * k;
   }
+  goreUpdate(DUEL.slow > 0 ? rdt * 0.35 : rdt);
   duelCamera(rdt);
   duelHud();
   renderer.render(DUEL.scene, DUEL.cam);
@@ -671,6 +685,7 @@ function duelNetTick(dt) {
       mx: r(me.moving ? me.want.mx : 0),
       mz: r(me.moving ? me.want.mz : 0),
       ck: N.host ? r(DUEL.clock) : undefined,
+      cu: me.cuts || undefined,
       r: DUEL.round,
       h: N.host ? 1 : 0,
     });

@@ -172,6 +172,7 @@ class Duelist {
     // stop every clip (a finished death clip stays clamped at full weight and would blend into the new round's pose)
     this.mixer.stopAllAction();
     this.cur = null;
+    goreReset(this); // stumps heal between rounds
     this.play('idle', 0);
   }
   /** Cross-fade to an animation; `dur` stretches the clip to last that many seconds. */
@@ -255,6 +256,8 @@ class Duelist {
   }
   /** Online, on the opponent's copy: the owner's broadcast state (position, health, stamina, guard, reactions). */
   netState(s) {
+    // limbs its owner lost (the owner decides, everyone else copies)
+    if (s.cu & ~this.cuts) for (const k in GORE_PARTS) if (s.cu & GORE_PARTS[k].bit) goreCut(this, k);
     this.nx = s.x;
     this.nz = s.z;
     this.nf = s.f;
@@ -264,6 +267,8 @@ class Duelist {
     this.st = s.st;
     this.want.block = s.a === 'block';
     if (s.a === this.act) return;
+    const other = this === DUEL.me ? DUEL.foe : DUEL.me;
+    if (s.a === 'dead' || s.a === 'hit' || s.a === 'knock') goreHit(this, other, s.a === 'hit' ? 'light' : 'heavy');
     if (s.a === 'dead') {
       this.start('dead');
       this.play('death', 0.1, 0, true);
@@ -289,6 +294,9 @@ class Duelist {
       kb = kind === 'heavy' ? 7 : 3;
     this.kx = (ax / L) * kb;
     this.kz = (az / L) * kb;
+    goreHit(this, from, kind);
+    const cut = goreDecide(this, kind);
+    if (cut) goreCut(this, cut, from);
     if (this.hp <= 0) {
       this.start('dead');
       this.play('death', 0.1, 0, true);
