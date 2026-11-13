@@ -20,7 +20,7 @@ class DuelBot {
       const r = Math.random();
       if (foe.act === 'heavy') {
         if (r < 0.45) me.dodge(pick([-1, 1]), -0.3);
-        else if (r < 0.75 && foe.t < DM.heavy.hitFrom - 0.3) me.light(); // a quick blow interrupts the wind-up
+        else if (r < 0.75 && foe.t < foe.M.heavy.hitFrom - 0.3) me.light(); // a quick blow interrupts the wind-up
       } else if (r < 0.6) {
         this.blockFor = 0.45 + Math.random() * 0.3;
         me.preBlock = Math.random() < 0.3 ? 0 : DM.parry; // perfect timing only sometimes
@@ -34,7 +34,7 @@ class DuelBot {
     // keep a light chain going for the third (combo) blow when the player is open
     if (
       me.act === 'light' &&
-      me.t > DM.light.t * 0.8 &&
+      me.t > me.M.light.t * 0.8 &&
       me.combo % 3 &&
       d < 2.2 &&
       foe.act !== 'block' &&
@@ -56,15 +56,15 @@ class DuelBot {
         if (
           (foe.act === 'stagger' || foe.act === 'knock' || foe.act === 'hit') &&
           foe.hp <= DM.execHp &&
-          me.st > DM.heavy.st * 0.5
+          me.st > me.M.heavy.st * 0.5
         )
           me.heavy();
         else if (foe.act === 'stagger' || foe.act === 'hit') me.light();
         else if (foe.act === 'block' && d < DM.kick.reach - 0.1 && r < 0.4)
           me.kick(); // boot through the guard
-        else if (foe.act === 'block' && me.st > DM.heavy.st && r < 0.55) me.heavy();
-        else if (r < 0.5 && me.st > DM.light.st) me.light();
-        else if (r < 0.62 && me.st > DM.heavy.st) {
+        else if (foe.act === 'block' && me.st > me.M.heavy.st && r < 0.55) me.heavy();
+        else if (r < 0.5 && me.st > me.M.light.st) me.light();
+        else if (r < 0.62 && me.st > me.M.heavy.st) {
           me.heavy();
           // now and then it's a feint: pulled back just before it falls, to bait your parry
           if (Math.random() < 0.22) this.feintAt = rand(0.3, 0.48);

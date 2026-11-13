@@ -2,10 +2,29 @@
 /* Sword duel — the ⚔️ menu: training, the list of players in the duel lobby (challenge / accept), and the public
    record of who fought whom. The lobby is a Realtime channel with presence; a match gets its own channel. */
 const LOBBY = { ch: null, pending: null, incoming: null, waitT: 0, open: false };
+/** The weapon picker in the ⚔️ menu (kept in the save). */
+function lobbyWeapons() {
+  const box = $('dmWeapons');
+  box.innerHTML = '';
+  const cur = S.duelW || 'sword';
+  for (const id of DUEL_WEAPON_IDS) {
+    const W = DUEL_WEAPONS[id],
+      b = el('button', 'wpPick' + (id === cur ? ' on' : ''));
+    b.append(el('i', '', W.i), el('b', '', W.n), el('small', '', W.tip));
+    b.onclick = () => {
+      S.duelW = id;
+      save();
+      AU.play('select');
+      lobbyWeapons();
+    };
+    box.appendChild(b);
+  }
+}
 async function lobbyOpen() {
   AU.init();
   LOBBY.open = true;
   go('duelMenu');
+  lobbyWeapons();
   // get the arena ready while you choose (training or a challenge): entering it is then instant
   setTimeout(() => duelPrepare().catch(() => {}), 350);
   if (!S.name) askName();

@@ -168,13 +168,30 @@ class Duelist {
     this.root.traverse(o => o.isBone && (kb[o.name] = o));
     this.kickBones = [kb.thigh_r, kb.calf_r, kb.spine_01];
     this.kickRest = this.kickBones.map(b => b && b.quaternion.clone());
-    this.sword = duelSword();
+    this.setWeapon('sword');
+    this.want = { mx: 0, mz: 0, block: false };
+    this.reset(0, 0, 0);
+  }
+  /** Take up weapon `id` (duel-weapons.js): its mesh in the hand, its moves. */
+  setWeapon(id) {
+    const W = DUEL_WEAPONS[id] || DUEL_WEAPONS.sword;
+    if (this.wp === W && this.sword) return;
+    const shown = !this.sword || this.sword.visible;
+    if (this.sword && this.sword.parent) this.sword.parent.remove(this.sword);
+    this.wp = W;
+    this.wpId = DUEL_WEAPONS[id] ? id : 'sword';
+    this.sword = W.build();
+    this.sword.traverse(o => o.isMesh && (o.castShadow = true));
+    if (!this.sword.userData.steel)
+      this.sword.traverse(o => o.isMesh && o.material.metalness > 0.5 && (this.sword.userData.steel = o.material));
+    this.sword.userData.hit = W.hit;
+    this.sword.visible = shown;
     if (this.hand) {
       this.hand.add(this.sword);
       duelGrip(this.hand, this.sword);
     }
-    this.want = { mx: 0, mz: 0, block: false };
-    this.reset(0, 0, 0);
+    this.M = duelMoves(W);
+    if (typeof goreBlade === 'function') goreBlade(this);
   }
   reset(x, z, face) {
     Object.assign(this, { nx: x, nz: z, nf: face, nmx: 0, nmz: 0 });
@@ -233,12 +250,12 @@ class Duelist {
     this.kz += Math.cos(this.face) * 5;
   }
   light() {
-    if (this.armless || !this.free || this.st < DM.light.st * 0.5) return false;
+    if (this.armless || !this.free || this.st < this.M.light.st * 0.5) return false;
     this.lunge();
-    this.spend(DM.light.st);
+    this.spend(this.M.light.st);
     this.start('light');
     if (this.comboT <= 0) this.combo = 0;
-    this.play(['atk1', 'atk2', 'atk3'][this.combo++ % 3], 0.08, DM.light.t * 1.15, true);
+    this.play(['atk1', 'atk2', 'atk3'][this.combo++ % 3], 0.08, this.M.light.t * 1.15, true);
     DS.light(this);
     this.onMove && this.onMove({ k: 'light', c: this.combo });
     return true;
@@ -304,18 +321,18 @@ class Duelist {
     this.kickBones.forEach((b, i) => b && b.quaternion.copy(this.kickRest[i]));
   }
   heavy() {
-    if (this.armless || !this.free || this.st < DM.heavy.st * 0.5) return false;
+    if (this.armless || !this.free || this.st < this.M.heavy.st * 0.5) return false;
     this.lunge();
-    this.spend(DM.heavy.st);
+    this.spend(this.M.heavy.st);
     this.start('heavy');
-    this.play('heavy', 0.1, DM.heavy.t * 1.6, true);
+    this.play('heavy', 0.1, this.M.heavy.t * 1.6, true);
     DS.heavy(this);
     this.onMove && this.onMove({ k: 'heavy' });
     return true;
   }
   /** Pull a heavy swing back before it falls (a feint): costs stamina, leaves the opponent guessing. */
   feint(net) {
-    if (this.act !== 'heavy' || this.t > DM.heavy.hitFrom - 0.08) return false;
+    if (this.act !== 'heavy' || this.t > this.M.heavy.hitFrom - 0.08) return false;
     if (!net) this.spend(10);
     this.start('idle');
     this.play('idle', 0.14);
@@ -360,6 +377,7 @@ class Duelist {
   }
   /** Online, on the opponent's copy: the owner's broadcast state (position, health, stamina, guard, reactions). */
   netState(s) {
+    if (s.w && s.w !== this.wpId) this.setWeapon(s.w); // the weapon its owner holds
     if (DUEL.fin || DUEL.intro) return; // a finisher or the walk-out is playing: it moves both fighters itself
     // limbs its owner lost (the owner decides, everyone else copies)
     if (s.cu & ~this.cuts) for (const k in GORE_PARTS) if (s.cu & GORE_PARTS[k].bit) goreCut(this, k);
@@ -409,7 +427,8 @@ class Duelist {
     const ax = this.x - from.x,
       az = this.z - from.z,
       L = Math.hypot(ax, az) || 1,
-      kb = kind === 'heavy' ? 7 : kind === 'kick' ? 9 : 3;
+      W = (from && from.wp) || DUEL_WEAPONS.sword,
+      kb = (kind === 'heavy' ? 7 : kind === 'kick' ? 9 : 3) * (kind === 'kick' ? 1 : W.kb);
     this.kx = (ax / L) * kb;
     this.kz = (az / L) * kb;
     // the killing blow: a staged finisher plays it out (the wound comes when its blade gets there)
@@ -432,7 +451,7 @@ class Duelist {
       return;
     }
     goreHit(this, from, kind);
-    const cut = this.execute && !(this.cuts & 1) ? 'head' : goreDecide(this, kind);
+    const cut = this.execute && !(this.cuts & 1) && W.cut ? 'head' : goreDecide(this, kind, from);
     this.execute = false;
     if (cut) goreCut(this, cut, from);
     if (this.hp <= 0) {
@@ -441,9 +460,9 @@ class Duelist {
       DS.death(this);
       return;
     }
-    DS.hurt(this, kind === 'heavy');
+    DS.hurt(this, kind === 'heavy', from);
     this.start(kind === 'heavy' ? 'knock' : 'hit');
-    this.stun = kind === 'heavy' ? 0.75 : 0.4;
+    this.stun = (kind === 'heavy' ? 0.75 : 0.4) * W.stun;
     this.play(kind === 'heavy' ? 'knock' : 'hit', 0.05, this.stun * 1.4, true);
   }
   stagger(dur) {
@@ -464,7 +483,7 @@ class Duelist {
         ? // free movement: you turn yourself; a swing only bends a little toward a foe already in front of you
           (this.act === 'light' || this.act === 'heavy' || this.act === 'kick') &&
           Math.abs(toFoe) < 1.1 &&
-          Math.hypot(foe.x - this.x, foe.z - this.z) < DM.heavy.reach + 1.2
+          Math.hypot(foe.x - this.x, foe.z - this.z) < this.M.heavy.reach + 1.2
           ? 3.5
           : 0
         : this.act === 'light' || this.act === 'kick'
@@ -545,10 +564,10 @@ class Duelist {
       vz = this.dz * DM.dodge.spd;
     }
     // swings: sword glows while a heavy winds up; land the blow inside the hit window
-    const M = DM[this.act];
+    const M = this.M[this.act] || DM[this.act];
     this.sword.userData.steel.emissive.setRGB(
-      this.act === 'heavy' && this.t < DM.heavy.hitTo ? Math.min(1, this.t / DM.heavy.hitFrom) * 0.9 : 0,
-      this.act === 'heavy' && this.t < DM.heavy.hitTo ? Math.min(1, this.t / DM.heavy.hitFrom) * 0.18 : 0,
+      this.act === 'heavy' && this.t < this.M.heavy.hitTo ? Math.min(1, this.t / this.M.heavy.hitFrom) * 0.9 : 0,
+      this.act === 'heavy' && this.t < this.M.heavy.hitTo ? Math.min(1, this.t / this.M.heavy.hitFrom) * 0.18 : 0,
       0
     );
     if (
@@ -617,7 +636,8 @@ class Duelist {
 }
 /** What happens when attacker `a` lands a swing of `kind` on defender `d`. Returns the outcome name. */
 function duelResolve(a, d, kind) {
-  const M = DM[kind];
+  const M = (a.M && a.M[kind]) || DM[kind],
+    W = a.wp || DUEL_WEAPONS.sword;
   if (d.act === 'dead') return 'none';
   // a blow from a man already down, or after the round is decided, lands on nothing
   if (a.act === 'dead' || a.hp <= 0 || DUEL.fin || (DUEL.phase !== 'fight' && !DUEL.watch)) return 'none';
@@ -627,7 +647,7 @@ function duelResolve(a, d, kind) {
     const ax = d.x - a.x,
       az = d.z - a.z,
       L = Math.hypot(ax, az) || 1;
-    if (d.act === 'block' || (d.act === 'heavy' && d.t < DM.heavy.hitFrom)) {
+    if (d.act === 'block' || (d.act === 'heavy' && d.t < d.M.heavy.hitFrom)) {
       d.stagger(0.95);
       d.kx = (ax / L) * 8;
       d.kz = (az / L) * 8;
@@ -644,14 +664,20 @@ function duelResolve(a, d, kind) {
       DS.parry();
       return 'parry';
     }
-    if (kind === 'heavy' || d.st < DM.blockCost) {
+    const cost = DM.blockCost * W.block; // a mace's blows wear a guard down twice as fast
+    if (kind === 'heavy' || d.st < cost) {
       d.stagger(0.8);
       d.damage(M.dmg * 0.3, a, 'chip');
       if (d.act !== 'dead') d.stagger(0.8);
       DS.breakGuard();
       return 'break';
     }
-    d.spend(DM.blockCost);
+    d.spend(cost);
+    if (W.chip) {
+      // an axe bites through a guard a little
+      d.hp = Math.max(1, d.hp - M.dmg * W.chip);
+      goreHit(d, a, 'chip');
+    }
     a.kx -= Math.sin(a.face) * 2.5;
     a.kz -= Math.cos(a.face) * 2.5;
     DS.block();

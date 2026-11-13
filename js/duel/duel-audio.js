@@ -84,6 +84,8 @@ function rPlay(name, v = 1, rate = 1, when = 0, wet = 0.22) {
   s.start(c.currentTime + when);
   return true;
 }
+/** Heavier weapons swing with a lower whoosh. */
+const dWpRate = who => (who && who.wp ? { axe: 0.82, mace: 0.78, spear: 1.08 }[who.wpId] || 1 : 1);
 /** A fighter's voice pitch: each fighter sounds like himself (you a little higher, your foe deeper). */
 const dVox = who => clamp((who && who.pitch ? who.pitch : 110) / 110, 0.82, 1.12);
 function duelSoundsLoad() {
@@ -228,7 +230,7 @@ function dCrowd(dur, v) {
 /** Duel sound cues; `who` is the fighter (each has its own voice pitch). */
 const DS = {
   light(who) {
-    rPlay('swish', 0.55, rand(0.95, 1.12), 0.1, 0.1) ||
+    rPlay('swish', 0.55, rand(0.95, 1.12) * dWpRate(who), 0.1, 0.1) ||
       sfxPlay('whoosh', 0.6, sfxRnd(0.95, 1.1), 0.12, 0.12) ||
       dWhoosh(0.24, 0.55, 0.12);
     if (Math.random() < 0.4)
@@ -236,19 +238,30 @@ const DS = {
   },
   heavy(who) {
     rPlay('effort', 0.8, dVox(who) * 0.92) || dVoice(who.pitch * 0.92, 0.5, 0.6, [820, 1250], 0.62); // the war cry
-    rPlay('whm', 0.85, rand(0.8, 0.95), DM.heavy.hitFrom - 0.18, 0.15) ||
-      sfxPlay('whooshH', 0.8, 1, DM.heavy.hitFrom - 0.28, 0.15) ||
-      dWhoosh(0.4, 0.8, DM.heavy.hitFrom - 0.25);
+    const hf = who.M ? who.M.heavy.hitFrom : DM.heavy.hitFrom;
+    rPlay('whm', 0.85, rand(0.8, 0.95) * dWpRate(who), hf - 0.18, 0.15) ||
+      sfxPlay('whooshH', 0.8, 1, hf - 0.28, 0.15) ||
+      dWhoosh(0.4, 0.8, hf - 0.25);
   },
   dodge() {
     rPlay('swish', 0.35, 0.8, 0, 0.08) || sfxPlay('whoosh', 0.4, 0.7, 0, 0.1) || dWhoosh(0.3, 0.35);
     rPlay('gear', 0.45, rand(0.95, 1.1));
   },
   /** A blade in flesh: the cut, the wet, the body, the bone for heavy blows, and the man's pain. */
-  hurt(who, heavy) {
-    const real = heavy
-      ? rPlay('chop', 1, rand(0.75, 0.95), 0, 0.28) && (rPlay('bone', 0.75), rPlay('punchH', 0.8), true)
-      : rPlay('slice', 0.9, rand(0.95, 1.1), 0, 0.2) && (rPlay('punch', 0.55), true);
+  hurt(who, heavy, by) {
+    const w = by && by.wp ? by.wp.snd : 'blade';
+    let real;
+    if (w === 'mace')
+      // blunt: a crushing thud and breaking bone, no cut
+      real =
+        rPlay(heavy ? 'punchX' : 'punchH', 1, rand(0.8, 0.95), 0, 0.28) &&
+        (rPlay('bone', heavy ? 1 : 0.7, rand(0.9, 1.1)), heavy && rPlay('skull', 0.6, 1.1), true);
+    else if (w === 'axe')
+      real = rPlay('chop', 1, rand(0.7, 0.85), 0, 0.3) && (rPlay('punchH', 0.8), heavy && rPlay('bone', 0.85), true);
+    else
+      real = heavy
+        ? rPlay('chop', 1, rand(0.75, 0.95), 0, 0.28) && (rPlay('bone', 0.75), rPlay('punchH', 0.8), true)
+        : rPlay('slice', 0.9, rand(0.95, 1.1) * (w === 'spear' ? 1.1 : 1), 0, 0.2) && (rPlay('punch', 0.55), true);
     if (real) rPlay('squish', heavy ? 0.75 : 0.5, rand(1, 1.25));
     else
       sfxPlay(heavy ? 'chop' : 'slice', heavy ? 1 : 0.9, 1, 0, heavy ? 0.3 : 0.22) ||

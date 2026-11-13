@@ -69,7 +69,8 @@ function introCard(f) {
   if (DUEL.watch) role = mine ? '🔵 الأزرق' : '🔴 الأحمر';
   else if (!DUEL.net) role = mine ? '🔵 أنت' : '🔴 الخصم';
   else role = (DUEL.net.host ? mine : !mine) ? '⚔️ المتحدّي' : '🛡️ المدافع';
-  return [name, role];
+  const W = f.wp || DUEL_WEAPONS.sword;
+  return [name, role + ' · ' + W.i + ' ' + W.n];
 }
 function introShow(big, small, cls) {
   const T = $('dIntro');

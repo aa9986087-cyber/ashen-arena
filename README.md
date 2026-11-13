@@ -113,6 +113,7 @@ assets/
 زر ⚔️ جنب «ابدأ المعركة». المقاتل «الحارس» في `assets/models/duelist.glb`، مبني بـ `tools/prepare-duelist.mjs` من حزم Quaternius المجانية (CC0):
 Modular Character Outfits – Fantasy، وUniversal Base Characters، وUniversal Animation Library 1 و2.
 توازن الحركات كله في `DM` داخل `js/duel/duel-fighter.js`.
+الأسلحة (سيف، فأس، رمح، مطرقة) في `js/duel/duel-weapons.js`: شكل كل سلاح، ومضاعفاته على حركات السيف (المدى، الضرر، السرعة، الطاقة، قطع الأطراف، الدم، كلفة الصد…). سلاح جديد = بند جديد في `DUEL_WEAPONS`.
 الأونلاين: اللي ينضرب هو اللي يحكم على الضربة (يعرف وقت صده ومراوغته بالضبط)، والمتحدّي (المضيف) يحكم الجولات ويسجل النتيجة.
 جدول السجل وإعداده في `supabase/duels.sql`.
 

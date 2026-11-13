@@ -189,7 +189,8 @@ function goreHit(d, a, kind) {
   // out of the far side and along the swing (sideways), a little upward
   const side = Math.random() < 0.5 ? -1 : 1;
   gV2.set(ax * 0.7 - az * 0.5 * side, 0.35, az * 0.7 + ax * 0.5 * side).normalize();
-  goreSpray(gV, gV2, kind === 'chip' ? 10 : heavy ? 70 : 38, heavy ? 5.2 : 3.6, 0.45);
+  const bl = (a.wp && a.wp.blood) || 1;
+  goreSpray(gV, gV2, Math.round((kind === 'chip' ? 10 : heavy ? 70 : 38) * bl), heavy ? 5.2 : 3.6, 0.45);
   // a few drops back toward the attacker (and his blade)
   gV2.set(-ax, 0.5, -az).normalize();
   goreSpray(gV, gV2, heavy ? 14 : 6, 2.2, 0.5);
@@ -390,8 +391,10 @@ function goreReset(f) {
   GORE.jets = GORE.jets.filter(j => j.f !== f && !(j.piece && j.piece.f === f));
 }
 /** The defender's own copy decides what a blow cuts off (sent to the other side with the fighter's state). */
-function goreDecide(d, kind) {
-  const r = Math.random();
+function goreDecide(d, kind, from) {
+  const cutK = from && from.wp ? from.wp.cut : 1;
+  if (!cutK) return null; // a mace crushes, it doesn't cut
+  const r = Math.random() / cutK; // an axe takes limbs more often, a spear less
   const has = k => d.cuts & GORE_PARTS[k].bit;
   if (d.hp <= 0) {
     let k;

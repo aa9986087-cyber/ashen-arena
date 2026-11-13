@@ -97,6 +97,13 @@ async function duelWarm() {
       renderer.setViewport(0, 0, sz.x, sz.y);
     };
   // a few objects at a time: compile their shaders, upload their textures, draw them once; then the next frame
+  // every weapon too (each has its own materials), held out of sight for the warm-up
+  const spare = DUEL_WEAPON_IDS.map(id => DUEL_WEAPONS[id].build());
+  spare.forEach((g, i) => {
+    g.position.set(i * 0.3, 1, 2);
+    DUEL.scene.add(g);
+    g.traverse(o => o.material && items.push(o));
+  });
   for (const o of items) o.visible = false;
   for (let k = 0; k < items.length; k += 4) {
     const batch = items.slice(k, k + 4);
@@ -114,6 +121,7 @@ async function duelWarm() {
   }
   for (const o of items) o.visible = true;
   withEnc(pixel);
+  for (const g of spare) DUEL.scene.remove(g);
   renderer.setScissorTest(false);
   renderer.setViewport(0, 0, sz.x, sz.y);
   for (const m of pools) m.count = 0;
@@ -157,6 +165,9 @@ async function duelStart(online, watch) {
       }
     : r => duelOutcome(foe, me, r);
   DUEL.bot = online || watch ? null : new DuelBot(foe, me);
+  // weapons: yours from the ⚔️ menu; the training bot draws one at random; online, the other side tells us his
+  if (!watch) me.setWeapon(S.duelW || 'sword');
+  foe.setWeapon(online || watch ? 'sword' : pick(DUEL_WEAPON_IDS));
   // you move freely (turn by dragging / Q E); 🎯 locks your view on the opponent
   me.freeLook = !watch;
   foe.freeLook = false;
@@ -1013,6 +1024,7 @@ function duelNetTick(dt) {
       mz: r(me.moving ? me.want.mz : 0),
       ck: N.host ? r(DUEL.clock) : undefined,
       cu: me.cuts || undefined,
+      w: me.wpId,
       rn: me.running ? 1 : undefined,
       fv: me.act === 'dead' && me.finV !== undefined ? me.finV : undefined,
       r: DUEL.round,

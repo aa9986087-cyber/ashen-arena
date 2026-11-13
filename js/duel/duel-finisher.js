@@ -9,6 +9,7 @@ const FIN_KINDS = [
   { name: 'بتر وشق', d: 1.4 },
   { name: 'الشق من الكتف', d: 1.2 },
 ];
+const FIN_BLUNT = ['تحطيم الجمجمة', 'السحق الأرضي', 'كسر وسحق', 'سحق الكتف'];
 const fA = new THREE.Vector3(),
   fB = new THREE.Vector3(),
   fP = new THREE.Vector3(),
@@ -66,7 +67,7 @@ function duelFinisher(v, k, kind) {
   DUEL.kc = null;
   const who = k === DUEL.me ? $('dNameMe').textContent : $('dNameFoe').textContent;
   const T = $('dCineT');
-  T.textContent = '☠️ ' + FIN_KINDS[kind].name;
+  T.textContent = '☠️ ' + (k.wp && !k.wp.cut ? FIN_BLUNT[kind] : FIN_KINDS[kind].name);
   T.appendChild(el('small', '', who));
   $('duel').classList.add('cine');
   document.documentElement.classList.add('cine');
@@ -81,8 +82,9 @@ function finScale() {
 }
 /** Distance from a point to the killer's blade (guard to tip). */
 function finBladeDist(k, p) {
-  k.sword.localToWorld(fA.set(0, 0.2, 0));
-  k.sword.localToWorld(fB.set(0, 1.07, 0));
+  const h = k.sword.userData.hit || [0.2, 1.07];
+  k.sword.localToWorld(fA.set(0, h[0], 0));
+  k.sword.localToWorld(fB.set(0, h[1], 0));
   fQ.subVectors(fB, fA);
   const t = clamp(fP.subVectors(p, fA).dot(fQ) / fQ.lengthSq(), 0, 1);
   return fP.copy(fA).addScaledVector(fQ, t).distanceTo(p);
@@ -99,6 +101,19 @@ function finReach(F, clipName, from, to, bone, rad) {
     hit = dist < rad;
   if (hit || t >= to) F.how = (hit ? 'touch ' : 'late ') + dist.toFixed(2); // for tuning
   return hit || t >= to;
+}
+/** Take a part off, unless the weapon is blunt (a mace breaks bones instead: more blood, a crack). */
+function finCut(F, part, k) {
+  if (k.wp && !k.wp.cut) {
+    const b = goreBone(F.v, GORE_PARTS[part].bone);
+    if (b) {
+      b.getWorldPosition(fP);
+      goreSpray(fP, gV2.set(F.dx, 0.6, F.dz).normalize(), 40, 4, 0.7);
+    }
+    rPlay('bone', 1, 0.85);
+    return;
+  }
+  goreCut(F.v, part, k);
 }
 /** A wound opens: blood bursts out along the blade's travel, the hit lands with weight. */
 function finWound(F, bone, n, heavy) {
@@ -150,7 +165,7 @@ function finStep(dt) {
     }
     if (F.stage === 2 && finReach(F, 'heavy', 2.5, 2.7, 'neck_01', 0.2)) {
       // ...and down through the neck
-      goreCut(v, 'head', k);
+      finCut(F, 'head', k);
       finWound(F, 'neck_01', 80, true);
       F.stage = 3;
       F.at = T;
@@ -208,7 +223,7 @@ function finStep(dt) {
       F.stage = 1;
     }
     if (F.stage === 1 && finReach(F, 'atk3', 0.1, 0.36, 'lowerarm_r', 0.2)) {
-      goreCut(v, 'armR', k);
+      finCut(F, 'armR', k);
       finWound(F, 'lowerarm_r', 40, false);
       F.stage = 2;
     }
@@ -228,7 +243,7 @@ function finStep(dt) {
       F.stage = 1;
     }
     if (F.stage === 1 && finReach(F, 'heavy', 2.45, 2.72, 'clavicle_l', 0.24)) {
-      goreCut(v, 'shoulderL', k);
+      finCut(F, 'shoulderL', k);
       finWound(F, 'clavicle_l', 90, true);
       F.stage = 2;
       F.at = T;
