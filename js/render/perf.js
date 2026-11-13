@@ -55,12 +55,22 @@ function warmGPU() {
 
 /* ---- adaptive resolution: if frames come late, render fewer pixels; when there is headroom, go back up.
    `best` learns the display's own frame interval (8.3 ms at 120 Hz, 16.7 ms at 60 Hz). */
-const PERF = { avg: 0, best: 1e9, acc: 0, good: 0, n: 0, fpsT: 0, fpsN: 0 };
+const PERF = { avg: 0, best: 1e9, acc: 0, good: 0, n: 0, fpsT: 0, fpsN: 0, slowN: 0, cap60: false };
+/** Milliseconds to wait between drawn frames (0 = every display frame). Nothing on screen changes:
+    calm screens (menus, pause, card pick, run over) move slowly or sit behind a panel → 30 fps;
+    play runs at the display's rate, or a steady 60 when this device can't hold 120 (or battery saver is on). */
+function frameGap() {
+  const st = G.state;
+  if (!DUEL.on && st !== 'play' && st !== 'watch' && st !== 'count') return 1000 / 30 - 2;
+  if (S.set.eco || PERF.cap60) return 1000 / 60 - 2;
+  return 0;
+}
 function perfTick(ms) {
   if (ms <= 0 || ms > 250) return; // tab switches, pauses
   PERF.avg = PERF.avg ? PERF.avg * 0.9 + ms * 0.1 : ms;
   PERF.n++;
-  if (PERF.n > 30) PERF.best = Math.max(1000 / 165, Math.min(PERF.best, PERF.avg));
+  // learn the display's own interval only from unthrottled frames
+  if (PERF.n > 30 && !frameGap()) PERF.best = Math.max(1000 / 165, Math.min(PERF.best, PERF.avg));
   // FPS counter, refreshed twice a second
   PERF.fpsT += ms;
   PERF.fpsN++;
@@ -74,8 +84,20 @@ function perfTick(ms) {
   PERF.acc += ms;
   if (PERF.acc < 1000) return;
   PERF.acc = 0;
-  const slow = PERF.avg > PERF.best * 1.3,
-    fine = PERF.avg < PERF.best * 1.08;
+  const capped = S.set.eco || PERF.cap60,
+    target = capped ? Math.max(PERF.best, 1000 / 60) : PERF.best,
+    slow = PERF.avg > target * 1.3,
+    fine = PERF.avg < target * 1.08;
+  // a fast (≈120 Hz) display this device can't keep up with: settle on a steady 60 first — smoother, cooler,
+  // and the picture stays exactly the same; only if 60 is still too much does the resolution come down
+  if (!capped && PERF.best < 12) {
+    PERF.slowN = slow ? PERF.slowN + 1 : 0;
+    if (PERF.slowN >= 3) {
+      PERF.cap60 = true;
+      PERF.slowN = 0;
+    }
+    return;
+  }
   if (slow && RS > 0.55) {
     RS = Math.max(0.55, RS - 0.1);
     PERF.good = 0;

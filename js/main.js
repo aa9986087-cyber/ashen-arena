@@ -3,6 +3,8 @@
 let last = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
+  const gap = frameGap();
+  if (gap && now - last < gap) return; // a calm screen or a 60 fps cap: skip this display frame
   const raw = (now - last) / 1000,
     dt = Math.min(raw, 0.05);
   last = now;

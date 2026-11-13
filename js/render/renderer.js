@@ -22,6 +22,8 @@ const PCOL = [
   [0.4, 1, 0.5],
   [0.85, 0.45, 1],
 ];
+let fxDrew = true,
+  vigShown = -1;
 function render(dt, now) {
   const p = G.p,
     playing = G.state !== 'menu';
@@ -373,7 +375,10 @@ function render(dt, now) {
   drawScene();
   // 2D overlay
   fx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  fx.clearRect(0, 0, W, H);
+  // the overlay (damage numbers, elite bars, boss arrow, hurt vignette) is cleared only when it held something
+  const fxNeed = playing && (G.texts.length || G.boss || G.enemies.some(e => e.elite && !e.boss));
+  if (fxDrew || fxNeed) fx.clearRect(0, 0, W, H);
+  fxDrew = !!fxNeed;
   if (playing) {
     fx.lineJoin = 'round';
     fx.lineCap = 'round';
@@ -432,7 +437,12 @@ function render(dt, now) {
   if (vig > 0) {
     vig = Math.max(0, vig - dt * 2);
   }
-  $('vig').style.opacity = vig + (playing && p.hp < p.maxHp * 0.25 ? 0.25 + 0.1 * Math.sin(now * 0.008) : 0);
+  // the hurt vignette: touch the page only when its opacity really changes (style writes cost a recalc)
+  const vo = Math.round((vig + (playing && p.hp < p.maxHp * 0.25 ? 0.25 + 0.1 * Math.sin(now * 0.008) : 0)) * 50) / 50;
+  if (vo !== vigShown) {
+    vigShown = vo;
+    $('vig').style.opacity = vo;
+  }
   if (bannerT > 0) {
     bannerT -= dt;
     if (bannerT <= 0) {

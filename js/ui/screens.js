@@ -226,6 +226,7 @@ function drawSet() {
   $('oShake').textContent = S.set.shake ? 'مفعّل' : 'متوقف';
   $('oQual').textContent = S.set.qual ? 'عالية' : 'منخفضة';
   $('oFps').textContent = S.set.fps ? 'ظاهر' : 'مخفي';
+  $('oEco').textContent = S.set.eco ? 'مفعّل' : 'متوقف';
   $('fps').hidden = !S.set.fps;
   $('oSide').textContent = S.set.left ? 'يسار' : 'يمين';
   document.body.classList.toggle('actsLeft', !!S.set.left);
@@ -253,6 +254,7 @@ for (const [id, key] of [
   ['oSide', 'left'],
   ['oQual', 'qual'],
   ['oFps', 'fps'],
+  ['oEco', 'eco'],
 ])
   $(id).onclick = () => {
     S.set[key] = S.set[key] ? 0 : 1;
