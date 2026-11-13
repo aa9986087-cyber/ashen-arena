@@ -405,6 +405,7 @@ class Duelist {
   /** Took a hit (kind: light | heavy | chip). */
   damage(v, from, kind) {
     this.hp = Math.max(0, this.hp - v);
+    if (this.hp <= 0) duelLethalGate(this); // may hold him at 1 (a dead man's blow, or the host must agree first)
     const ax = this.x - from.x,
       az = this.z - from.z,
       L = Math.hypot(ax, az) || 1,
@@ -618,6 +619,8 @@ class Duelist {
 function duelResolve(a, d, kind) {
   const M = DM[kind];
   if (d.act === 'dead') return 'none';
+  // a blow from a man already down, or after the round is decided, lands on nothing
+  if (a.act === 'dead' || a.hp <= 0 || DUEL.fin || (DUEL.phase !== 'fight' && !DUEL.watch)) return 'none';
   if (d.act === 'dodge' && d.t > DM.dodge.iFrom && d.t < DM.dodge.iTo) return 'miss';
   if (kind === 'kick') {
     // the boot goes through a raised guard (and stops a heavy blow still rising): the defender reels open

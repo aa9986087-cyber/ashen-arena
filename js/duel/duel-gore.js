@@ -418,6 +418,7 @@ function goreUpdate(dt) {
       if (f.remote || f.act === 'dead' || DUEL.phase !== 'fight') continue;
       if (f.cuts & GORE_PARTS.armR.bit) {
         f.hp = Math.max(0, f.hp - 6 * dt);
+        if (f.hp <= 0) duelLethalGate(f);
         if (f.hp <= 0) {
           f.start('dead');
           f.play('death', 0.1, 0, true);

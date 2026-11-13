@@ -164,7 +164,8 @@ async function duelStart(online, watch) {
   DUEL.pitch = 0;
   $('dNameMe').textContent = watch ? DUEL.watch.a : S.name || 'أنت';
   $('dNameFoe').textContent = watch ? DUEL.watch.b : online ? DUEL.net.foeName : 'خصم التدريب';
-  $('dAgain').hidden = !!online || !!watch;
+  $('dAgain').hidden = !!watch;
+  duelRematchUi();
   DUEL.score = [0, 0];
   DUEL.round = 0;
   MUS.on = true;
@@ -229,6 +230,7 @@ function duelPlace() {
 }
 function duelRound(n) {
   DUEL.round = n || DUEL.round + 1;
+  if (DUEL.net) DUEL.net.guestDying = DUEL.net.asking = null;
   duelPlace();
   DUEL.clock = DUEL_ROUND;
   DUEL.phase = 'intro';
@@ -587,12 +589,48 @@ function duelUnlock() {
 }
 $('dExit').onclick = () => duelExit();
 $('dAgain').onclick = () => {
+  if (DUEL.net) return duelRematchAsk(true);
+  duelRematchReset();
+  duelRound();
+};
+/** A new match from scratch (same opponent, same arena). */
+function duelRematchReset() {
   $('dOver').hidden = true;
   DUEL.score = [0, 0];
   DUEL.round = 0;
   goreClear();
-  duelRound();
-};
+  duelPips();
+  if (DUEL.net) DUEL.net.meAgain = DUEL.net.foeAgain = false;
+  duelRematchUi();
+}
+function duelRematchUi() {
+  const b = $('dAgain');
+  b.disabled = false;
+  b.textContent = '🔁 إعادة';
+}
+/** Online rematch: each side asks; when both have, the host starts round 1 (the guest follows its 'rd'). */
+function duelRematchAsk(mine) {
+  const N = DUEL.net;
+  if (!N || DUEL.phase !== 'over') return;
+  if (mine) {
+    if (N.meAgain) return;
+    N.meAgain = true;
+    N.ch.send('again', {});
+    $('dAgain').textContent = '⏳ بانتظار خصمك…';
+    $('dAgain').disabled = true;
+  } else {
+    if (N.foeAgain) return;
+    N.foeAgain = true;
+    if (!N.meAgain) {
+      $('dOverS').textContent += '\n⚔️ خصمك يبي إعادة!';
+      $('dAgain').textContent = '⚔️ قبول الإعادة';
+    }
+  }
+  if (N.meAgain && N.foeAgain && N.host) {
+    duelRematchReset();
+    duelRound(1);
+  }
+}
 $('dLeave').onclick = () => duelExit();
 function duelToggleView() {
   DUEL.view = DUEL.view === 'fp' ? 'tps' : 'fp';
@@ -831,6 +869,8 @@ function duelMatchEnd(why) {
   }
   DUEL.phase = 'over';
   $('dOver').hidden = false;
+  duelRematchUi();
+  if (why) $('dAgain').hidden = !!DUEL.net; // the opponent is gone: no one to play again
   $('dOverT').textContent = won ? '🏆 انتصرت!' : '💀 هُزمت';
   $('dOverS').textContent = (why ? why + '\n' : '') + DUEL.score[0] + ' - ' + DUEL.score[1];
   dPlay(won ? 'v_you_win' : 'v_you_lose', 1);
@@ -865,10 +905,23 @@ async function duelStartOnline(room, host, foeName) {
       alive();
       if (!host && DUEL.ready) {
         N.ready = true;
+        if (d.n === 1 && DUEL.phase === 'over') duelRematchReset();
         duelRound(d.n);
       }
     })
     .on('ko', d => !host && DUEL.phase === 'fight' && duelRoundEnd(d))
+    .on('die', d => {
+      // the host: may the guest die? only if we are still standing in this round
+      if (!host || d.r !== DUEL.round) return;
+      const ok = N.guestDying || (DUEL.phase === 'fight' && !DUEL.fin && DUEL.me.hp > 0 && DUEL.me.act !== 'dead');
+      if (ok) N.guestDying = true;
+      ch.send(ok ? 'dieok' : 'dieno', { r: d.r });
+    })
+    .on('dieok', d => !host && duelNetDieOk(d))
+    .on('dieno', d => {
+      if (!host && N.asking && d.r === DUEL.round) N.asking = null; // spared: the host fell first
+    })
+    .on('again', () => duelRematchAsk(false))
     .on('end', () => !host && duelMatchEnd())
     .on('hi', () => {
       alive();
@@ -885,7 +938,13 @@ async function duelStartOnline(room, host, foeName) {
       alive();
       N.ready = true;
     })
-    .on('bye', () => duelForfeit('خصمك طلع من المبارزة'));
+    .on('bye', () => {
+      if (DUEL.phase === 'over') {
+        // left after the match: no rematch
+        $('dAgain').hidden = true;
+        $('dOverS').textContent += '\nخصمك طلع';
+      } else duelForfeit('خصمك طلع من المبارزة');
+    });
   await duelStart(true);
   if (!DUEL.on || DUEL.net !== N) return;
   N.lastRx = performance.now();
@@ -901,6 +960,40 @@ async function duelStartOnline(room, host, foeName) {
       duelExit();
     }
   }, 20000);
+}
+/** A fighter's health just reached 0. Online, two blows can land at once on the two machines (each judges the
+    blows on its own fighter), and both men would fall. One death per round, in the order the host sees:
+    - a blow from a man already down can't kill;
+    - the host's own death stands at once (it is the arbiter) unless it already let the guest die;
+    - the guest asks the host first ('die'), held at 1 health until the answer ('dieok' kills him, 'dieno' spares him). */
+function duelLethalGate(v) {
+  const N = DUEL.net;
+  if (!N || v.remote) return;
+  const foe = v === DUEL.me ? DUEL.foe : DUEL.me;
+  if (DUEL.phase !== 'fight' || DUEL.fin || foe.act === 'dead' || foe.hp <= 0 || (N.host && N.guestDying)) {
+    v.hp = 1;
+    return;
+  }
+  if (N.host) return;
+  v.hp = 1;
+  if (!N.asking) {
+    N.asking = { kind: v.execute ? 1 : 0, at: performance.now() };
+    N.ch.send('die', { r: DUEL.round });
+  }
+}
+/** The guest: the host agreed, he falls now (to a finisher, by the host's fighter). */
+function duelNetDieOk(d) {
+  const N = DUEL.net,
+    me = DUEL.me;
+  if (!N || !N.asking || d.r !== DUEL.round || me.act === 'dead') return;
+  const exec = N.asking.kind;
+  N.asking = null;
+  me.hp = 0;
+  if (!duelFinisher(me, DUEL.foe, finPick(me, exec))) {
+    me.start('dead');
+    me.play('death', 0.1, 0, true);
+    DS.death(me);
+  }
 }
 /** Send our fighter 20 times a second; give up on an opponent silent for 7 s. */
 function duelNetTick(dt) {
@@ -927,6 +1020,11 @@ function duelNetTick(dt) {
     });
   }
   if (DUEL.phase !== 'over' && performance.now() - N.lastRx > 7000) duelForfeit('انقطع اتصال خصمك');
+  // a 'die' question that got no answer: ask again
+  if (N.asking && performance.now() - N.asking.at > 800) {
+    N.asking.at = performance.now();
+    N.ch.send('die', { r: DUEL.round });
+  }
 }
 /** The defender judged our blow: apply what it means for us (the attacker). */
 function duelNetRes(r) {
@@ -989,7 +1087,17 @@ async function duelStartWatch(room, a, b) {
       DUEL.round = d.n;
       duelPlace();
       DUEL.clock = DUEL_ROUND;
-      if (d.n === 1) return duelIntroStart();
+      if (d.n === 1) {
+        // a new match (a rematch): start the board over
+        if (DUEL.phase === 'over') {
+          DUEL.score = [0, 0];
+          $('dOver').hidden = true;
+          goreClear();
+          DUEL.phase = 'fight';
+        }
+        duelPips();
+        return duelIntroStart();
+      }
       duelMsg('الجولة ' + d.n, DUEL.score[0] + ' - ' + DUEL.score[1]);
       DS.round(d.n, DUEL.score[0] === DUEL_WIN - 1 && DUEL.score[1] === DUEL_WIN - 1);
       duelPips();
