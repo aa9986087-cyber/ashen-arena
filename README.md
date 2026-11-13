@@ -69,6 +69,10 @@ js/
     chat.js             الشات العام (جدول chat في Supabase — الإعداد في supabase/chat.sql)
     gift.js             أكواد الهدايا (عملات)
     backup.js           نسخة احتياطية للتقدم (كود AS1)
+  duel/                 المبارزة بالسيوف (طور منفصل بساحته وكاميرته)
+    duel-fighter.js     المقاتل: النموذج، السيف، الحركات، قواعد الضرب والصد والمراوغة والطاقة (DM)
+    duel-ai.js          خصم التدريب (يتصرف بتأخير بشري)
+    duel-mode.js        الساحة، الكاميرا (منظور العين / من ورا الكتف)، الجولات (أول من يفوز بـ3)، التحكم
   input.js              لوحة المفاتيح، الفأرة، عصا اللمس
   main.js               الإقلاع وحلقة الإطارات
 assets/
@@ -100,6 +104,12 @@ assets/
 سلاح جديد يحتاج **تطوره الكامل** في `EVO` بنفس الملف، وإذا عنده سلوك خاص يتبرمج في `fire()` داخل `game/combat.js`. والأسلحة اللي ما تطلق مقذوفات تتعلّم بـ `chain` (برق يقفز بين الأعداء) أو `slam` (ضربة على الأرض).
 
 أدوات مساعدة جاهزة للهجمات: `eRing` (حلقة طلقات)، `eFan` (مروحة طلقات)، `spawnPack` (مجموعة أعداء)، `zoneBarrage` (دوائر خطر)، `eachInRadius` (كل عدو داخل دائرة)، `heal`.
+
+## المبارزة
+
+زر ⚔️ جنب «ابدأ المعركة». المقاتل «الحارس» في `assets/models/duelist.glb`، مبني بـ `tools/prepare-duelist.mjs` من حزم Quaternius المجانية (CC0):
+Modular Character Outfits – Fantasy، وUniversal Base Characters، وUniversal Animation Library 1 و2.
+توازن الحركات كله في `DM` داخل `js/duel/duel-fighter.js`.
 
 ## أكواد الهدايا
 

@@ -1,0 +1,382 @@
+/* Sword duel overlay: bars, round pips, timer, messages, touch controls. */
+#duel {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+#duel > * {
+  pointer-events: auto;
+}
+#dPad {
+  position: absolute;
+  inset: 0;
+}
+#dHurt {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(200, 0, 0, 0.55));
+}
+#dHurt.on {
+  animation: dHurt 0.45s ease-out;
+}
+@keyframes dHurt {
+  from {
+    opacity: 1;
+  }
+}
+#dTop {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  pointer-events: none;
+}
+.dSide {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dSide.foe {
+  align-items: flex-end;
+}
+.dSide b {
+  font-size: 14px;
+  color: #ffe9b8;
+  text-shadow: 0 1px 3px #000;
+}
+.dHp,
+.dSt {
+  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(246, 196, 90, 0.45);
+}
+.dHp {
+  height: 14px;
+}
+.dSt {
+  height: 6px;
+  width: 80%;
+}
+.dHp i,
+.dSt i {
+  display: block;
+  height: 100%;
+  transition: width 0.15s;
+}
+.me .dHp i {
+  background: linear-gradient(180deg, #7fd0ff, #2a7fd0);
+}
+.foe .dHp i {
+  background: linear-gradient(180deg, #ff8a70, #c0301a);
+  margin-inline-start: auto;
+}
+.foe .dHp,
+.foe .dSt {
+  direction: ltr;
+}
+.foe .dSt i {
+  margin-left: auto;
+}
+.dSt i {
+  background: linear-gradient(90deg, #f6c45a, #ffe9a0);
+}
+.dSt.low i {
+  background: #c05030;
+}
+.dPips {
+  display: flex;
+  gap: 5px;
+}
+.dPips i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #f6c45a;
+  background: rgba(0, 0, 0, 0.5);
+}
+.dPips i.on {
+  background: #f6c45a;
+  box-shadow: 0 0 8px #f6c45a;
+}
+#dTime {
+  min-width: 54px;
+  text-align: center;
+  font-family: var(--display);
+  font-size: 30px;
+  line-height: 1.1;
+  color: #ffe9b8;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1.5px solid rgba(246, 196, 90, 0.6);
+  border-radius: 12px;
+  padding: 2px 8px;
+}
+#dBtns {
+  position: absolute;
+  top: calc(max(10px, env(safe-area-inset-top)) + 70px);
+  left: 12px;
+  display: flex;
+  gap: 8px;
+}
+#dMsg {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 30%;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+}
+#dMsg.show {
+  animation: dMsg 2.2s ease-out forwards;
+}
+@keyframes dMsg {
+  0% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+#dMsg b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(48px, 13vw, 96px);
+  background: linear-gradient(180deg, #fff6dc 15%, var(--gold) 55%, var(--gold2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 0 #2a0e04) drop-shadow(0 0 22px rgba(242, 120, 40, 0.65));
+}
+#dMsg.go b {
+  background: linear-gradient(180deg, #fff, #ff9a50 60%, #c0301a);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+#dMsg.lose b {
+  background: linear-gradient(180deg, #ddd, #8a8a9a);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+#dMsg p {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffe2a8;
+  text-shadow: 0 1px 4px #000;
+}
+#dFloat {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 46%;
+  text-align: center;
+  font-size: 30px;
+  font-weight: 800;
+  opacity: 0;
+  pointer-events: none;
+  text-shadow: 0 2px 6px #000;
+}
+#dFloat.on {
+  animation: dFloat 0.8s ease-out;
+}
+#dFloat.blk {
+  color: #bfe4ff;
+}
+#dFloat.par {
+  color: #ffe066;
+  font-size: 38px;
+}
+#dFloat.brk {
+  color: #ff7a50;
+}
+@keyframes dFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+}
+#dJoy {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  margin: -55px 0 0 -55px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+#dJoy i {
+  position: absolute;
+  left: 30px;
+  top: 30px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(246, 196, 90, 0.55);
+}
+#dActs {
+  position: absolute;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  gap: 12px;
+  align-items: end;
+  direction: ltr;
+}
+.dAct {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 2px solid rgba(246, 196, 90, 0.7);
+  background: radial-gradient(circle at 40% 35%, rgba(70, 60, 90, 0.95), rgba(14, 12, 24, 0.95));
+  color: #fff;
+  font-size: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  touch-action: none;
+}
+.dAct small {
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffe2a8;
+  margin-top: 3px;
+}
+.dAct.big {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  width: 104px;
+  height: 104px;
+  font-size: 40px;
+}
+.dAct.big small {
+  font-size: 9px;
+  max-width: 80px;
+  text-align: center;
+}
+.dAct.held {
+  transform: scale(0.92);
+  border-color: #fff;
+  box-shadow: 0 0 18px rgba(246, 196, 90, 0.8);
+}
+#dDodge {
+  grid-row: 2;
+  grid-column: 1;
+}
+#dBlock {
+  grid-row: 1;
+  grid-column: 1;
+}
+#dKeys {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 233, 184, 0.75);
+  text-shadow: 0 1px 3px #000;
+  pointer-events: none;
+}
+body:not(.mouse) #dKeys {
+  display: none;
+}
+body.mouse #dActs {
+  display: none;
+}
+#dLoad {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffe9b8;
+  background: #120f18;
+}
+#dLoad[hidden] {
+  display: none;
+}
+#dOver {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(8, 6, 14, 0.72);
+}
+#dOver[hidden] {
+  display: none;
+}
+#dOver h2 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(44px, 12vw, 80px);
+  color: var(--gold);
+}
+#dOver p {
+  font-size: 26px;
+  font-weight: 800;
+  color: #ffe9b8;
+}
+/* main menu: play + duel side by side */
+#playRow {
+  display: flex;
+  gap: 8px;
+}
+#playRow #mPlay {
+  flex: 1;
+}
+#mDuel {
+  flex: none;
+  width: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  line-height: 1;
+  border-radius: 18px;
+  border: 2px solid rgba(246, 196, 90, 0.7);
+  background: linear-gradient(180deg, #5a2a1a, #2a1010);
+}
+#mDuel small {
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 4px;
+  color: #ffe2a8;
+}
