@@ -104,7 +104,7 @@ function drawBoard() {
     const r = el('div', 'rk' + (e.n === S.name ? ' me' : ''));
     r.append(
       el('i', '', i + 1),
-      el('span', '', e.n),
+      profileLink(el('span', '', e.n), e.n),
       el('b', '', '💀 ' + e.k),
       el('small', '', 'مستوى ' + e.l),
       el('small', '', fmtT(e.t))
@@ -129,6 +129,7 @@ $('nameOk').onclick = () => {
   if (old && old !== n) for (const e of S.board) if (e.n === old) e.n = n;
   S.name = n;
   save();
+  profileSync();
   AU.init();
   AU.play('select');
   $('nameScr').hidden = true;

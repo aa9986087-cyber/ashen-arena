@@ -70,7 +70,7 @@ function chatDraw() {
         m.classList.toggle('sel', CHAT.sel.has(r.id));
         chatModBar();
       };
-    m.append(el('b', '', r.name), el('small', '', chatAgo(r.created_at)), el('p', '', r.msg));
+    m.append(profileLink(el('b', '', r.name), r.name), el('small', '', chatAgo(r.created_at)), el('p', '', r.msg));
     L.appendChild(m);
   }
   if (atEnd || L.dataset.first !== '1') {

@@ -13,15 +13,15 @@
       href="https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@400;500;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="css/base.css?v=202611131007" />
-    <link rel="stylesheet" href="css/hud.css?v=202611131007" />
-    <link rel="stylesheet" href="css/screens.css?v=202611131007" />
-    <link rel="stylesheet" href="css/cards.css?v=202611131007" />
-    <link rel="stylesheet" href="css/responsive.css?v=202611131007" />
-    <link rel="stylesheet" href="css/menu.css?v=202611131007" />
-    <link rel="stylesheet" href="css/motion.css?v=202611131007" />
-    <link rel="stylesheet" href="css/duel.css?v=202611131007" />
-    <link rel="stylesheet" href="css/skill-tree.css?v=202611131007" />
+    <link rel="stylesheet" href="css/base.css?v=202611131011" />
+    <link rel="stylesheet" href="css/hud.css?v=202611131011" />
+    <link rel="stylesheet" href="css/screens.css?v=202611131011" />
+    <link rel="stylesheet" href="css/cards.css?v=202611131011" />
+    <link rel="stylesheet" href="css/responsive.css?v=202611131011" />
+    <link rel="stylesheet" href="css/menu.css?v=202611131011" />
+    <link rel="stylesheet" href="css/motion.css?v=202611131011" />
+    <link rel="stylesheet" href="css/duel.css?v=202611131011" />
+    <link rel="stylesheet" href="css/skill-tree.css?v=202611131011" />
   </head>
   <body class="mouse">
     <canvas id="gl"></canvas>
@@ -46,6 +46,15 @@
         <div id="dmList"></div>
         <h4 class="sec">📜 سجل المبارزات</h4>
         <div id="dmRec"></div>
+      </div>
+    </div>
+    <div id="pcard" hidden>
+      <div class="pcBox">
+        <button class="iconBtn" id="pcClose" aria-label="إغلاق">✖</button>
+        <div id="pcPic"></div>
+        <h3 id="pcName"></h3>
+        <p id="pcHero"></p>
+        <div id="pcBody"></div>
       </div>
     </div>
     <div id="dmAsk" hidden>
@@ -436,61 +445,62 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
     <!-- Game scripts: plain (non-module) scripts sharing one global scope. ORDER MATTERS:
      each file may only use, at load time, what the files above it define. -->
-    <script src="js/core/utils.js?v=202611131007"></script>
-    <script src="js/core/config.js?v=202611131007"></script>
-    <script src="js/core/dom.js?v=202611131007"></script>
-    <script src="js/core/codes.js?v=202611131007"></script>
-    <script src="js/core/save.js?v=202611131007"></script>
-    <script src="js/data/weapons.js?v=202611131007"></script>
-    <script src="js/data/characters.js?v=202611131007"></script>
-    <script src="js/data/upgrades.js?v=202611131007"></script>
-    <script src="js/data/achievements.js?v=202611131007"></script>
-    <script src="js/data/stages.js?v=202611131007"></script>
-    <script src="js/data/enemies.js?v=202611131007"></script>
-    <script src="js/data/missions.js?v=202611131007"></script>
-    <script src="js/audio/sound.js?v=202611131007"></script>
-    <script src="js/audio/music-track.js?v=202611131007"></script>
-    <script src="js/render/scene.js?v=202611131007"></script>
-    <script src="js/render/geometry.js?v=202611131007"></script>
-    <script src="js/render/instances.js?v=202611131007"></script>
-    <script src="js/render/vfx.js?v=202611131007"></script>
-    <script src="js/render/world.js?v=202611131007"></script>
-    <script src="js/render/atmosphere.js?v=202611131007"></script>
-    <script src="js/render/player-model.js?v=202611131007"></script>
-    <script src="js/game/state.js?v=202611131007"></script>
-    <script src="js/game/fx.js?v=202611131007"></script>
-    <script src="js/game/spawning.js?v=202611131007"></script>
-    <script src="js/game/combat.js?v=202611131007"></script>
-    <script src="js/game/specials.js?v=202611131007"></script>
-    <script src="js/game/boss-ults.js?v=202611131007"></script>
-    <script src="js/game/progression.js?v=202611131007"></script>
-    <script src="js/game/update.js?v=202611131007"></script>
-    <script src="js/game/enemy-ai.js?v=202611131007"></script>
-    <script src="js/game/cards.js?v=202611131007"></script>
-    <script src="js/game/run.js?v=202611131007"></script>
-    <script src="js/game/daily.js?v=202611131007"></script>
-    <script src="js/ui/hud.js?v=202611131007"></script>
-    <script src="js/ui/screens.js?v=202611131007"></script>
-    <script src="js/ui/portraits.js?v=202611131007"></script>
-    <script src="js/ui/leaderboard.js?v=202611131007"></script>
-    <script src="js/ui/chat.js?v=202611131007"></script>
-    <script src="js/ui/gift.js?v=202611131007"></script>
-    <script src="js/ui/backup.js?v=202611131007"></script>
-    <script src="js/ui/share-card.js?v=202611131007"></script>
-    <script src="js/ui/skill-tree.js?v=202611131007"></script>
-    <script src="js/ui/lab.js?v=202611131007"></script>
-    <script src="js/ui/dev.js?v=202611131007"></script>
-    <script src="js/ui/intro.js?v=202611131007"></script>
-    <script src="js/input.js?v=202611131007"></script>
-    <script src="js/render/renderer.js?v=202611131007"></script>
-    <script src="js/render/models.js?v=202611131007"></script>
-    <script src="js/render/perf.js?v=202611131007"></script>
-    <script src="js/duel/duel-audio.js?v=202611131007"></script>
-    <script src="js/duel/duel-fighter.js?v=202611131007"></script>
-    <script src="js/duel/duel-ai.js?v=202611131007"></script>
-    <script src="js/duel/duel-mode.js?v=202611131007"></script>
-    <script src="js/duel/duel-net.js?v=202611131007"></script>
-    <script src="js/duel/duel-lobby.js?v=202611131007"></script>
-    <script src="js/main.js?v=202611131007"></script>
+    <script src="js/core/utils.js?v=202611131011"></script>
+    <script src="js/core/config.js?v=202611131011"></script>
+    <script src="js/core/dom.js?v=202611131011"></script>
+    <script src="js/core/codes.js?v=202611131011"></script>
+    <script src="js/core/save.js?v=202611131011"></script>
+    <script src="js/data/weapons.js?v=202611131011"></script>
+    <script src="js/data/characters.js?v=202611131011"></script>
+    <script src="js/data/upgrades.js?v=202611131011"></script>
+    <script src="js/data/achievements.js?v=202611131011"></script>
+    <script src="js/data/stages.js?v=202611131011"></script>
+    <script src="js/data/enemies.js?v=202611131011"></script>
+    <script src="js/data/missions.js?v=202611131011"></script>
+    <script src="js/audio/sound.js?v=202611131011"></script>
+    <script src="js/audio/music-track.js?v=202611131011"></script>
+    <script src="js/render/scene.js?v=202611131011"></script>
+    <script src="js/render/geometry.js?v=202611131011"></script>
+    <script src="js/render/instances.js?v=202611131011"></script>
+    <script src="js/render/vfx.js?v=202611131011"></script>
+    <script src="js/render/world.js?v=202611131011"></script>
+    <script src="js/render/atmosphere.js?v=202611131011"></script>
+    <script src="js/render/player-model.js?v=202611131011"></script>
+    <script src="js/game/state.js?v=202611131011"></script>
+    <script src="js/game/fx.js?v=202611131011"></script>
+    <script src="js/game/spawning.js?v=202611131011"></script>
+    <script src="js/game/combat.js?v=202611131011"></script>
+    <script src="js/game/specials.js?v=202611131011"></script>
+    <script src="js/game/boss-ults.js?v=202611131011"></script>
+    <script src="js/game/progression.js?v=202611131011"></script>
+    <script src="js/game/update.js?v=202611131011"></script>
+    <script src="js/game/enemy-ai.js?v=202611131011"></script>
+    <script src="js/game/cards.js?v=202611131011"></script>
+    <script src="js/game/run.js?v=202611131011"></script>
+    <script src="js/game/daily.js?v=202611131011"></script>
+    <script src="js/ui/hud.js?v=202611131011"></script>
+    <script src="js/ui/screens.js?v=202611131011"></script>
+    <script src="js/ui/portraits.js?v=202611131011"></script>
+    <script src="js/ui/leaderboard.js?v=202611131011"></script>
+    <script src="js/ui/chat.js?v=202611131011"></script>
+    <script src="js/ui/profile.js?v=202611131011"></script>
+    <script src="js/ui/gift.js?v=202611131011"></script>
+    <script src="js/ui/backup.js?v=202611131011"></script>
+    <script src="js/ui/share-card.js?v=202611131011"></script>
+    <script src="js/ui/skill-tree.js?v=202611131011"></script>
+    <script src="js/ui/lab.js?v=202611131011"></script>
+    <script src="js/ui/dev.js?v=202611131011"></script>
+    <script src="js/ui/intro.js?v=202611131011"></script>
+    <script src="js/input.js?v=202611131011"></script>
+    <script src="js/render/renderer.js?v=202611131011"></script>
+    <script src="js/render/models.js?v=202611131011"></script>
+    <script src="js/render/perf.js?v=202611131011"></script>
+    <script src="js/duel/duel-audio.js?v=202611131011"></script>
+    <script src="js/duel/duel-fighter.js?v=202611131011"></script>
+    <script src="js/duel/duel-ai.js?v=202611131011"></script>
+    <script src="js/duel/duel-mode.js?v=202611131011"></script>
+    <script src="js/duel/duel-net.js?v=202611131011"></script>
+    <script src="js/duel/duel-lobby.js?v=202611131011"></script>
+    <script src="js/main.js?v=202611131011"></script>
   </body>
 </html>

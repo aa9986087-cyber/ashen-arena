@@ -54,7 +54,7 @@ function lobbyList(peers) {
       b = el('button', 'btn sm go', p.busy ? 'مشغول' : 'تحدّاه ⚔️');
     b.disabled = !!p.busy || !!LOBBY.pending;
     b.onclick = () => lobbyChallenge(p);
-    r.append(el('span', '', p.n), b);
+    r.append(profileLink(el('span', '', p.n), p.n), b);
     L.appendChild(r);
   }
 }
@@ -189,7 +189,11 @@ async function lobbyDrawRec() {
     .forEach(p => {
       const r = el('div', 'dmPair' + (p.x === S.name || p.y === S.name ? ' me' : ''));
       // right-to-left row: x sits on the right, so its count is the right-hand number
-      r.append(el('span', '', p.x), el('b', '', p.wy + ' : ' + p.wx), el('span', '', p.y));
+      r.append(
+        profileLink(el('span', '', p.x), p.x),
+        el('b', '', p.wy + ' : ' + p.wx),
+        profileLink(el('span', '', p.y), p.y)
+      );
       if (S.dev) r.append(duelDelBtn('كل مبارزات ' + p.x + ' و ' + p.y, { a: p.x, b: p.y }));
       B.appendChild(r);
     });

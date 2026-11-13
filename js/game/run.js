@@ -178,6 +178,7 @@ function endRun() {
   }
   checkAch();
   save();
+  setTimeout(profileSync, 500);
   // stat tiles; plain numbers count up from zero
   $('ovSum').innerHTML = '';
   const rows = [
