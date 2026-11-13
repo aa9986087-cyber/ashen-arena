@@ -15,6 +15,7 @@ const SCREENS = [
   'lab',
   'chat',
   'duelMenu',
+  'liveScr',
 ];
 function show(id, on) {
   $(id).hidden = !on;

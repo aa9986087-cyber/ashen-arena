@@ -6,6 +6,8 @@ function frame(now) {
   const raw = (now - last) / 1000,
     dt = Math.min(raw, 0.05);
   last = now;
+  liveTick(dt);
+  if (G.state === 'watch') liveWatchStep(dt);
   if (DUEL.on) {
     duelFrame(dt);
     AU.music();
