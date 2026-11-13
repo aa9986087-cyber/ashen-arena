@@ -19,8 +19,13 @@ function heroPortrait(id) {
     G.weapons = [{ id: CHARS[id].wep, lvl: 3, cd: 0 }];
     buildPlayer();
     PM.g.position.set(0, 0, 0);
-    PM.g.rotation.y = 0.45;
-    if (PM.anim && PM.anim.idle) PM.hm.geometry = PM.anim.idle[0];
+    const hgv = HERO_GEOS[id] || HERO_GEOS['*'];
+    PM.g.rotation.y = hgv && hgv.view !== undefined ? hgv.view : 0.45;
+    if (PM.anim && PM.anim.idle) {
+      const I = PM.anim.idle,
+        hg = HERO_GEOS[id] || HERO_GEOS['*'];
+      PM.hm.geometry = I[Math.min(I.length - 1, ((hg && hg.pose) || 0) * I.length) | 0];
+    }
     const hd = PM.wpHand && PM.hm.geometry.userData.hand;
     if (hd) {
       PM.wp.position.copy(hd.p);

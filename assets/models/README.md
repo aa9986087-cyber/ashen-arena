@@ -18,6 +18,8 @@
 | `hero-mage.glb` | البطلة: الساحرة | KayKit Adventurers (Mage) |
 | `hero-ranger.glb` | البطلة: الرامية | KayKit Adventurers (Rogue) |
 | `hero-assassin.glb` | البطل: القاتل | KayKit Adventurers (Rogue Hooded) |
+| `hero-gunner.glb` | البطل: الجندي | Quaternius Ultimate Modular Men (SWAT)، وحركات السلاح من Quaternius Cyberpunk Game Kit (منقولة بـ `tools/retarget-swat.html`) |
+| `duelist.glb` | مقاتل المبارزة | Quaternius Modular Character Outfits – Fantasy (Ranger) + Universal Base Characters + Universal Animation Library 1 و2 (`tools/prepare-duelist.mjs`) |
 | `grunt.glb` | الجندي | KayKit Skeletons (Minion + فأس) |
 | `shield.glb` | حامل الدرع | KayKit Skeletons (Warrior + سيف ودرع) |
 | `archer.glb` | الرامي | KayKit Skeletons (Rogue + قوس) |

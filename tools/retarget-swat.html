@@ -1,0 +1,202 @@
+<!doctype html>
+<!-- Builds assets/models/hero-gunner.glb: open in a browser next to three.min.js, GLTFLoader.js, GLTFExporter.js (three r128),
+     modular_men_Swat.glb (Quaternius Ultimate Modular Men, CC0) and cyberpunk_pack_Character.glb (Quaternius Cyberpunk Game Kit, CC0);
+     call exportGlb() and save the result, then shrink it with gltf-transform (dedup, prune keepLeaves, textureCompress). -->
+<html>
+  <body style="margin: 0">
+    <canvas id="c"></canvas>
+    <script src="three.min.js"></script>
+    <script src="GLTFLoader.js"></script>
+    <script src="GLTFExporter.js"></script>
+    <script>
+      // Retarget Quaternius CharacterArmature clips (cyberpunk character) onto the SWAT model (same bone names, different rest axes).
+      // World-space delta method: Rt(t) = Ds(t) * RestT_world, with Ds(t) = S_world(t) * inverse(RestS_world).
+      const R = new THREE.WebGLRenderer({ canvas: c, antialias: true, preserveDrawingBuffer: true });
+      R.setSize(1400, 600);
+      R.outputEncoding = THREE.sRGBEncoding;
+      R.setClearColor(0x1c1830);
+      const load = u => new Promise((ok, no) => new THREE.GLTFLoader().load(u, ok, undefined, no));
+      const bonesOf = root => {
+        const m = {};
+        root.traverse(o => o.isBone && !m[o.name] && (m[o.name] = o));
+        return m;
+      };
+      const worldQ = o => o.getWorldQuaternion(new THREE.Quaternion());
+      window.CLIPS = {
+        idle: 'CharacterArmature|Idle_Gun_Pointing',
+        run: 'CharacterArmature|Run_Shoot',
+        attack: 'CharacterArmature|Gun_Shoot',
+      };
+      async function retarget() {
+        const [tg, sg] = await Promise.all([load('modular_men_Swat.glb'), load('cyberpunk_pack_Character.glb')]);
+        const T = tg.scene,
+          Sx = sg.scene;
+        T.updateMatrixWorld(true);
+        Sx.updateMatrixWorld(true);
+        const tb = bonesOf(T),
+          sb = bonesOf(Sx);
+        // bones in parent-before-child order
+        const order = [];
+        T.traverse(o => o.isBone && order.push(o));
+        const shared = order.filter(b => sb[b.name]);
+        const restT = {},
+          restS = {},
+          restTLocal = {};
+        // rest = the pose the skin was bound in (a true T-pose for both rigs), read from the inverse bind matrices;
+        // the nodes' default pose can be anything (the cyberpunk one already stands in a gun pose)
+        const bindQ = root => {
+          const out = {};
+          root.traverse(o => {
+            if (!o.isSkinnedMesh) return;
+            o.skeleton.bones.forEach((b, i) => {
+              if (out[b.name]) return;
+              const m = o.bindMatrix.clone().multiply(o.skeleton.boneInverses[i].clone().invert()),
+                p = new THREE.Vector3(),
+                q = new THREE.Quaternion(),
+                sc = new THREE.Vector3();
+              m.decompose(p, q, sc);
+              out[b.name] = q;
+            });
+          });
+          return out;
+        };
+        const bindT = bindQ(T),
+          bindS = bindQ(Sx);
+        for (const b of order) {
+          restT[b.name] = bindT[b.name] || worldQ(b);
+          restTLocal[b.name] = b.quaternion.clone();
+        }
+        for (const n in sb) restS[n] = bindS[n] || worldQ(sb[n]);
+        // hips height ratio for root motion
+        const hipT = tb['Hips'].getWorldPosition(new THREE.Vector3()),
+          hipS = sb['Hips'].getWorldPosition(new THREE.Vector3());
+        const hipRestTLocal = tb['Hips'].position.clone(),
+          ratio = hipT.y / hipS.y;
+        const mixer = new THREE.AnimationMixer(Sx),
+          out = [];
+        for (const [role, name] of Object.entries(CLIPS)) {
+          const clip = sg.animations.find(a => a.name === name);
+          if (!clip) throw new Error('missing ' + name);
+          mixer.stopAllAction();
+          const act = mixer.clipAction(clip);
+          act.play();
+          const fps = 30,
+            n = Math.max(2, Math.round(clip.duration * fps) + 1),
+            times = [],
+            q = {},
+            hipP = [];
+          for (const b of order) q[b.name] = [];
+          const cur = {}; // target world quats at this frame
+          for (let i = 0; i < n; i++) {
+            const t = Math.min(clip.duration, i / fps);
+            times.push(t);
+            mixer.setTime(t);
+            Sx.updateMatrixWorld(true);
+            for (const b of order) {
+              const parentW = b.parent && b.parent.isBone ? cur[b.parent.name] : worldQ(b.parent || T);
+              let w;
+              if (sb[b.name]) {
+                const d = worldQ(sb[b.name]).multiply(restS[b.name].clone().invert());
+                w = d.multiply(restT[b.name].clone());
+              } else w = parentW.clone().multiply(restTLocal[b.name]); // fingers etc keep their rest pose
+              cur[b.name] = w;
+              const local = parentW.clone().invert().multiply(w);
+              q[b.name].push(local.x, local.y, local.z, local.w);
+            }
+            // hips: world offset of the source hips, scaled, into the target hips' parent space
+            const sp = sb['Hips'].getWorldPosition(new THREE.Vector3()).sub(hipS).multiplyScalar(ratio);
+            const parent = tb['Hips'].parent,
+              pInv = new THREE.Matrix4().copy(parent.matrixWorld).invert();
+            const wp = hipT.clone().add(sp).applyMatrix4(pInv);
+            hipP.push(wp.x, wp.y, wp.z);
+          }
+          const tracks = order.map(b => new THREE.QuaternionKeyframeTrack(b.name + '.quaternion', times, q[b.name]));
+          tracks.push(new THREE.VectorKeyframeTrack('Hips.position', times, hipP));
+          out.push(new THREE.AnimationClip(role, clip.duration, tracks));
+        }
+        // a hand slot like the KayKit heroes have, so the game can put the hero's weapon in the right hand
+        const slot = new THREE.Object3D();
+        slot.name = 'handslot.r';
+        tb['HandR'].add(slot);
+        // aim the slot (+Y = barrel) along the forearm in the aiming pose, so the gun extends the arm
+        const mT = new THREE.AnimationMixer(T);
+        mT.clipAction(out[0]).play();
+        mT.setTime(out[0].duration * 0.3);
+        T.updateMatrixWorld(true);
+        const e = tb['LowerArmR'].getWorldPosition(new THREE.Vector3()),
+          h = tb['HandR'].getWorldPosition(new THREE.Vector3()),
+          dir = h.sub(e).normalize(),
+          want = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+        slot.quaternion.copy(worldQ(tb['HandR']).invert().multiply(want));
+        mT.stopAllAction();
+        return { T, clips: out, slot, tb };
+      }
+      window.preview = async (slotRot, slotPos) => {
+        const { T, clips, slot } = await retarget();
+        if (slotRot) slot.rotation.set(...slotRot);
+        if (slotPos) slot.position.set(...slotPos);
+        const S = new THREE.Scene();
+        S.add(new THREE.HemisphereLight(0xffffff, 0x443344, 1.1));
+        const d = new THREE.DirectionalLight(0xffffff, 1.2);
+        d.position.set(3, 6, 5);
+        S.add(d);
+        const shots = [],
+          poses = [
+            ['idle', 0.3],
+            ['run', 0.25],
+            ['run', 0.7],
+            ['attack', 0.4],
+          ];
+        const box = new THREE.Box3().setFromObject(T),
+          k = 2 / (box.max.y - box.min.y);
+        for (let i = 0; i < poses.length; i++) {
+          const inst = THREE.SkeletonUtils ? null : null;
+          const g = await load('modular_men_Swat.glb'); // a fresh copy per pose
+          const tb2 = {};
+          g.scene.traverse(o => o.isBone && !tb2[o.name] && (tb2[o.name] = o));
+          const s2 = new THREE.Object3D();
+          s2.name = 'handslot.r';
+          s2.rotation.copy(slot.rotation);
+          s2.position.copy(slot.position);
+          tb2['HandR'].add(s2);
+          // a stand-in rifle on the slot: barrel along the slot's +Z
+          const gun = new THREE.Group();
+          const body = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.7), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+          body.position.z = 0.25;
+          const tip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.06), new THREE.MeshBasicMaterial({ color: 0xff3020 }));
+          tip.position.z = 0.62;
+          gun.add(body, tip);
+          s2.add(gun);
+          g.scene.updateMatrixWorld(true);
+          const ws = new THREE.Vector3();
+          s2.getWorldScale(ws);
+          gun.scale.setScalar(1 / ws.x); // the rig's bones are in centimetres
+          const m = new THREE.AnimationMixer(g.scene);
+          const cl = clips.find(c => c.name === poses[i][0]);
+          m.clipAction(cl).play();
+          m.setTime(cl.duration * poses[i][1]);
+          g.scene.scale.setScalar(k);
+          g.scene.position.x = (i - 1.5) * 2.4;
+          g.scene.rotation.y = -0.6;
+          S.add(g.scene);
+          shots.push(g.scene);
+        }
+        const cam = new THREE.PerspectiveCamera(30, 1400 / 600, 0.1, 100);
+        cam.position.set(0, 1.2, 10.5);
+        cam.lookAt(0, 1, 0);
+        R.render(S, cam);
+        return c.toDataURL('image/jpeg', 0.88);
+      };
+      window.exportGlb = async (slotRot, slotPos) => {
+        const { T, clips, slot } = await retarget();
+        return new Promise(ok =>
+          new THREE.GLTFExporter().parse(
+            T,
+            buf => ok(btoa(new Uint8Array(buf).reduce((s, b) => s + String.fromCharCode(b), ''))),
+            { binary: true, animations: clips, onlyVisible: false }
+          )
+        );
+      };
+    </script>
+  </body>
+</html>

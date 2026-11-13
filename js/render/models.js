@@ -3,13 +3,17 @@
    Animated models are baked into a few snapshots per clip and played as a flip-book (cheap for big crowds).
    To add one: put the .glb in assets/models/ and list it here. Sources and licences: assets/models/README.md */
 /** file → what it replaces: a GEO key (enemy type or boss0…boss5), or hero:<CHARS id> (or hero:* for every hero).
-    Use { to, size, tint } for options: size scales the fitted height, tint:true darkens it for a scarier look. */
+    Use { to, size, tint, lift, pose } for options: size scales the fitted height, tint:true darkens it for a scarier
+    look, lift brightens its colours, pose picks the idle frame (0…1) shown on a hero card, view turns that card. */
 const MODEL_FILES = {
   'hero-knight.glb': 'hero:knight',
   'hero-berserker.glb': 'hero:berserker',
   'hero-mage.glb': 'hero:mage',
   'hero-ranger.glb': 'hero:ranger',
   'hero-assassin.glb': 'hero:assassin',
+  // Quaternius SWAT with gun clips retargeted from the cyberpunk character (tools/retarget-swat.html);
+  // a dark uniform: lifted colours so it reads on the dark arena and the hero card
+  'hero-gunner.glb': { to: 'hero:gunner', lift: 1.7, pose: 0.5, view: 0.95 },
   'grunt.glb': 'grunt',
   'shield.glb': 'shield',
   'archer.glb': 'archer',
@@ -25,7 +29,7 @@ const MODEL_FILES = {
   'boss-flame.glb': { to: 'boss5', size: 0.85 }, // wide wings
 };
 /** Bump to make browsers fetch updated model files. */
-const MODEL_VER = 6;
+const MODEL_VER = 7;
 const lin2s = v => (v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
 function texSampler(tex) {
   try {
@@ -62,7 +66,7 @@ const ANIM_FRAMES = { walk: 8, run: 10, idle: 8, attack: 8 };
  * (geometry.userData.hand = { p, q }) so the game can put the hero's weapon in it.
  * Returns { base, clips: { role: [geometry…] } } or null.
  */
-function bakeModel(root, animations, targetH, scary) {
+function bakeModel(root, animations, targetH, scary, lift) {
   // 1 · collect vertices once: colours and the index never change between frames
   const meshes = [],
     col = [],
@@ -110,6 +114,8 @@ function bakeModel(root, animations, targetH, scary) {
             (l * 0.45 + c[2] * 0.55) * 0.72,
           ];
         }
+        if (lift)
+          c = [Math.min(1, c[0] * lift + 0.02), Math.min(1, c[1] * lift + 0.02), Math.min(1, c[2] * lift + 0.02)];
         vc.set(c, i * 3);
         used = true;
       }
@@ -207,11 +213,13 @@ function loadModels() {
             og.computeBoundingBox();
             th = og.boundingBox.max.y - og.boundingBox.min.y;
           }
-          const baked = bakeModel(gl.scene, gl.animations, th * (o.size || 1), !!o.tint);
+          const baked = bakeModel(gl.scene, gl.animations, th * (o.size || 1), !!o.tint, o.lift);
           if (!baked) return;
           const g = baked.base;
           if (hero) {
             HERO_GEOS[hero] = baked;
+            baked.pose = o.pose || 0; // which idle frame (0…1) the hero card shows
+            baked.view = o.view; // the card's turn (radians); a hero aiming at the camera hides its gun
             if (hero === '*' || hero === S.char) buildPlayer();
           } else {
             GEO[key] = g;
