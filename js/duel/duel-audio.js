@@ -287,6 +287,33 @@ const DS = {
     sfxPlay('fall', 0.85, 1, 0.6, 0.3); // the body hits the stones
     rPlay('gear', 0.55, 0.9, 0.6);
   },
+  /** A war drum for the walk-out: one deep hit, or a double for the face-off. */
+  drum(big) {
+    const c = AU.ctx;
+    if (!c) return;
+    const t = c.currentTime;
+    for (const at of big ? [0, 0.16] : [0]) {
+      const o = c.createOscillator(),
+        g = c.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(big ? 95 : 80, t + at);
+      o.frequency.exponentialRampToValueAtTime(38, t + at + 0.5);
+      g.gain.setValueAtTime(0.0001, t + at);
+      g.gain.exponentialRampToValueAtTime(big ? 1 : 0.8, t + at + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + at + 0.9);
+      o.connect(g);
+      g.connect(AU.sg);
+      if (typeof DSFX !== 'undefined' && DSFX.rev) {
+        const w = c.createGain();
+        w.gain.value = 0.5;
+        g.connect(w);
+        w.connect(DSFX.rev);
+      }
+      o.start(t + at);
+      o.stop(t + at + 1);
+    }
+    rPlay('punchX', big ? 0.7 : 0.45, 0.6, 0, 0.4); // the skin of the drum
+  },
   /** A limb cut off a living man. */
   scream(who) {
     rPlay('scream', 1, dVox(who), 0.05, 0.3);

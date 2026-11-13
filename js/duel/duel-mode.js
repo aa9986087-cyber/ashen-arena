@@ -185,6 +185,9 @@ async function duelStart(online, watch) {
   duelRound();
 }
 function duelExit() {
+  DUEL.intro = DUEL.fin = DUEL.kc = null;
+  $('duel').classList.remove('cine', 'intro');
+  document.documentElement.classList.remove('cine');
   if (DUEL.watch) {
     const ch = DUEL.watch.ch;
     DUEL.watch = null;
@@ -229,9 +232,14 @@ function duelRound(n) {
   DUEL.phaseT = 2.4;
   DUEL.saidFight = false;
   $('dLoad').hidden = true;
-  if (DUEL.round === 1) duelMsg(ARENA_NAME, 'الجولة 1');
-  else duelMsg('الجولة ' + DUEL.round, DUEL.score[0] + ' - ' + DUEL.score[1]);
-  DS.round(DUEL.round, DUEL.score[0] === DUEL_WIN - 1 && DUEL.score[1] === DUEL_WIN - 1);
+  if (DUEL.round === 1) {
+    // the walk-out first: the countdown waits for it
+    DUEL.phaseT += INTRO_T;
+    duelIntroStart();
+  } else {
+    duelMsg('الجولة ' + DUEL.round, DUEL.score[0] + ' - ' + DUEL.score[1]);
+    DS.round(DUEL.round, DUEL.score[0] === DUEL_WIN - 1 && DUEL.score[1] === DUEL_WIN - 1);
+  }
   duelPips();
   if (DUEL.net && DUEL.net.host) DUEL.net.ch.send('rd', { n: DUEL.round });
 }
@@ -348,7 +356,7 @@ function duelKillcamEnd() {
   if ($('dMsg').querySelector('b').textContent) pop($('dMsg'), 'show'); // the round's verdict, now that it can be seen
 }
 function duelInput(dt = 0) {
-  if (DUEL.kc || DUEL.fin) return;
+  if (DUEL.kc || DUEL.fin || DUEL.intro) return;
   const me = DUEL.me,
     k = IN.k;
   // turning: finger / middle-mouse drag, or Q E (allowed in the countdown too, to look around)
@@ -414,6 +422,7 @@ addEventListener('keydown', e => {
     duelLock(!DUEL.lock);
   }
   if (e.code === 'Escape') duelExit();
+  if (DUEL.intro && !DUEL.net && !DUEL.watch && (e.code === 'Space' || e.code === 'Enter')) duelIntroEnd();
 });
 addEventListener('keyup', e => {
   if (DUEL.on && e.code === 'KeyJ') duelAtkUp();
@@ -424,6 +433,8 @@ function duelPt(e) {
 }
 // mouse on the duel layer: left = attack (hold = heavy), right = block
 $('dPad').addEventListener('pointerdown', e => {
+  // training: a tap skips the walk-out
+  if (DUEL.intro && !DUEL.net && !DUEL.watch) return duelIntroEnd();
   const P = duelPt(e);
   if (e.pointerType === 'touch') {
     document.body.classList.remove('mouse');
@@ -595,9 +606,10 @@ function duelCamera(dt) {
     cam.updateProjectionMatrix();
     return;
   }
-  if (DUEL.fin) {
+  if (DUEL.fin || DUEL.intro) {
     for (const m of me.fpHide) m.visible = !m.userData.cut;
-    finCamera(dt, cam);
+    if (DUEL.fin) finCamera(dt, cam);
+    else introCamera(dt, cam);
     if (cam.aspect !== W / H) cam.aspect = W / H;
     cam.updateProjectionMatrix();
     return;
@@ -673,6 +685,7 @@ function duelFrame(rdt) {
     DUEL.shake = 0;
     const ts = DUEL.kc ? duelKcScale() : 1;
     if (DUEL.fin) finStep(rdt * finScale());
+    else if (DUEL.intro) introStep(rdt);
     else {
       DUEL.me.update(rdt * ts, DUEL.foe);
       DUEL.foe.update(rdt * ts, DUEL.me);
@@ -722,7 +735,7 @@ function duelStep(rdt) {
     foe = DUEL.foe;
   const judge = !DUEL.net || DUEL.net.host;
   if (DUEL.phase === 'fight') {
-    if (DUEL.bot && !DUEL.fin) DUEL.bot.update(dt);
+    if (DUEL.bot && !DUEL.fin && !DUEL.intro) DUEL.bot.update(dt);
     if (judge) {
       DUEL.clock -= dt;
       if (me.hp <= 0 || foe.hp <= 0 || DUEL.clock <= 0) duelRoundEnd();
@@ -748,6 +761,7 @@ function duelStep(rdt) {
     }
   }
   if (DUEL.fin) finStep(dt);
+  else if (DUEL.intro) introStep(rdt);
   else {
     me.update(dt, foe);
     foe.update(dt, me);
@@ -949,6 +963,7 @@ async function duelStartWatch(room, a, b) {
       DUEL.round = d.n;
       duelPlace();
       DUEL.clock = DUEL_ROUND;
+      if (d.n === 1) return duelIntroStart();
       duelMsg('الجولة ' + d.n, DUEL.score[0] + ' - ' + DUEL.score[1]);
       DS.round(d.n, DUEL.score[0] === DUEL_WIN - 1 && DUEL.score[1] === DUEL_WIN - 1);
       duelPips();

@@ -360,7 +360,7 @@ class Duelist {
   }
   /** Online, on the opponent's copy: the owner's broadcast state (position, health, stamina, guard, reactions). */
   netState(s) {
-    if (DUEL.fin) return; // a finisher is playing: it moves both fighters itself
+    if (DUEL.fin || DUEL.intro) return; // a finisher or the walk-out is playing: it moves both fighters itself
     // limbs its owner lost (the owner decides, everyone else copies)
     if (s.cu & ~this.cuts) for (const k in GORE_PARTS) if (s.cu & GORE_PARTS[k].bit) goreCut(this, k);
     this.nx = s.x;
