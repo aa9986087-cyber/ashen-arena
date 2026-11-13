@@ -142,7 +142,7 @@ function updExpansionAbilities(dt) {
   if (u.whirl && every('whirl', 5 - 0.5 * u.whirl)) {
     const R = 4 * p.area;
     slashFx(0, 2, R);
-    vfxTornado(p.x, p.z, 0.55, R / 4, [0.8, 0.82, 0.9]).follow = 1;
+    vfxBladeWhirl(R);
     AU.play('sword');
     eachInRadius(p.x, p.z, R, (e, ang) => hit(e, (20 + 12 * u.whirl) * p.dmgMul, { kb: 8, ang }));
   }

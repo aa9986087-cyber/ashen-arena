@@ -79,6 +79,7 @@ function vfxEmit(x, z, d, fn, extra) {
   return em;
 }
 function vfxClear() {
+  for (const em of VFX.emitters) if (em.end) em.end();
   VFX.glow.list.length = VFX.smoke.list.length = VFX.emitters.length = 0;
   for (const b of VFX.bolts) b.mesh.visible = false;
   for (const m of VFX_TWISTER) m.visible = false;
@@ -259,7 +260,11 @@ function vfxUpdate(dt) {
     em.l += dt;
     if (em.l < em.d) em.fn(em, dt);
   }
-  VFX.emitters = VFX.emitters.filter(em => em.l < em.d);
+  VFX.emitters = VFX.emitters.filter(em => {
+    if (em.l < em.d) return true;
+    if (em.end) em.end();
+    return false;
+  });
   vfxStep(VFX.glow, dt);
   vfxStep(VFX.smoke, dt);
   for (const B of VFX.bolts) {
@@ -463,7 +468,7 @@ function vfxTornado(x, z, life, scale, col) {
     funnel.visible = true;
     funnel.material.uniforms.col.value.setRGB(c[0] * 1.05, c[1] * 1.05, c[2] * 1.05);
   }
-  return vfxEmit(x, z, life, (em, dt) => {
+  const em0 = vfxEmit(x, z, life, (em, dt) => {
     if (em.follow) {
       em.x = G.p.x;
       em.z = G.p.z;
@@ -474,7 +479,6 @@ function vfxTornado(x, z, life, scale, col) {
       funnel.scale.setScalar(scale * (k < 0.15 ? 0.3 + (k / 0.15) * 0.7 : 1));
       funnel.material.uniforms.t.value = em.l * 3;
       funnel.material.uniforms.op.value = Math.min(1, k * 8, (1 - k) * 5);
-      if (em.l + dt >= life) funnel.visible = false;
     }
     const s =
       scale * (em.l < 0.2 ? 0.4 + (em.l / 0.2) * 0.6 : em.l > life - 0.3 ? Math.max(0.2, (life - em.l) / 0.3) : 1);
@@ -559,6 +563,8 @@ function vfxTornado(x, z, life, scale, col) {
         orbit: { cx: em.x, cz: em.z, ang: Math.random() * TAU, rad: 1.2 * s, w: 6, grow: 2.2 },
       });
   });
+  em0.end = () => funnel && (funnel.visible = false);
+  return em0;
 }
 /** A black hole: a dark core inside a bright purple disc of matter spiralling in. */
 function vfxBlackHole(em) {
@@ -729,4 +735,47 @@ function vfxPhoenix(x, z) {
         drag: 1.5,
       });
     }
+}
+/** The blade whirl: a ring of glowing steel arcs and wind sweeping round the hero at sword's reach
+    (the hero stays visible in the middle). */
+function vfxBladeWhirl(R) {
+  const p = G.p;
+  // a solid ring of bright steel, plus a fainter echo trailing just behind it
+  for (const [n, rad, sz, bright] of [
+    [110, 0.85, 0.7, 1],
+    [70, 0.72, 0.5, 0.55],
+  ])
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU;
+      vfxP({
+        x: p.x,
+        y: 1,
+        z: p.z,
+        life: 0.34,
+        s: sz,
+        s1: sz * 0.3,
+        r: 1.6 * bright,
+        g: 1.65 * bright,
+        b: 1.9 * bright,
+        orbit: { cx: p.x, cz: p.z, ang: a, rad: R * rad, w: 15, rise: 0.3 },
+      });
+    }
+  for (let i = 0; i < 24; i++) {
+    const a = (i / 24) * TAU;
+    vfxP({
+      smoke: 1,
+      x: p.x,
+      y: 0.4,
+      z: p.z,
+      life: 0.45,
+      s: 1,
+      s1: 1.8,
+      r: 0.85,
+      g: 0.86,
+      b: 0.9,
+      a: 0.35,
+      fade: 1,
+      orbit: { cx: p.x, cz: p.z, ang: a, rad: R * 0.95, w: 12, grow: 1.5 },
+    });
+  }
 }
