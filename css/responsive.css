@@ -16,45 +16,6 @@
   font-size: 12px;
 }
 @media (max-width: 640px) {
-  /* six or eight cards on a phone: a two-column grid of compact upright cards */
-  #cardRow[data-n='6'],
-  #cardRow[data-n='8'] {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-  #cardRow[data-n='6'] .card,
-  #cardRow[data-n='8'] .card {
-    flex-direction: column;
-    text-align: center;
-    padding: 10px 8px 8px;
-    gap: 4px;
-    min-height: 0;
-  }
-  #cardRow[data-n='6'] .card .ic,
-  #cardRow[data-n='8'] .card .ic {
-    width: 44px;
-    height: 44px;
-    font-size: 24px;
-  }
-  #cardRow[data-n='6'] .card .rar,
-  #cardRow[data-n='8'] .card .rar {
-    align-self: center;
-  }
-  #cardRow[data-n='6'] .card h3,
-  #cardRow[data-n='8'] .card h3 {
-    font-size: 17px;
-  }
-  #cardRow[data-n='6'] .card p,
-  #cardRow[data-n='8'] .card p {
-    font-size: 11.5px;
-    line-height: 1.4;
-  }
-  #cardRow[data-n='6'] .card .lv,
-  #cardRow[data-n='8'] .card .lv {
-    font-size: 11px;
-    padding-top: 4px;
-  }
   /* heroes: two per row with their portraits */
   #charGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

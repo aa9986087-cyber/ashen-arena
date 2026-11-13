@@ -4,6 +4,146 @@
 const FX_LIFE = { text: 0.8, bolt: 0.22, slash: 0.18, corpse: 0.55 };
 /** Radius of the electric aura upgrade. */
 const auraRadius = () => (3.4 + 0.55 * G.ups.aura) * G.p.area;
+/** Timed abilities from the second upgrade expansion (see UP in data/upgrades.js). */
+function updExpansionAbilities(dt) {
+  const p = G.p,
+    u = G.ups,
+    tm = G.tm,
+    every = (k, t) => (tm[k] -= dt) <= 0 && ((tm[k] = t), true),
+    near = R => G.enemies.filter(e => !e.dead && (e.x - p.x) ** 2 + (e.z - p.z) ** 2 < R * R);
+  if (u.spikes && p.moving && every('spikes', 0.35))
+    G.clouds.push({ x: p.x, z: p.z, r: 1.5 * p.area, l: 0, d: 2.2, tick: 0, dmg: 4 + 3 * u.spikes, col: 0x9a5aff });
+  if (u.mines && every('mines', 3.6 - 0.5 * u.mines)) G.mines.push({ x: p.x, z: p.z, t: 0 });
+  for (const m of G.mines) {
+    m.t += dt;
+    if (m.t > 0.6 && (m.t > 9 || G.enemies.some(e => !e.dead && (e.x - m.x) ** 2 + (e.z - m.z) ** 2 < 1.8))) {
+      m.done = 1;
+      explode(m.x, m.z, 3 * p.area, (40 + 25 * u.mines) * p.dmgMul);
+    }
+  }
+  G.mines = G.mines.filter(m => !m.done);
+  if (u.firering && every('firering', 6)) {
+    ring(p.x, p.z, 0.5, 6 * p.area, 0.5, [1.6, 0.6, 0.15]);
+    AU.play('nova');
+    eachInRadius(p.x, p.z, 6 * p.area, e => {
+      hit(e, (10 + 6 * u.firering) * p.dmgMul, { aoe: 1, quiet: 1, noCrit: 1, burn: 1 });
+      e.burn = 3;
+    });
+  }
+  if (u.magic && every('magic', 2.2 - 0.3 * u.magic))
+    for (let k = 0; k < 1 + u.magic; k++) {
+      const t = nearest(p.x, p.z, 16);
+      if (t)
+        shot(p.x, p.z, Math.atan2(t.z - p.z, t.x - p.x) + rand(-0.6, 0.6), {
+          spd: 13,
+          dmg: (12 + 5 * u.magic) * p.dmgMul,
+          size: 0.3,
+          range: 18,
+          kind: 4,
+          homing: 1,
+          col: [1.3, 0.5, 1.8],
+        });
+    }
+  if (u.blades && every('blades', 1.8)) {
+    const n = 4 + 2 * u.blades,
+      a0 = Math.random() * TAU;
+    for (let k = 0; k < n; k++)
+      shot(p.x, p.z, a0 + (k / n) * TAU, {
+        spd: 18,
+        dmg: (8 + 4 * u.blades) * p.dmgMul,
+        size: 0.35,
+        pierce: 3,
+        life: 0.5,
+        kind: 5,
+        col: [1.4, 1.4, 1.6],
+      });
+  }
+  if (u.turret && every('turret', 14)) {
+    G.turrets.push({ x: p.x + 1.5, z: p.z, l: 0, cd: 0 });
+    if (G.turrets.length > 2) G.turrets.shift();
+  }
+  for (const t of G.turrets) {
+    t.l += dt;
+    if ((t.cd -= dt) <= 0) {
+      t.cd = 0.45;
+      const e = nearest(t.x, t.z, 14);
+      if (e)
+        shot(t.x, t.z, Math.atan2(e.z - t.z, e.x - t.x), {
+          spd: 30,
+          dmg: (10 + 5 * u.turret) * p.dmgMul,
+          size: 0.22,
+          range: 14,
+          kind: 0,
+          col: [1.8, 0.9, 0.3],
+        });
+    }
+  }
+  G.turrets = G.turrets.filter(t => t.l < 10);
+  if (u.skystrike && every('skystrike', 5 - 0.6 * u.skystrike)) {
+    const pool = near(18);
+    for (let k = 0; k < 1 + u.skystrike && pool.length; k++) {
+      const e = pool.splice((Math.random() * pool.length) | 0, 1)[0];
+      zone(e.x, e.z, 2.2 * p.area, 0.3, (35 + 20 * u.skystrike) * p.dmgMul * (u.thunderlord ? 2 : 1), true);
+    }
+    AU.play('bolt');
+  }
+  if (u.guardian && every('guardian', 9 - u.guardian)) {
+    p.inv = Math.max(p.inv, 1);
+    ring(p.x, p.z, 0.5, 4, 0.5, [1.6, 1.4, 0.6]);
+    eachInRadius(p.x, p.z, 4, (e, ang) => hit(e, 10 * p.dmgMul, { aoe: 1, quiet: 1, noCrit: 1, kb: 12, ang }));
+  }
+  if (u.frostnova && every('frostnova', 7)) {
+    ring(p.x, p.z, 0.5, 6 * p.area, 0.6, [0.6, 1, 1.6]);
+    AU.play('shield');
+    eachInRadius(p.x, p.z, 6 * p.area, e => (e.frz = Math.max(e.frz || 0, e.boss ? 0.5 : 1.2 + 0.3 * u.frostnova)));
+  }
+  if (u.regenburst && every('regenburst', 10)) {
+    heal(p.maxHp * (0.05 + 0.03 * u.regenburst));
+    ring(p.x, p.z, 0.4, 3, 0.5, [0.4, 1.6, 0.6]);
+  }
+  if (u.whirl && every('whirl', 5 - 0.5 * u.whirl)) {
+    const R = 4 * p.area;
+    slashFx(0, 2, R);
+    AU.play('sword');
+    eachInRadius(p.x, p.z, R, (e, ang) => hit(e, (20 + 12 * u.whirl) * p.dmgMul, { kb: 8, ang }));
+  }
+  if (u.starfall && every('starfall', 6))
+    for (let k = 0; k < 10; k++) {
+      const a = Math.random() * TAU,
+        r = rand(3, 12);
+      zone(p.x + Math.cos(a) * r, p.z + Math.sin(a) * r, 2.4 * p.area, 0.5 + k * 0.1, 80 * p.dmgMul, true);
+    }
+  if (u.timewarp && every('timewarp', 20)) {
+    G.warpT = 5;
+    banner('تسارع الزمن', '', 1);
+    ring(p.x, p.z, 0.5, 6, 0.6, [1.4, 1.2, 0.4]);
+  }
+  if (u.clones) {
+    G.cloneA += dt * 2.2;
+    if (every('clones', 0.6))
+      forClones((x, z) => {
+        const t = nearest(x, z, 13);
+        if (t)
+          shot(x, z, Math.atan2(t.z - z, t.x - x), {
+            spd: 22,
+            dmg: (14 + 6 * u.clones) * p.dmgMul,
+            size: 0.32,
+            range: 13,
+            kind: 4,
+            col: [0.9, 0.7, 1.9],
+          });
+      });
+  }
+}
+/** Call fn(x,z) for each companion spirit (two per level, circling wider than the drones). */
+function forClones(fn) {
+  const p = G.p,
+    n = 2 * (G.ups.clones || 0);
+  for (let i = 0; i < n; i++) {
+    const a = -G.cloneA + (i / n) * TAU;
+    fn(p.x + Math.cos(a) * 3.4, p.z + Math.sin(a) * 3.4);
+  }
+}
 /** Call fn(x,z) for each combat drone (they circle above the player). */
 function forDrones(fn) {
   const p = G.p,
@@ -46,7 +186,8 @@ function update(dt) {
   IN.mvz = ml > 0.01 ? (mz / Math.max(ml, 0.01)) * Math.min(ml, 1) : 0;
   const focus = IN.atk || IN.md,
     sup = G.superT > 0;
-  const sp = p.speed * (sup ? 1.3 : 1) * (focus ? 0.75 : 1) * buffMul('spd');
+  const warp = G.warpT > 0,
+    sp = p.speed * (sup ? 1.3 : 1) * (focus ? 0.75 : 1) * buffMul('spd') * (warp ? 1.3 : 1);
   if (p.dashT > 0) {
     p.dashT -= dt;
     const ds = p.dashLen / 0.18;
@@ -87,7 +228,14 @@ function update(dt) {
   const manual = IN.md && !IN.touch,
     mAng = Math.atan2(IN.mz - p.z, IN.mx - p.x);
   for (const w of G.weapons) {
-    w.cd -= dt * p.aspd * (focus ? 1.3 : 1) * (sup ? 1.25 : 1) * buffMul('aspd');
+    w.cd -=
+      dt *
+      p.aspd *
+      (focus ? 1.3 : 1) *
+      (sup ? 1.25 : 1) *
+      buffMul('aspd') *
+      (warp ? 2 : 1) *
+      (1 + 0.015 * G.lust * (G.ups.bloodlust || 0));
     if (w.cd > 0) continue;
     const d = WEP[w.id],
       range = d.melee ? d.range * p.area + 0.3 : d.range;
@@ -102,6 +250,8 @@ function update(dt) {
       continue;
     }
     fire(w, ang);
+    // double strike: sometimes the weapon fires again right away
+    if (G.ups.mirror && Math.random() < 0.2 * G.ups.mirror) fire(w, ang + rand(-0.15, 0.15));
     w.cd = d.cd * (1 - 0.05 * (w.lvl - 1));
   }
   const tgt = manual ? null : nearest(p.x, p.z, 14);
@@ -169,7 +319,15 @@ function update(dt) {
       const near = G.enemies.filter(e => !e.dead && (e.x - p.x) ** 2 + (e.z - p.z) ** 2 < 196);
       if (near.length) {
         const e = pick(near);
-        G.clouds.push({ x: e.x, z: e.z, r: (2.6 + 0.4 * u.poison) * p.area, l: 0, d: 3, tick: 0 });
+        G.clouds.push({
+          x: e.x,
+          z: e.z,
+          r: (2.6 + 0.4 * u.poison) * p.area,
+          l: 0,
+          d: 3,
+          tick: 0,
+          dmg: 5 + 4 * u.poison,
+        });
       }
     }
   }
@@ -177,7 +335,7 @@ function update(dt) {
     c.l += dt;
     if ((c.tick -= dt) <= 0) {
       c.tick = 0.5;
-      eachInRadius(c.x, c.z, c.r, e => hit(e, (5 + 4 * u.poison) * p.dmgMul, { aoe: 1, quiet: 1, noCrit: 1, burn: 1 }));
+      eachInRadius(c.x, c.z, c.r, e => hit(e, c.dmg * p.dmgMul, { aoe: 1, quiet: 1, noCrit: 1, burn: 1 }));
     }
   }
   G.clouds = G.clouds.filter(c => c.l < c.d);
@@ -201,7 +359,7 @@ function update(dt) {
       const dx = h.x - e.x,
         dz = h.z - e.z,
         d = Math.hypot(dx, dz);
-      if (d < 10 && d > 0.3) {
+      if (d < (h.mini ? 6 : 10) && d > 0.3) {
         const f = ((e.boss ? 0.6 : 7) * dt) / d;
         e.x += dx * f;
         e.z += dz * f;
@@ -210,7 +368,8 @@ function update(dt) {
     if (Math.random() < dt * 6) ring(h.x, h.z, 9, 0.5, 0.5, [0.6, 0.3, 1]);
     if (h.l >= h.d) {
       h.done = 1;
-      explode(h.x, h.z, 5 * p.area, 140 * p.dmgMul);
+      if (h.mini) explode(h.x, h.z, 3 * p.area, (40 + 25 * (u.vortexdash || 1)) * p.dmgMul, true);
+      else explode(h.x, h.z, 5 * p.area, 140 * p.dmgMul);
       ring(h.x, h.z, 0.5, 7, 0.6, [0.8, 0.4, 1]);
     }
   }
@@ -225,6 +384,10 @@ function update(dt) {
     }
   }
   if (G.tslowT > 0) G.tslowT -= dt;
+  if (G.lustT > 0 && (G.lustT -= dt) <= 0) G.lust = 0;
+  if (G.secondT > 0) G.secondT -= dt;
+  if (G.warpT > 0) G.warpT -= dt;
+  updExpansionAbilities(dt);
   if (u.drone) {
     G.droneA += dt * 1.8;
     if ((tm.drone -= dt) <= 0) {
@@ -411,9 +574,11 @@ function update(dt) {
       q.got = true;
       if (q.k === 0) {
         addXp(q.v);
+        if (u.pickup) heal(0.3 * u.pickup);
         AU.play('gem');
       } else if (q.k === 1) {
         const v = Math.max(1, Math.round(q.v * p.goldMul));
+        if (u.midas) addXp(v * 2);
         G.coins += v;
         AU.play('coin');
         text(p.x, p.z, '+' + v + ' 🪙', '#ffd23a');

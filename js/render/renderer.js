@@ -251,6 +251,19 @@ function render(dt, now) {
     put(IB, x, 2.3 + Math.sin(now * 0.006 + x) * 0.15, z, now * 0.004, 0.55, 0.18, 0.55, 0.5, 1.3, 1.6);
     put(IS, x, 2.1, z, 0, 0.22, 0.22, 0.22, 0.6, 1.6, 2);
   });
+  // expansion upgrades: mines, turrets, mirror clones
+  for (const m of G.mines) {
+    const q = m.t > 0.5 ? 0.42 + 0.08 * Math.sin(now * 0.02) : 0.3;
+    put(IS, m.x, 0.25, m.z, 0, q, q * 0.5, q, 1.8, 0.3, 0.2);
+  }
+  for (const t of G.turrets) {
+    put(IB, t.x, 0.45, t.z, 0, 0.8, 0.9, 0.8, 0.45, 0.5, 0.55);
+    put(IB, t.x, 1.1, t.z, now * 0.006, 0.55, 0.35, 0.9, 0.6, 1.2, 1.5);
+  }
+  forClones((x, z) => {
+    put(IS, x, 1.2, z, 0, 0.6, 0.9, 0.6, 1.1, 0.5, 1.8);
+    put(IS, x, 1.9, z, 0, 0.35, 0.35, 0.35, 1.4, 0.8, 2);
+  });
   flush(IB);
   flush(IS);
   cloudPool.forEach((m, i) => {
@@ -258,6 +271,7 @@ function render(dt, now) {
     m.visible = !!c;
     if (c) {
       m.position.set(c.x, 0.15, c.z);
+      m.material.color.setHex(c.col || 0x50ff60);
       m.scale.set(c.r, c.r, 1);
       m.material.opacity = 0.25 * Math.min(1, (c.d - c.l) * 2) + 0.05 * Math.sin(now * 0.01 + i);
     }

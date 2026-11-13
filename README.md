@@ -64,6 +64,7 @@ js/
     hud.js  screens.js (التنقل go مع الانتقال)  leaderboard.js  lab.js
     skill-tree.js       رسم شجرة المهارات وأيقوناتها TREE_IC
     intro.js            مقدمة VAMOS وجمر القائمة
+    chat.js             الشات العام (جدول chat في Supabase — الإعداد في supabase/chat.sql)
     gift.js             أكواد الهدايا (عملات)
     backup.js           نسخة احتياطية للتقدم (كود AS1)
   input.js              لوحة المفاتيح، الفأرة، عصا اللمس

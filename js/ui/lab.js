@@ -120,21 +120,14 @@ function buildLab() {
     buildWeapon();
     refreshLoadout();
   });
+  labBtn(T, '🌟 كل الـ72 تطوير', () => {
+    for (const k in UP) G.ups[k] = UP[k].max;
+    recalc();
+    refreshLoadout();
+    closeLab();
+  });
   labBtn(T, '✨ كل التطويرات الجديدة', () => {
-    for (const k of [
-      'frost',
-      'poison',
-      'drone',
-      'vamp',
-      'thorns',
-      'bounce',
-      'hole',
-      'tslow',
-      'rage',
-      'execute',
-      'corpse',
-    ])
-      G.ups[k] = UP[k].max;
+    for (const k of Object.keys(UP).slice(Object.keys(UP).indexOf('hole') + 1)) G.ups[k] = UP[k].max;
     recalc();
     refreshLoadout();
     closeLab();

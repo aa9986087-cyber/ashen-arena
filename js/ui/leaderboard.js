@@ -132,6 +132,7 @@ $('nameOk').onclick = () => {
   AU.play('select');
   $('nameScr').hidden = true;
   if (!$('board').hidden) drawBoard();
+  if (!$('chat').hidden) chatDraw();
 };
 $('nameIn').addEventListener('keydown', e => {
   if (e.key === 'Enter') $('nameOk').click();

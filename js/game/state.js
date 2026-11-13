@@ -51,11 +51,45 @@ function newRun() {
     corpses: [],
     allies: [],
     defer: [],
-    tm: { bolt: 1.5, nova: 2, meteor: 2.5, aura: 0, poison: 2, hole: 4, tslow: 6, drone: 0 },
+    tm: {
+      bolt: 1.5,
+      nova: 2,
+      meteor: 2.5,
+      aura: 0,
+      poison: 2,
+      hole: 4,
+      tslow: 6,
+      drone: 0,
+      spikes: 0,
+      mines: 2,
+      firering: 3,
+      magic: 1,
+      blades: 1,
+      turret: 3,
+      skystrike: 2,
+      guardian: 4,
+      frostnova: 3,
+      regenburst: 5,
+      whirl: 2,
+      starfall: 3,
+      timewarp: 6,
+      clones: 0,
+    },
     clouds: [],
     holes: [],
     tslowT: 0,
     droneA: 0,
+    mines: [],
+    calmT: 0,
+    countT: 0,
+    turrets: [],
+    shockN: 0,
+    lust: 0,
+    lustT: 0,
+    secondT: 0,
+    phoenixUsed: 0,
+    warpT: 0,
+    cloneA: 0,
     orbitA: 0,
     p: {
       x: 0,
@@ -114,6 +148,16 @@ function recalc() {
   G.pacts = G.pacts || {};
   for (const k in G.pacts) if (G.pacts[k] && PACT[k]) PACT[k].f(p);
   if (S.tree.A4) p.critMul += 0.5;
+  // expansion 2 stat upgrades
+  p.critMul += 0.3 * L('critdmg');
+  p.pspd = 1 + 0.15 * L('pspeed');
+  p.pierceAdd = L('pierce');
+  p.sizeMul = 1 + 0.2 * L('size');
+  p.cdr = 1 - 0.1 * L('cdr');
+  p.dashMax *= p.cdr;
+  p.kbMul = 1 + 0.4 * L('kb');
+  p.iframe = 0.15 * L('iframe');
+  p.bossMul = 1 + 0.2 * L('bossdmg');
   p.maxHp = Math.round(p.maxHp);
   if (p.hp > p.maxHp) p.hp = p.maxHp;
   const na = L('army') ? 1 + L('army') : 0;

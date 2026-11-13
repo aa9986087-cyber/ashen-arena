@@ -544,3 +544,69 @@ textarea.txt {
 #charGrid .item:not(.sel) .portrait {
   filter: saturate(0.85) brightness(0.92);
 }
+
+/* public chat */
+#chat .wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100dvh;
+}
+#chatList {
+  flex: 1;
+  min-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 2px;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.cm {
+  align-self: flex-start;
+  max-width: 85%;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(241, 231, 208, 0.18);
+  border-radius: 14px 14px 14px 4px;
+  padding: 7px 12px 8px;
+}
+.cm.me {
+  align-self: flex-end;
+  border-radius: 14px 14px 4px 14px;
+  background: rgba(120, 60, 20, 0.5);
+  border-color: rgba(242, 160, 70, 0.45);
+}
+.cm b {
+  color: var(--gold);
+  font-size: 13px;
+}
+.cm small {
+  opacity: 0.55;
+  font-size: 11px;
+  margin-inline-start: 8px;
+}
+.cm p {
+  margin: 2px 0 0;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+#chatForm {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0 4px;
+}
+#chatForm .txt {
+  flex: 1;
+  padding: 10px 12px;
+}
+#mChat {
+  position: relative;
+  font-size: 14px;
+  padding: 9px;
+}
+#mChat .badge {
+  position: absolute;
+  top: -6px;
+  inset-inline-end: -6px;
+}

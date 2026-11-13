@@ -279,6 +279,9 @@ const GAP = {
 };
 const SK = [293.66, 349.23, 392, 440, 523.25, 587.33, 698.46, 880, 1046.5, 1174.7];
 const SFX = {
+  tick: a => {
+    a.tone(880, 0.09, 'triangle', 0.07, 660);
+  },
   sword: a => {
     a.noise(0.16, 0.15, 1200, 0, null, 'bandpass');
     a.tone(196, 0.14, 'triangle', 0.05, 130);

@@ -56,6 +56,19 @@ function hit(e, dmg, o) {
   dmg *= buffMul('dmg');
   if (G.ups.rage && G.p.hp < G.p.maxHp * 0.35) dmg *= 1 + 0.25 * G.ups.rage;
   if (crit && G.ups.vamp) heal(G.ups.vamp);
+  if (e.boss || e.elite) dmg *= G.p.bossMul || 1;
+  if (crit && G.ups.ice && !e.boss) e.frz = Math.max(e.frz || 0, 0.4 + 0.25 * G.ups.ice);
+  if (G.ups.shock && !o.aoe && ++G.shockN >= 14 - 2 * G.ups.shock) {
+    G.shockN = 0;
+    ring(e.x, e.z, 0.3, 3 * G.p.area, 0.3, [0.5, 0.9, 1.5]);
+    AU.play('bolt');
+    eachInRadius(
+      e.x,
+      e.z,
+      3 * G.p.area,
+      q => q !== e && hit(q, (12 + 8 * G.ups.shock) * G.p.dmgMul, { aoe: 1, quiet: 1, noCrit: 1 })
+    );
+  }
   if (e.type === 'shield' && !e.boss && !o.aoe) {
     dmg *= 0.4;
     AU.play('clang');
@@ -73,8 +86,8 @@ function hit(e, dmg, o) {
   e.hp -= dmg;
   e.flash = 0.1;
   if (o.kb && !e.boss && e.type !== 'brute' && e.type !== 'golem') {
-    e.kx += Math.cos(o.ang) * o.kb;
-    e.kz += Math.sin(o.ang) * o.kb;
+    e.kx += Math.cos(o.ang) * o.kb * (G.p.kbMul || 1);
+    e.kz += Math.sin(o.ang) * o.kb * (G.p.kbMul || 1);
   }
   if (G.ups.fire && !o.burn) e.burn = 3;
   if (G.ups.frost && !o.burn) e.slowT = 2;
@@ -84,7 +97,15 @@ function hit(e, dmg, o) {
   }
   if (!o.quiet || crit) text(e.x, e.z, Math.round(dmg), crit ? '#ffd23a' : o.burn ? '#ff9a4a' : '#ffffff', crit);
   if (!o.quiet) AU.play('hit');
-  if (e.hp <= 0) kill(e);
+  if (e.hp <= 0) {
+    const extra = -e.hp;
+    kill(e);
+    // overkill: what was left over hits the closest other enemy
+    if (G.ups.overkill && !o.ok && extra > 1) {
+      const t = nearest(e.x, e.z, 5, [e]);
+      if (t) hit(t, extra * 0.6 * G.ups.overkill, { ok: 1, aoe: 1, quiet: 1, noCrit: 1 });
+    }
+  }
 }
 function kill(e) {
   e.dead = true;
@@ -111,6 +132,24 @@ function kill(e) {
   if (Math.random() < (e.elite ? 1 : 0.13))
     drop(e.x + rand(-0.5, 0.5), e.z + rand(-0.5, 0.5), 1, e.mini ? 15 : e.elite ? 6 : 1 + (Math.random() < 0.3));
   if (Math.random() < (e.elite ? 0.35 : 0.012)) drop(e.x, e.z + 0.6, 2, 20);
+  const gold = 0.06 * (G.ups.goldrush || 0) + (G.ups.midas ? 0.1 : 0);
+  if (gold && Math.random() < gold) drop(e.x + rand(-0.6, 0.6), e.z + rand(-0.6, 0.6), 1, 1 + (Math.random() < 0.4));
+  if (G.ups.chain && Math.random() < 0.2 * G.ups.chain) boltStrike(3, (10 + 6 * G.ups.chain) * p.dmgMul, e.x, e.z);
+  if (G.ups.bloodlust) {
+    G.lust = Math.min(20, G.lust + 1);
+    G.lustT = 4;
+  }
+  if (G.ups.shards && Math.random() < 0.3)
+    for (let i = 0; i < 4; i++)
+      shot(e.x, e.z, (i / 4) * TAU + Math.random(), {
+        spd: 16,
+        dmg: (8 + 5 * G.ups.shards) * p.dmgMul,
+        size: 0.3,
+        pierce: 2,
+        life: 0.45,
+        kind: 2,
+        col: [0.6, 1.2, 1.9],
+      });
   if (G.ups.corpse && Math.random() < 0.15 * G.ups.corpse)
     G.defer.push([e.x, e.z, 2.4 * p.area, (15 + 10 * G.ups.corpse) * p.dmgMul]);
   if (e.type === 'bomber') G.defer.push([e.x, e.z, 3, 30 * p.dmgMul]);
@@ -244,7 +283,7 @@ function fire(w, ang) {
     }
   } else {
     let n = 1 + p.multi,
-      pierce = d.pierce,
+      pierce = d.pierce + (d.pierce < 50 ? p.pierceAdd || 0 : 0),
       aoe = d.aoe || 0,
       crit = 0;
     if (w.id === 'axe') n += t;
@@ -313,9 +352,9 @@ function fire(w, ang) {
             p.z + Math.sin(a0) * 0.8,
             a0 + (i - (n - 1) / 2) * sp + (d.jit ? rand(-d.jit, d.jit) : 0),
             {
-              spd: d.spd,
+              spd: d.spd * (p.pspd || 1),
               dmg,
-              size: d.size * (w.id === 'axe' && t === 2 ? 1.3 : 1),
+              size: d.size * (w.id === 'axe' && t === 2 ? 1.3 : 1) * (p.sizeMul || 1),
               pierce,
               range: range * 1.15,
               life: d.life,
@@ -347,6 +386,10 @@ function fire(w, ang) {
   }
 }
 function boltStrike(n, dmg, fromX, fromZ) {
+  if (G.ups.thunderlord) {
+    n += 2;
+    dmg *= 2;
+  }
   let x = fromX,
     z = fromZ;
   const pts = [[x, z]],
@@ -381,6 +424,7 @@ function dash() {
   p.dashCd = p.dashMax;
   p.inv = Math.max(p.inv, 0.3);
   AU.play('dash');
+  if (G.ups.vortexdash) G.holes.push({ x: p.x, z: p.z, l: 0, d: 1.2, mini: 1 });
   parts(p.x, 1, p.z, 10, 0.8, 0.9, 1, 5, 0.2, 0.35);
 }
 function hurt(d) {
@@ -399,12 +443,31 @@ function hurt(d) {
     }
   }
   p.hp -= d;
-  p.inv = 0.22;
+  p.inv = 0.22 + (p.iframe || 0);
   shake(0.45);
   AU.play('hurt');
   vig = 0.75;
   pop($('hpbar'), 'hitf');
   text(p.x, p.z, '-' + Math.round(d), '#ff5a50', true);
+  if (G.ups.second && p.hp > 0 && p.hp < p.maxHp * 0.3 && G.secondT <= 0) {
+    G.secondT = 60;
+    heal(p.maxHp * (0.2 + 0.1 * G.ups.second));
+    ring(p.x, p.z, 0.4, 4, 0.5, [0.4, 1.5, 0.6]);
+    text(p.x, p.z - 1, 'نفَس ثانٍ', '#6dff8a', true);
+  }
+  if (p.hp <= 0 && G.ups.phoenix && !G.phoenixUsed) {
+    // the phoenix: rise at full health in a ring of fire, once
+    G.phoenixUsed = 1;
+    p.hp = p.maxHp;
+    p.inv = 3;
+    banner('العنقاء', 'نهضت من الرماد', 1.8);
+    cine('العنقاء');
+    AU.play('legend');
+    shake(1);
+    explode(p.x, p.z, 10, 320 * p.dmgMul);
+    eachInRadius(p.x, p.z, 10, e => (e.burn = 4));
+    return;
+  }
   if (p.hp <= 0) {
     if (G.revives > 0) {
       G.revives--;

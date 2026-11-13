@@ -50,6 +50,10 @@ function updEnemies(dt) {
       mz = 0,
       spd = e.spd;
     e.face = Math.atan2(dx, dz);
+    if (!e.boss && d > 32) {
+      e.offT = (e.offT || 0) + dt;
+      if (e.offT > 1.2) recycleEnemy(e);
+    } else e.offT = 0;
     if (e.boss) {
       const rage = e.hp < e.maxHp * 0.5 ? 1.45 : 1,
         k = e.kind;
@@ -483,4 +487,24 @@ function updEnemies(dt) {
   }
   // crowding can shove bodies back into the decor: settle them outside it again
   for (const e of E) if (!e.dead && !(e.boss && e.st === 3)) pushOutOfObstacles(e, e.r * 0.8);
+}
+
+/** An enemy left far behind off-screen re-enters at the screen edge, ahead of or beside the player's path. */
+function recycleEnemy(e) {
+  const p = G.p,
+    mv = Math.hypot(IN.mvx, IN.mvz) > 0.1,
+    base = mv ? Math.atan2(IN.mvz, IN.mvx) : Math.random() * TAU,
+    a = base + rand(-1.3, 1.3) * (mv ? 1 : Math.PI),
+    d = rand(19, 23);
+  let x = p.x + Math.cos(a) * d,
+    z = p.z + Math.sin(a) * d;
+  const r = Math.hypot(x, z);
+  if (r > ARENA + 3) {
+    x *= (ARENA + 3) / r;
+    z *= (ARENA + 3) / r;
+  }
+  e.x = x;
+  e.z = z;
+  e.kx = e.kz = 0;
+  e.offT = 0;
 }

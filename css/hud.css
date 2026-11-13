@@ -508,3 +508,49 @@ body.mouse .act.big {
   pointer-events: none;
   background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(4, 3, 10, 0.55) 100%);
 }
+
+/* resume countdown (after pause) and the calm before soldiers return (after a boss) */
+#count {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 40%;
+  text-align: center;
+  pointer-events: none;
+  z-index: 3;
+}
+#count b {
+  display: inline-block;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(70px, 16vw, 130px);
+  line-height: 1;
+  background: linear-gradient(180deg, #fff6dc 15%, var(--gold) 55%, var(--gold2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 0 #2a0e04) drop-shadow(0 0 24px rgba(242, 120, 40, 0.7));
+}
+#count b.cnt {
+  animation: cntIn 0.9s ease-out;
+}
+@keyframes cntIn {
+  from {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.9);
+    opacity: 0.85;
+  }
+}
+#count p {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffe2a8;
+  text-shadow: 0 1px 4px #000;
+}

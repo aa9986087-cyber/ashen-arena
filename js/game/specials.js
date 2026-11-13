@@ -136,7 +136,7 @@ const SPECIALS = {
   },
 };
 /** Cooldown of the hero's special, after the skill tree. */
-const specCdMax = () => heroSpecial().cd * (S.tree.S1 ? 0.85 : 1);
+const specCdMax = () => heroSpecial().cd * (S.tree.S1 ? 0.85 : 1) * ((G && G.p.cdr) || 1);
 /** The current hero's special. */
 const heroSpecial = () => SPECIALS[CHARS[S.char].sp] || SPECIALS.shock;
 /** Remove enemy bullets within radius R of (x,z). */

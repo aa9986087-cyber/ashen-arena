@@ -52,6 +52,10 @@
         <div class="bar"><i></i></div>
       </div>
       <div id="loadout"></div>
+      <div id="count" hidden>
+        <b></b>
+        <p></p>
+      </div>
       <div id="banner">
         <h2></h2>
         <p></p>
@@ -131,6 +135,7 @@
             ><b>الإعدادات</b>
           </button>
         </div>
+        <button class="btn" id="mChat">💬 الشات العام <i class="badge" id="chatBadge" hidden></i></button>
         <button class="btn" id="mLab" hidden>🧪 المختبر: جرّب كل شي بسرعة</button>
         <p class="credit"><span>✦</span> صنعها <b>Vamos</b> <span>✦</span></p>
       </div>
@@ -281,11 +286,27 @@
       </div>
     </div>
 
+    <div class="screen veil" id="chat" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>الشات العام</h2>
+          <button class="btn sm" id="cName"></button><button class="btn sm" id="cBack">رجوع</button>
+        </div>
+        <p class="note" id="chatInfo"></p>
+        <div id="chatList"></div>
+        <form id="chatForm">
+          <input class="txt" id="chatIn" maxlength="200" autocomplete="off" placeholder="اكتب رسالتك…" />
+          <button class="btn go sm" id="chatSend">إرسال</button>
+        </form>
+      </div>
+    </div>
+
     <div class="screen veil center" id="pause" hidden>
       <h2>استراحة</h2>
       <div class="stack">
         <button class="btn go" id="pResume">أكمل القتال</button>
         <button class="btn" id="pSet">⚙️ الإعدادات</button>
+        <button class="btn" id="pChat">💬 الشات العام</button>
         <button class="btn" id="pSave">احفظ واخرج للقائمة</button>
         <button class="btn" id="pQuit">أنهِ الجولة</button>
         <p class="credit">صنعها <b>Vamos</b></p>
@@ -365,6 +386,7 @@
     <script src="js/ui/screens.js"></script>
     <script src="js/ui/portraits.js"></script>
     <script src="js/ui/leaderboard.js"></script>
+    <script src="js/ui/chat.js"></script>
     <script src="js/ui/gift.js"></script>
     <script src="js/ui/backup.js"></script>
     <script src="js/ui/share-card.js"></script>

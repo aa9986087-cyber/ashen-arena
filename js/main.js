@@ -3,9 +3,11 @@
 let last = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min((now - last) / 1000, 0.05);
+  const raw = (now - last) / 1000,
+    dt = Math.min(raw, 0.05);
   last = now;
   if (G.state === 'play') update(dt * (G.slow > 0 ? 0.35 : 1) * (G.slowmo ? 0.3 : 1));
+  updCount(Math.min(raw, 0.25)); // real seconds, even on a slow device
   AU.music();
   if (!AU.ctx) CM.tick();
   render(dt, now);

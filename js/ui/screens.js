@@ -13,6 +13,7 @@ const SCREENS = [
   'board',
   'ending',
   'lab',
+  'chat',
 ];
 function show(id, on) {
   $(id).hidden = !on;

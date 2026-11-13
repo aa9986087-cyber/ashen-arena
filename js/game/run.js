@@ -72,7 +72,8 @@ function resumeRun() {
   S.char = o.char;
   newRun();
   Object.assign(G, {
-    state: 'play',
+    state: 'count',
+    countT: 3,
     t: +o.t || 0,
     kills: o.kills | 0,
     coins: o.coins | 0,
@@ -209,14 +210,42 @@ function toMenu() {
   buildPlayer();
   go('menu');
 }
+/** Freeze the game and count n..1 before play resumes (after a pause). */
+function countIn(n) {
+  G.state = 'count';
+  G.countT = n;
+}
+/** Per frame (real time): the resume countdown and the calm after a boss. */
+function updCount(dt) {
+  const c = $('count');
+  let n = 0,
+    sub = '';
+  if (G.state === 'count') {
+    G.countT -= dt;
+    if (G.countT <= 0) G.state = 'play';
+    else n = Math.ceil(G.countT);
+  } else if (G.state === 'play' && G.calmT > 0) {
+    n = Math.ceil(G.calmT);
+    sub = 'الجنود قادمون';
+  }
+  c.hidden = !n;
+  if (n && c.dataset.n !== String(n)) {
+    c.dataset.n = n;
+    c.querySelector('b').textContent = n;
+    c.querySelector('p').textContent = sub;
+    pop(c.querySelector('b'), 'cnt');
+    AU.play('tick');
+  }
+  if (!n) c.dataset.n = '';
+}
 function pause(on) {
   if (on && G.state === 'play') {
     G.state = 'paused';
     show('pause', true);
     saveRun();
   } else if (!on && G.state === 'paused') {
-    G.state = 'play';
     show('pause', false);
+    countIn(3);
     show('settings', false);
   }
 }

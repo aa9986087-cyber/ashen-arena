@@ -14,7 +14,7 @@ addEventListener('keydown', e => {
   } else if (G.state === 'paused' && (e.code === 'Escape' || e.code === 'KeyP')) {
     show('settings', false);
     pause(false);
-  } else if (G.state === 'cards' && /^Digit[1-8]$/.test(e.code)) chooseCard(+e.code[5] - 1);
+  } else if (G.state === 'cards' && /^Digit[1-4]$/.test(e.code)) chooseCard(+e.code[5] - 1);
 });
 addEventListener('keyup', e => {
   IN.k[e.code] = false;

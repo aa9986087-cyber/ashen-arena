@@ -364,7 +364,8 @@
 .tile {
   position: relative;
 }
-.tile .badge {
+.tile .badge,
+#mChat .badge {
   position: absolute;
   top: 6px;
   left: 8px;

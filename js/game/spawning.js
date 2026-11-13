@@ -138,6 +138,10 @@ function updWaves(dt) {
   const p = G.p,
     gw = gwave(),
     cap = S.set.qual ? 170 : 100;
+  if (G.calmT > 0) {
+    G.calmT -= dt;
+    return;
+  }
   if (!G.bossOn && !(G.bossReward > 0) && !G.noWaves) {
     G.waveT += dt;
     if (G.waveT >= 28) {

@@ -104,7 +104,7 @@ let curCards = [];
 function openCards(mode) {
   G.state = 'cards';
   G.cardMode = mode;
-  const n = mode === 'boss' ? 3 : S.tree.U1 ? 8 : 6;
+  const n = mode === 'boss' ? 3 : S.tree.U1 ? 4 : 3;
   curCards = rollCards(n, mode === 'boss' ? 2 : 0);
   $('cardTitle').textContent = mode === 'boss' ? 'غنيمة الزعيم' : 'ارتفع مستواك!';
   $('cardSub').textContent = mode === 'boss' ? 'اختر مكافأة نادرة' : 'المستوى ' + G.lvl + '. اختر تطويراً واحداً';
@@ -117,7 +117,6 @@ function openCards(mode) {
 }
 function drawCards() {
   const row = $('cardRow');
-  row.dataset.n = curCards.length;
   row.innerHTML = '';
   curCards.forEach((c, i) => {
     const f = cardInfo(c),

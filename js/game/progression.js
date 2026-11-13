@@ -46,6 +46,7 @@ function nextStage() {
   G.wave = 0;
   G.waveT = 0;
   G.ringT = 12;
+  G.calmT = 5; // five quiet seconds before the next stage's soldiers march in
   if (!G.abyss) setStage(G.stage);
   heal(G.p.maxHp * 0.3);
   banner(
