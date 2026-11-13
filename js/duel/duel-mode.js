@@ -381,22 +381,27 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => {
   if (DUEL.on && e.code === 'KeyJ') duelAtkUp();
 });
+/** Where a pointer is in the duel's own frame: when the duel is turned sideways (iPhone 🔄), screen x/y swap. */
+function duelPt(e) {
+  return duelRotated() ? { x: e.clientY, y: innerWidth - e.clientX } : { x: e.clientX, y: e.clientY };
+}
 // mouse on the duel layer: left = attack (hold = heavy), right = block
 $('dPad').addEventListener('pointerdown', e => {
+  const P = duelPt(e);
   if (e.pointerType === 'touch') {
     document.body.classList.remove('mouse');
     // right half (away from the buttons): drag to turn
-    if (e.clientX >= innerWidth * 0.5 && !DUEL.look) {
-      DUEL.look = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    if (P.x >= W * 0.5 && !DUEL.look) {
+      DUEL.look = { id: e.pointerId, x: P.x, y: P.y };
       return;
     }
     // left half: floating joystick
-    if (e.clientX < innerWidth * 0.5 && !DUEL.joy) {
-      DUEL.joy = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: 0, z: 0 };
+    if (P.x < W * 0.5 && !DUEL.joy) {
+      DUEL.joy = { id: e.pointerId, x0: P.x, y0: P.y, x: 0, z: 0 };
       const j = $('dJoy');
       j.hidden = false;
-      j.style.left = e.clientX + 'px';
-      j.style.top = e.clientY + 'px';
+      j.style.left = P.x + 'px';
+      j.style.top = P.y + 'px';
       j.firstElementChild.style.transform = '';
     }
     return;
@@ -406,21 +411,22 @@ $('dPad').addEventListener('pointerdown', e => {
   if (e.button === 2) DUEL.rmb = true;
   if (e.button === 1) {
     e.preventDefault();
-    DUEL.look = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    DUEL.look = { id: e.pointerId, x: P.x, y: P.y };
   }
 });
 addEventListener('pointermove', e => {
+  const P = duelPt(e);
   const Lk = DUEL.look;
   if (Lk && e.pointerId === Lk.id) {
-    DUEL.yaw = (DUEL.yaw || 0) + (e.clientX - Lk.x);
-    DUEL.tilt = (DUEL.tilt || 0) + (e.clientY - Lk.y);
-    Lk.x = e.clientX;
-    Lk.y = e.clientY;
+    DUEL.yaw = (DUEL.yaw || 0) + (P.x - Lk.x);
+    DUEL.tilt = (DUEL.tilt || 0) + (P.y - Lk.y);
+    Lk.x = P.x;
+    Lk.y = P.y;
   }
   const J = DUEL.joy;
   if (!J || e.pointerId !== J.id) return;
-  let dx = e.clientX - J.x0,
-    dy = e.clientY - J.y0;
+  let dx = P.x - J.x0,
+    dy = P.y - J.y0;
   const d = Math.hypot(dx, dy),
     m = 50;
   if (d > m) {
@@ -471,18 +477,33 @@ press(
 press('dDodge', duelDodge);
 press('dLock', () => duelLock(!DUEL.lock));
 $('dView').onclick = () => duelToggleView();
-/** Landscape: full screen + orientation lock where the browser allows it (Android); otherwise ask to rotate. */
+/** Landscape: full screen + orientation lock where the browser allows it (Android). Where it doesn't (iPhone
+    Safari allows neither), the duel itself is turned 90° on the upright screen: hold the phone sideways. */
+const duelRotated = () => document.documentElement.classList.contains('rot');
+function duelSetRot(on) {
+  document.documentElement.classList.toggle('rot', on);
+  resize();
+}
 $('dLand').onclick = async () => {
+  if (duelRotated()) return duelSetRot(false); // second press: back upright
   try {
     const d = document.documentElement;
     if (!document.fullscreenElement && d.requestFullscreen) await d.requestFullscreen({ navigationUI: 'hide' });
     await screen.orientation.lock('landscape');
     DUEL.locked = true;
   } catch (e) {
-    toast('لف جوالك بالعرض 🔄 (جهازك ما يسمح للمواقع تقلب الشاشة)');
+    if (innerHeight > innerWidth) {
+      duelSetRot(true);
+      duelFloat('لف جوالك بالعرض 🔄', 'blk'); // shown inside the turned duel, so it reads the right way
+    } else toast('الشاشة بالعرض الحين 👍');
   }
 };
+// the phone itself turned to landscape (rotation lock off): the turned duel would be sideways twice, undo it
+addEventListener('resize', () => {
+  if (duelRotated() && innerWidth > innerHeight) duelSetRot(false);
+});
 function duelUnlock() {
+  if (duelRotated()) duelSetRot(false);
   if (!DUEL.locked) return;
   DUEL.locked = false;
   try {

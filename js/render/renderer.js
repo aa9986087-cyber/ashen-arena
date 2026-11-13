@@ -1,8 +1,12 @@
 'use strict';
 /* Draws a frame: camera, player, instanced enemies/projectiles/pickups, effect pools, and the 2D overlay. */
 function resize() {
-  W = innerWidth;
-  H = innerHeight;
+  // the duel can be turned 90° on an upright phone (iPhone landscape): then the drawing area is the screen sideways
+  const rot = document.documentElement.classList.contains('rot');
+  W = rot ? innerHeight : innerWidth;
+  H = rot ? innerWidth : innerHeight;
+  document.documentElement.style.setProperty('--sw', innerWidth + 'px');
+  document.documentElement.style.setProperty('--sh', innerHeight + 'px');
   DPR = Math.min(devicePixelRatio || 1, S.set.qual ? 2 : 1.25) * RS;
   renderer.setPixelRatio(DPR);
   renderer.setSize(W, H, false);

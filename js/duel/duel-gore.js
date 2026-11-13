@@ -626,8 +626,8 @@ function goreScreenDraw(clear, dt = 0) {
   if (!c) return;
   const S2 = GORE.screen;
   if (!S2.length && !GORE.screenDrew && !clear) return;
-  const w = Math.round(innerWidth * 0.5),
-    h = Math.round(innerHeight * 0.5);
+  const w = Math.round(W * 0.5),
+    h = Math.round(H * 0.5);
   if (c.width !== w || c.height !== h) {
     c.width = w;
     c.height = h;

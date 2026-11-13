@@ -548,3 +548,15 @@ body.mouse #dActs {
   font-weight: 800;
   color: #ffe2a8;
 }
+
+/* iPhone landscape: Safari can't turn the screen, so the duel (and the 3D view under it) is turned 90° instead */
+html.rot #gl,
+html.rot #duel {
+  inset: auto;
+  top: 0;
+  left: 0;
+  width: var(--sh, 100vh);
+  height: var(--sw, 100vw);
+  transform-origin: top left;
+  transform: rotate(90deg) translateY(-100%);
+}
