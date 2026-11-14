@@ -335,6 +335,34 @@ function coopTakeOver() {
   coopCheckAllDown();
 }
 
+/* ---------- the safe ring while choosing cards ---------- */
+const SAFE_R = 5;
+/** Host: a player choosing cards stands in a safe ring: enemies (not the boss) that walk into it are pushed
+    back out to its edge, and enemy bullets that reach it fade. */
+function coopSafeZones(dt) {
+  const zones = [];
+  if (G.cardsOpen && !G.p.dead) zones.push(G.p);
+  for (const q of COOP.peers.values()) if (q.cards && !q.dead && q.x !== undefined) zones.push(q);
+  for (const z of zones) {
+    for (const e of G.enemies) {
+      if (e.dead || e.boss) continue;
+      const dx = e.x - z.x,
+        dz = e.z - z.z,
+        d = Math.hypot(dx, dz),
+        R = SAFE_R + (e.r || 0.6);
+      if (d < R) {
+        const k = d > 0.01 ? 1 / d : 0,
+          ux = d > 0.01 ? dx * k : Math.cos(e.slot || 0),
+          uz = d > 0.01 ? dz * k : Math.sin(e.slot || 0);
+        e.x = z.x + ux * R;
+        e.z = z.z + uz * R;
+      }
+    }
+    G.eshots = G.eshots.filter(s => (s.x - z.x) ** 2 + (s.z - z.z) ** 2 > SAFE_R * SAFE_R);
+  }
+  // shown to everyone: the snapshot carries who is choosing (the 'pl' rows' card flag)
+}
+
 /* ---------- falling and rising ---------- */
 function coopDie() {
   const p = G.p;
@@ -453,6 +481,7 @@ function coopSendWorld() {
       (G.weapons[0] || PM.lastWep || {}).id || '',
       G.lvl,
       S.name || 'المضيف',
+      G.cardsOpen && !p.dead ? 1 : 0,
     ],
   ];
   const tNow = performance.now();
@@ -474,6 +503,7 @@ function coopSendWorld() {
       q.w,
       q.lvl,
       q.n,
+      q.cards ? 1 : 0,
     ]);
   }
   const s = {
@@ -545,6 +575,7 @@ function coopRecvClient(m) {
     w: m.w,
     lvl: m.l,
     mg: m.mg || 2.5,
+    cards: !!m.cd,
     speed: m.sp || 6,
   });
   q.mvx = m.mv ? m.mv[0] : 0;
@@ -666,6 +697,7 @@ function coopSendState() {
       p.dead ? 1 : 0,
     ],
     mv: [r2(IN.mvx || 0), r2(IN.mvz || 0)],
+    cd: G.cardsOpen && !p.dead ? 1 : 0, // choosing cards: the host keeps enemies out of a ring around us
     sp: r1(p.speed),
     mg: r1(p.magnet),
     ch: S.char,
@@ -914,7 +946,7 @@ function coopMirror(dt) {
     q.rface = q.face = lerpAng(a[3], r[3], k);
     q.rmoving = q.moving = r[4];
     q.rswing = q.swing = r[5];
-    Object.assign(q, { hp: r[6], maxHp: r[7], dead: !!r[8], ch: r[9], w: r[10], lvl: r[11], n: r[12] });
+    Object.assign(q, { hp: r[6], maxHp: r[7], dead: !!r[8], ch: r[9], w: r[10], lvl: r[11], n: r[12], cards: !!r[13] });
     q.plT = nowMs;
   }
   // a teammate the host listed but no longer does (for 2 s) has left
@@ -986,6 +1018,24 @@ function coopRender(now) {
 }
 /** Names and health bars over the teammates' heads. */
 function coopTags(fx) {
+  // the safe ring around a teammate choosing cards
+  const now = performance.now() / 1000;
+  for (const q of COOP.peers.values()) {
+    if (!q.cards || q.dead || q.rx === undefined) continue;
+    fx.beginPath();
+    for (let i = 0; i <= 40; i++) {
+      const a = (i / 40) * TAU,
+        [x, y] = proj(q.rx + Math.cos(a) * SAFE_R, 0.1, q.rz + Math.sin(a) * SAFE_R);
+      i ? fx.lineTo(x, y) : fx.moveTo(x, y);
+    }
+    fx.strokeStyle = 'rgba(120, 200, 255, ' + (0.55 + 0.25 * Math.sin(now * 4)) + ')';
+    fx.lineWidth = 3;
+    fx.setLineDash([10, 8]);
+    fx.stroke();
+    fx.setLineDash([]);
+    fx.fillStyle = 'rgba(80, 160, 255, 0.08)';
+    fx.fill();
+  }
   fx.font = '800 13px Tajawal,sans-serif';
   for (const q of COOP.peers.values()) {
     if (q.rx === undefined) continue;
@@ -994,7 +1044,7 @@ function coopTags(fx) {
     fx.fillStyle = q.dead ? '#aaa' : '#fff';
     fx.strokeStyle = 'rgba(0,0,0,0.75)';
     fx.lineWidth = 3;
-    const label = (q.dead ? '💀 ' : '') + (q.n || '');
+    const label = (q.dead ? '💀 ' : q.cards ? '🃏 ' : '') + (q.n || '');
     cvText(fx, label, x, y - 8, true);
     cvText(fx, label, x, y - 8);
     if (!q.dead && q.maxHp) {

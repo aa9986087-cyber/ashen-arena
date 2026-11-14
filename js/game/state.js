@@ -133,7 +133,9 @@ function recalc() {
     pm = S.perm,
     L = k => u[k] || 0;
   p.maxHp = ch.hp + (pm.hp || 0) * 10 + (S.tree.D1 ? 20 : 0) + L('hp') * 18;
-  p.dmgMul = ch.dmg * (1 + 0.12 * L('dmg')) * (1 + 0.06 * (pm.dmg || 0)) * (S.tree.A1 ? 1.1 : 1);
+  // permanent bonuses (shop + skill tree) add up with each other, so each shows exactly what it says;
+  // the run's cards multiply on top
+  p.dmgMul = ch.dmg * (1 + 0.06 * (pm.dmg || 0) + (S.tree.A1 ? 0.1 : 0)) * (1 + 0.12 * L('dmg'));
   p.aspd = 1 + 0.1 * L('aspd');
   p.crit = 0.05 + ch.crit + 0.07 * L('crit') + (S.tree.A2 ? 0.1 : 0);
   p.area = 1 + 0.1 * L('area');
@@ -142,11 +144,11 @@ function recalc() {
   p.regen = 0.6 * L('regen') + (S.tree.D2 ? 1 : 0);
   p.armor = Math.min(0.4, 0.08 * L('armor'));
   p.shieldMax = L('shield') ? 12 + 14 * L('shield') : 0;
-  p.magnet = 3.2 * (1 + 0.35 * L('magnet')) * (1 + 0.1 * (pm.mag || 0)) * (S.tree.W3 ? 1.25 : 1);
+  p.magnet = 3.2 * (1 + 0.1 * (pm.mag || 0) + (S.tree.W3 ? 0.25 : 0)) * (1 + 0.35 * L('magnet'));
   p.dashMax = 2.2 * (1 - 0.2 * L('dash')) * (S.tree.S2 ? 0.85 : 1);
   p.dashLen = 6 * (1 + 0.3 * L('dashlen'));
-  p.xpMul = (1 + 0.08 * (pm.xp || 0)) * (1 + 0.1 * L('xp')) * (S.tree.W2 ? 1.1 : 1);
-  p.goldMul = (1 + 0.1 * (pm.gold || 0)) * (1 + 0.15 * L('coins')) * (S.tree.W1 ? 1.1 : 1);
+  p.xpMul = (1 + 0.08 * (pm.xp || 0) + (S.tree.W2 ? 0.1 : 0)) * (1 + 0.1 * L('xp'));
+  p.goldMul = (1 + 0.1 * (pm.gold || 0) + (S.tree.W1 ? 0.1 : 0)) * (1 + 0.15 * L('coins'));
   p.taken = S.tree.D4 ? 0.9 : 1;
   p.leech = 0;
   p.enemyMul = 1;

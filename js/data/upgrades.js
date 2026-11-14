@@ -228,14 +228,17 @@ const PACT = {
     },
   },
 };
+/* a = what one level adds (u: '%' of the hero's base, or plain points); recalc() reads the same numbers. */
 const PERM = {
-  hp: { n: 'صلابة', i: '❤️', d: '+10 صحة قصوى', max: 10 },
-  dmg: { n: 'بأس', i: '⚔️', d: '+6% ضرر', max: 10 },
-  spd: { n: 'خفة', i: '👟', d: '+3% سرعة حركة', max: 5 },
-  xp: { n: 'حكمة', i: '📘', d: '+8% خبرة', max: 5 },
-  gold: { n: 'طمع', i: '🪙', d: '+10% عملات', max: 5 },
-  mag: { n: 'جاذبية', i: '🧲', d: '+10% مدى الجذب', max: 5 },
+  hp: { n: 'صلابة', i: '❤️', d: '+10 صحة قصوى', max: 10, a: 10, u: '', s: 'الصحة القصوى' },
+  dmg: { n: 'بأس', i: '⚔️', d: '+6% ضرر', max: 10, a: 6, u: '%', s: 'الضرر' },
+  spd: { n: 'خفة', i: '👟', d: '+3% سرعة حركة', max: 5, a: 3, u: '%', s: 'سرعة الحركة' },
+  xp: { n: 'حكمة', i: '📘', d: '+8% خبرة', max: 5, a: 8, u: '%', s: 'الخبرة' },
+  gold: { n: 'طمع', i: '🪙', d: '+10% عملات', max: 5, a: 10, u: '%', s: 'العملات' },
+  mag: { n: 'جاذبية', i: '🧲', d: '+10% مدى الجذب', max: 5, a: 10, u: '%', s: 'مدى الجذب' },
 };
+/** What the shop gives for a stat right now, e.g. "+20" or "+12%" ('' if nothing). */
+const permBonus = (id, l = S.perm[id] || 0) => (l ? '+' + l * PERM[id].a + PERM[id].u : '');
 const permCost = l => 150 + l * 130;
 /** Skill tree: five branches, each unlocked bottom-up; c = skill-point cost. Effects are read where noted. */
 const TREE = [

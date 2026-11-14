@@ -871,3 +871,9 @@ textarea.txt {
     grid-template-columns: 1fr 1fr;
   }
 }
+.item .permNow {
+  font-size: 12px;
+  font-weight: 800;
+  color: #8ff0a8;
+  font-variant-numeric: tabular-nums;
+}

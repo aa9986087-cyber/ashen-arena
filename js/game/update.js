@@ -537,6 +537,7 @@ function update(dt) {
   if (!cc) {
     updWaves(dt);
     updEnemies(dt);
+    if (COOP.on) coopSafeZones(dt);
   }
   // deferred chain explosions
   let guard = 40;

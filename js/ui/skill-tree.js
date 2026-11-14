@@ -1,6 +1,7 @@
 'use strict';
-/* Skill tree screen: one column per branch (first skill at the top), each skill a tile; tapping a skill opens
-   its details at once in a sheet fixed to the bottom of the screen, with its unlock button. */
+/* Skill tree screen, vertical: a tab per branch; the chosen branch is a path of skills from top to bottom,
+   with the chosen skill's details beside it (under it on a phone held upright). Nothing floats, so the details
+   are always right where you look. */
 /** Line icons (SVG path markup, 24×24 viewBox) for each TREE node id. */
 const TREE_IC = {
   A1: '<path d="M5 19 17 7l2-4-4 2L3 17zM4 14l6 6M3 21l2-2"/>',
@@ -30,89 +31,97 @@ const TREE_IC = {
   W5: '<rect x="4" y="5" width="16" height="15" rx="2"/><circle cx="12" cy="12.5" r="3"/><path d="M12 9.5V8M8 20v1M16 20v1"/>',
 };
 const TREE_COL = ['#ff7a5a', '#5aaaff', '#3fd6b8', '#b98aff', '#ffcf40'];
-/** Id of the skill shown in the sheet (null = none). */
-let treeSel = null;
+let treeBr = 0,
+  treeSel = null;
 /** 'own' (unlocked), 'av' (can be unlocked now) or 'lock' (the one before it isn't yet). */
 function treeState(br, i) {
   const n = br.nodes[i];
   return S.tree[n.id] ? 'own' : i === 0 || S.tree[br.nodes[i - 1].id] ? 'av' : 'lock';
 }
 const treeSvg = id => '<svg viewBox="0 0 24 24" aria-hidden="true">' + (TREE_IC[id] || '') + '</svg>';
-/** open: the screen is being opened (columns fade in); otherwise a redraw after a tap keeps everything still,
-    including how far the columns are scrolled. */
+/** The first skill of a branch still to get (or its last one). */
+const treeNext = br => (br.nodes.find(n => !S.tree[n.id]) || br.nodes[br.nodes.length - 1]).id;
+/** open: the screen is being opened (fresh selection, fade in); a redraw after a tap keeps everything still. */
 function drawTree(open = true) {
-  const V = $('treeView'),
-    sx = V.scrollLeft,
-    sy = $('tree').scrollTop;
-  if (open) treeSel = null;
+  const V = $('treeView');
+  if (open) {
+    treeSel = treeNext(TREE[treeBr]);
+  }
   V.classList.toggle('still', !open);
   V.innerHTML = '';
+  // the branches
+  const tabs = el('div', 'ttabs');
   TREE.forEach((br, bi) => {
-    const col = el('section', 'tcol');
-    col.style.setProperty('--bc', TREE_COL[bi % TREE_COL.length]);
-    col.style.animationDelay = bi * 0.05 + 's';
     const own = br.nodes.filter(n => S.tree[n.id]).length,
-      head = el('header', 'thead');
-    head.append(el('b', '', br.n), el('small', '', own + ' / ' + br.nodes.length));
-    const bar = el('i', 'tprog');
-    bar.appendChild(el('em')).style.width = (own / br.nodes.length) * 100 + '%';
-    head.appendChild(bar);
-    col.appendChild(head);
-    br.nodes.forEach((n, i) => {
-      const stt = treeState(br, i),
-        b = el(
-          'button',
-          'tnode ' + stt + (treeSel === n.id ? ' sel' : '') + (stt === 'av' && S.sp >= n.c ? ' can' : '')
-        );
-      b.innerHTML = '<span class="tic">' + treeSvg(n.id) + '</span>';
-      b.append(el('span', 'tnm', n.n), el('span', 'tco', stt === 'own' ? '✓' : stt === 'lock' ? '🔒' : n.c + ' ✨'));
-      b.setAttribute('aria-label', n.n);
-      b.onclick = () => {
-        treeSel = treeSel === n.id ? null : n.id;
-        AU.play('select');
-        drawTree(false);
-      };
-      col.appendChild(b);
-    });
-    V.appendChild(col);
+      t = el('button', 'ttab' + (bi === treeBr ? ' on' : ''));
+    t.style.setProperty('--bc', TREE_COL[bi]);
+    t.append(el('b', '', br.n), el('small', '', own + '/' + br.nodes.length));
+    if (br.nodes.some((n, i) => treeState(br, i) === 'av' && S.sp >= n.c)) t.appendChild(el('i', 'dot'));
+    t.onclick = () => {
+      treeBr = bi;
+      treeSel = treeNext(br);
+      AU.play('select');
+      drawTree(false);
+    };
+    tabs.appendChild(t);
   });
-  V.scrollLeft = sx;
-  $('tree').scrollTop = sy;
-  treeSheet();
+  V.appendChild(tabs);
+  const br = TREE[treeBr],
+    body = el('div', 'tbody');
+  body.style.setProperty('--bc', TREE_COL[treeBr]);
+  // the branch, top to bottom
+  const path = el('div', 'tpath');
+  br.nodes.forEach((n, i) => {
+    const stt = treeState(br, i),
+      b = el('button', 'tnode ' + stt + (treeSel === n.id ? ' sel' : '') + (stt === 'av' && S.sp >= n.c ? ' can' : ''));
+    const ic = el('span', 'tic');
+    ic.innerHTML = treeSvg(n.id);
+    ic.appendChild(el('i', 'tnum', String(i + 1)));
+    b.append(ic, el('span', 'tnm', n.n), el('span', 'tco', stt === 'own' ? '✓' : stt === 'lock' ? '🔒' : n.c + ' ✨'));
+    b.setAttribute('aria-label', n.n);
+    b.onclick = () => {
+      treeSel = n.id;
+      AU.play('select');
+      drawTree(false);
+      // a phone held upright: the details are under the path, bring them into view
+      const inf = $('treeView').querySelector('.tinfo');
+      if (inf && inf.getBoundingClientRect().bottom > innerHeight)
+        inf.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    };
+    path.appendChild(b);
+  });
+  body.appendChild(path);
+  body.appendChild(treeInfo(br));
+  V.appendChild(body);
 }
-/** The sheet with the chosen skill: what it does, its cost, and the button to unlock it. */
-function treeSheet() {
-  const I = $('tvInfo');
-  let bi = -1,
-    ni = -1;
-  TREE.forEach((br, b) =>
-    br.nodes.forEach((n, i) => {
-      if (n.id === treeSel) ((bi = b), (ni = i));
-    })
-  );
-  I.classList.toggle('on', bi >= 0);
-  if (bi < 0) return;
-  const br = TREE[bi],
+/** The chosen skill: what it does, its cost, and the button to unlock it. */
+function treeInfo(br) {
+  const ni = Math.max(
+      0,
+      br.nodes.findIndex(n => n.id === treeSel)
+    ),
     n = br.nodes[ni],
-    stt = treeState(br, ni);
-  I.innerHTML = '';
-  I.style.setProperty('--bc', TREE_COL[bi % TREE_COL.length]);
+    stt = treeState(br, ni),
+    I = el('div', 'tinfo');
   const ic = el('span', 'tic big');
   ic.innerHTML = treeSvg(n.id);
-  const txt = el('div', 'ttxt');
-  txt.append(
-    el('small', '', br.n + ' · المهارة ' + (ni + 1) + ' من ' + br.nodes.length),
-    el('h3', '', n.n),
-    el('p', '', n.d)
+  const top = el('div', 'ttop'),
+    txt = el('div', 'ttxt');
+  txt.append(el('small', '', br.n + ' · المهارة ' + (ni + 1) + ' من ' + br.nodes.length), el('h3', '', n.n));
+  top.append(ic, txt);
+  const st = el(
+    'p',
+    'tst ' + stt,
+    stt === 'own'
+      ? 'مفعّلة ✓'
+      : stt === 'lock'
+        ? 'مقفلة: فعّل «' + br.nodes[ni - 1].n + '» أول'
+        : 'السعر: ' + n.c + ' ✨ · معك ' + S.sp + ' ✨'
   );
   const b = el(
     'button',
     'btn' + (stt === 'av' ? ' go' : ''),
-    stt === 'own'
-      ? '✓ مفعّلة'
-      : stt === 'lock'
-        ? '🔒 فعّل «' + br.nodes[ni - 1].n + '» أول'
-        : 'فعّلها بـ ' + n.c + ' ✨'
+    stt === 'own' ? '✓ مفعّلة' : stt === 'lock' ? '🔒 مقفلة' : 'فعّلها بـ ' + n.c + ' ✨'
   );
   b.disabled = stt !== 'av';
   b.onclick = () => {
@@ -126,14 +135,10 @@ function treeSheet() {
     AU.play('unlock');
     save();
     newRun();
+    treeSel = treeNext(br);
     drawTree(false);
     wallet();
   };
-  const x = el('button', 'iconBtn tx', '✖');
-  x.setAttribute('aria-label', 'إغلاق');
-  x.onclick = () => {
-    treeSel = null;
-    drawTree(false);
-  };
-  I.append(ic, txt, b, x);
+  I.append(top, el('p', 'tdesc', n.d), st, b);
+  return I;
 }

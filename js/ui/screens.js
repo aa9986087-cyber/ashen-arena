@@ -49,6 +49,7 @@ function hideScreens(keep) {
 }
 function goNow(id) {
   hideScreens(id);
+  if (id !== 'menu' && typeof closeNews === 'function') closeNews(); // the bulletin belongs to the menu
   if (id === 'chars') drawChars();
   if (id === 'shop') drawShop();
   if (id === 'tree') drawTree();
@@ -173,7 +174,6 @@ function drawShopHero() {
     ch = CHARS[S.char],
     sp = heroSpecial(),
     p = heroStartStats(),
-    b = heroStartStats(true),
     pct = v => Math.round(v * 100) + '%';
   box.innerHTML = '';
   const pic = el('div', 'shPic'),
@@ -186,29 +186,29 @@ function drawShopHero() {
   name.append(el('b', '', ch.i + ' ' + ch.n), el('small', '', ch.d));
   info.appendChild(name);
   const grid = el('div', 'shStats');
-  const row = (ic, label, v, base, fmt) => {
+  const row = (ic, label, v, perm, fmt) => {
     const r = el('div', 'shSt');
     r.append(el('i', '', ic), el('span', '', label), el('b', '', fmt(v)));
-    const add = v - base;
-    if (Math.abs(add) > 1e-6) r.appendChild(el('em', '', (add > 0 ? '+' : '') + fmt(add) + ' من المتجر'));
+    const add = perm && permBonus(perm);
+    if (add) r.appendChild(el('em', '', add + ' من المتجر'));
     grid.appendChild(r);
   };
   const n0 = v => String(Math.round(v)),
     n1 = v => v.toFixed(1);
-  row('❤️', 'الصحة', p.maxHp, b.maxHp, n0);
-  row('⚔️', 'قوة الضرر', p.dmgMul, b.dmgMul, pct);
-  row('⚡', 'سرعة الهجوم', p.aspd, b.aspd, pct);
-  row('🎯', 'فرصة الحرجة', p.crit, b.crit, pct);
-  row('💢', 'ضرر الحرجة', p.critMul, b.critMul, v => '×' + v.toFixed(1));
-  row('👟', 'سرعة الحركة', p.speed, b.speed, n1);
-  row('🧱', 'تقليل الضرر', 1 - p.taken * (1 - p.armor), 1 - b.taken * (1 - b.armor), pct);
-  row('💚', 'تجدد الصحة', p.regen, b.regen, v => v.toFixed(1) + '/ث');
-  row('🧲', 'مدى الجذب', p.magnet, b.magnet, v => v.toFixed(1) + 'م');
-  row('📘', 'الخبرة', p.xpMul, b.xpMul, pct);
-  row('🪙', 'العملات', p.goldMul, b.goldMul, pct);
-  row('💨', 'تجهيز المراوغة', p.dashMax, b.dashMax, v => v.toFixed(1) + 'ث');
-  if (p.multi) row('🔱', 'مقذوفات إضافية', p.multi, b.multi, v => '+' + v);
-  if (p.shieldMax) row('🔵', 'درع الطاقة', p.shieldMax, b.shieldMax, n0);
+  row('❤️', 'الصحة', p.maxHp, 'hp', n0);
+  row('⚔️', 'قوة الضرر', p.dmgMul, 'dmg', pct);
+  row('⚡', 'سرعة الهجوم', p.aspd, '', pct);
+  row('🎯', 'فرصة الحرجة', p.crit, '', pct);
+  row('💢', 'ضرر الحرجة', p.critMul, '', v => '×' + v.toFixed(1));
+  row('👟', 'سرعة الحركة', p.speed, 'spd', n1);
+  row('🧱', 'تقليل الضرر', 1 - p.taken * (1 - p.armor), '', pct);
+  row('💚', 'تجدد الصحة', p.regen, '', v => v.toFixed(1) + '/ث');
+  row('🧲', 'مدى الجذب', p.magnet, 'mag', v => v.toFixed(1) + 'م');
+  row('📘', 'الخبرة', p.xpMul, 'xp', pct);
+  row('🪙', 'العملات', p.goldMul, 'gold', pct);
+  row('💨', 'تجهيز المراوغة', p.dashMax, '', v => v.toFixed(1) + 'ث');
+  if (p.multi) row('🔱', 'مقذوفات إضافية', p.multi, '', v => '+' + v);
+  if (p.shieldMax) row('🔵', 'درع الطاقة', p.shieldMax, '', n0);
   info.appendChild(grid);
   // the special, the starting weapon, and what the skill tree adds
   const extra = el('div', 'shExtra');
@@ -231,7 +231,23 @@ function drawShop() {
       cls: l >= u.max ? ' done' : '',
       icon: u.i,
       title: u.n,
-      body: [el('p', '', u.d + ' لكل مستوى'), pips(l, u.max)],
+      body: [
+        el('p', '', u.d + ' لكل مستوى'),
+        el(
+          'p',
+          'permNow',
+          'مستواك ' +
+            l +
+            ' من ' +
+            u.max +
+            ' · ' +
+            u.s +
+            ': ' +
+            (permBonus(id, l) || '+0' + u.u) +
+            (l < u.max ? ' ← ' + permBonus(id, l + 1) : ' (الأقصى)')
+        ),
+        pips(l, u.max),
+      ],
       btn: l >= u.max ? 'اكتمل' : 'طوّر بـ ' + permCost(l) + ' 🪙',
       disabled: l >= u.max,
       onClick: () =>
