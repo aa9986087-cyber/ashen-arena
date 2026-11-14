@@ -3,6 +3,14 @@
 function gwave() {
   return G.abyss ? 36 + G.depth * 6 + G.wave : G.cycle * 36 + G.stage * 6 + G.wave;
 }
+/* ---------- balance ---------- */
+/** Enemies grow with the hero: from level 4, +4.5% health per level (cards stack up fast; without this a good
+    player outgrows every wave). In co-op the team's average level would be fairer, but each spawn uses the host's. */
+const lvlHp = () => 1 + Math.max(0, G.lvl - 4) * 0.045;
+/** Enemies coming in per second at wave gw (before the boss / abyss / co-op factors). */
+const spawnRate = gw => Math.min(1.1 + gw * 0.25, 11);
+/** Enemy damage: every enemy hits 1.4× its base, growing with the waves. */
+const EN_DMG = 1.4;
 function spawn(type, x, z, elite) {
   const d = EN[type],
     gw = gwave(),
@@ -10,7 +18,7 @@ function spawn(type, x, z, elite) {
       (1 + gw * 0.24) *
       Math.pow(1.05, gw) *
       (1 + G.cycle * 1.5) *
-      (1 + Math.max(0, G.lvl - 10) * 0.04) *
+      lvlHp() *
       (G.p.enemyMul || 1) *
       COOP.hpMul * // co-op: tougher with every player
       (elite ? 4.5 : 1);
@@ -30,7 +38,7 @@ function spawn(type, x, z, elite) {
     maxHp: d.hp * hm,
     r: d.r * (elite ? 1.3 : 1),
     spd: d.spd * (1 + Math.min(gw, 40) * 0.012),
-    dmg: d.dmg * 1.25 * coopDmgF(gw) * (elite ? 1.5 : 1),
+    dmg: d.dmg * EN_DMG * coopDmgF(gw) * (elite ? 1.5 : 1),
     xp: d.xp * (elite ? 6 : 1),
     scale: d.sc * (elite ? 1.35 : 1),
     elite: !!elite,
@@ -98,7 +106,7 @@ function stageQuota() {
   let t = 0;
   for (let w = 0; w < 6; w++) {
     // about as many as come in a wave's 28 s (the spawn rate), so the pace is what it was
-    t += Math.round(Math.min(28 * Math.min(1 + (base + w) * 0.24, 10) * 0.75, 80) * COOP.cntMul);
+    t += Math.round(Math.min(28 * spawnRate(base + w) * 0.7, 80) * COOP.cntMul);
     ends.push(t);
   }
   return (G.quota = {
@@ -125,7 +133,7 @@ function spawnBoss() {
 /** The boss of kind k at (x,z), quietly (co-op: a new host takes over the boss already fighting). */
 function makeBoss(k, x, z) {
   const si = G.abyss ? 6 + G.depth * 0.7 : G.stage;
-  const hp = 2200 * 1.35 * Math.pow(1.55, si) * (1 + G.cycle * 3) * COOP.bossMul;
+  const hp = 2200 * 1.35 * Math.pow(1.55, si) * (1 + G.cycle * 3) * COOP.bossMul * (1 + Math.max(0, G.lvl - 8) * 0.025);
   const e = spawn('brute', x, z, false);
   Object.assign(e, {
     boss: true,
@@ -180,8 +188,11 @@ function updWaves(dt) {
       G.wave = 5;
       spawnBoss();
     } else {
-      const w = Q.waveAt(G.sk);
+      // a wave ends at its share of kills, or after 30 s at most (it never stalls when the killing is slow)
+      G.waveT += dt;
+      const w = Math.max(Q.waveAt(G.sk), G.waveT >= 30 ? Math.min(5, G.wave + 1) : 0);
       if (w > G.wave) {
+        G.waveT = 0;
         G.wave = w;
         banner('الموجة ' + (G.wave + 1), G.wave === 2 || G.wave === 4 ? 'عدو قوي يقترب' : '', 1.8);
         if (G.wave === 2 || G.wave === 4) {
@@ -192,13 +203,13 @@ function updWaves(dt) {
       }
     }
   }
-  const rate = Math.min(1 + gw * 0.24, 10) * (G.bossOn ? 0.4 : 1) * (G.abyss ? 1.25 : 1) * COOP.cntMul;
+  const rate = spawnRate(gw) * (G.bossOn ? 0.4 : 1) * (G.abyss ? 1.25 : 1) * COOP.cntMul;
   G.spawnAcc += G.noWaves ? 0 : dt * rate;
   while (G.spawnAcc >= 1) {
     G.spawnAcc -= 1;
     if (G.enemies.length >= cap) continue;
     const t = pickType(gw),
-      e0 = spawnAround(t, gw >= 3 && Math.random() < Math.min(0.03 + gw * 0.008, 0.25));
+      e0 = spawnAround(t, gw >= 2 && Math.random() < Math.min(0.04 + gw * 0.01, 0.28));
     if (t === 'wolf') spawnPack('wolf', 2, e0.x, e0.z, 2);
     if (t === 'runner' && Math.random() < 0.5) spawnPack('runner', 1, e0.x, e0.z, 2);
   }

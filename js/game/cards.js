@@ -266,7 +266,7 @@ function chooseCard(i) {
   // straight back into the fight: a moment of slow motion that eases up to full speed (solo; co-op's world
   // never stopped), and a short shield so nothing lands on you while you find your bearings
   G.state = 'play';
-  G.p.inv = Math.max(G.p.inv, 1.2);
+  G.p.inv = Math.max(G.p.inv, 0.7);
   if (!COOP.on) G.resumeT = RESUME_T;
   saveRun();
 }
