@@ -152,11 +152,6 @@ function kill(e) {
   }
   // a fallen body that tips over and sinks (drawn by render, aged in update)
   if (G.corpses.length < 60) G.corpses.push({ type: e.type, x: e.x, z: e.z, face: e.face, s: e.scale, l: 0 });
-  if (e.affix === 'split' && !(COOP.on && !COOP.host)) {
-    const r0 = G.enemies.length;
-    spawnPack(e.type, 3, e.x, e.z, 1.5);
-    for (let i = r0; i < G.enemies.length; i++) G.enemies[i].scale *= 0.8;
-  }
   drop(e.x, e.z, 0, e.xp);
   if (Math.random() < (e.elite ? 1 : 0.13))
     drop(e.x + rand(-0.5, 0.5), e.z + rand(-0.5, 0.5), 1, e.mini ? 15 : e.elite ? 6 : 1 + (Math.random() < 0.3));

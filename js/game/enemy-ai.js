@@ -12,8 +12,7 @@ function zoneBarrage(cx, cz, n, spread, r, d0, dstep, dmg) {
     zone(cx + (j ? rand(-spread, spread) : 0), cz + (j ? rand(-spread, spread) : 0), r, d0 + j * dstep, dmg, false);
 }
 function updEnemies(dt) {
-  const hasteSrc = G.enemies.filter(q => q.affix === 'haste' && !q.dead),
-    P0 = G.p, // the local hero (burn damage scales with him); each enemy chases its own target below
+  const P0 = G.p, // the local hero (burn damage scales with him); each enemy chases its own target below
     E = G.enemies,
     fl = G.ups.fire || 0;
   for (let i = 0, n = E.length; i < n; i++) {
@@ -418,19 +417,7 @@ function updEnemies(dt) {
         }
       }
     }
-    if (e.affix === 'regen' && e.hp < e.maxHp) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.04 * dt);
-    if (e.affix === 'ward' && (e.wardT -= dt) <= 0 && e.ward < e.wardMax)
-      e.ward = Math.min(e.wardMax, e.ward + e.wardMax * 0.3 * dt);
-    if (hasteSrc.length && !e.boss)
-      for (const h of hasteSrc)
-        if (h !== e && (h.x - e.x) ** 2 + (h.z - e.z) ** 2 < 49) {
-          spd *= 1.35;
-          break;
-        }
-    if (e.slowT > 0) {
-      e.slowT -= dt;
-      spd *= 0.75 - 0.08 * (G.ups.frost || 1);
-    }
+
     if (G.tslowT > 0) spd *= 0.5;
     // only shooters fire: an elite archer or mage gets an extra aimed bolt (the others hit harder, but don't shoot)
     if (e.elite && !e.boss && (e.type === 'archer' || e.type === 'mage')) {

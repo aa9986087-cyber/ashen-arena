@@ -29,9 +29,9 @@ const MON_N = {
   golem: 'غولم',
 };
 /** Elite traits: every elite rolls one. tint = colour multiplier in the arena; see hit(), kill() and updEnemies(). */
+/* What makes a strong enemy stand out: a little tougher, or hitting a little harder. Nothing that makes it
+   impossible to kill (the old ones: regenerating, shields, splitting, speeding the others up). */
 const AFFIX = {
-  split: { n: 'ينقسم', i: '✳️', d: 'لما يموت يطلع منه 3 صغار', tint: [1.7, 1.6, 0.5] },
-  regen: { n: 'يتجدد', i: '💚', d: 'يرجع له 4% من صحته كل ثانية', tint: [0.6, 1.8, 0.7] },
-  haste: { n: 'مُسرِّع', i: '⚡', d: 'الأعداء حوله أسرع 35%', tint: [1.9, 1.3, 0.3] },
-  ward: { n: 'درع', i: '🛡️', d: 'درع يمتص الضرر ويتجدد إذا ما انضرب', tint: [0.7, 1.1, 2] },
+  tough: { n: 'صلب', i: '🛡️', d: 'صحته أكثر 40%', tint: [0.8, 1.1, 1.8], hp: 1.4 },
+  fierce: { n: 'شرس', i: '💢', d: 'ضربه أقوى 25%', tint: [1.8, 0.7, 0.5], dmg: 1.25 },
 };

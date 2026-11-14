@@ -27,7 +27,7 @@ function spawn(type, x, z, elite) {
       easeIn(gw) *
       (G.p.enemyMul || 1) *
       COOP.hpMul * // co-op: tougher with every player
-      (elite ? 4.5 : 1);
+      (elite ? 3 : 1); // a strong one: three times the health (its trait adds a little)
   const r = Math.hypot(x, z);
   if (r > ARENA + 3) {
     x *= (ARENA + 3) / r;
@@ -66,7 +66,9 @@ function spawn(type, x, z, elite) {
   };
   if (elite) {
     e.affix = pick(Object.keys(AFFIX));
-    if (e.affix === 'ward') e.ward = e.wardMax = e.maxHp * 0.35;
+    const A = AFFIX[e.affix];
+    if (A.hp) e.hp = e.maxHp = e.maxHp * A.hp;
+    if (A.dmg) e.dmg *= A.dmg;
   }
   G.enemies.push(e);
   return e;

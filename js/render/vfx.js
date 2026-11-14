@@ -451,7 +451,7 @@ function vfxExplosion(x, z, R, big) {
     });
   }
   vfxP({ x, y: 0.8, z, life: 0.22, s: 4 * k, s1: 6 * k, r: 2, g: 1.6, b: 0.9 }); // the flash
-  vfxP({ t: VT.flare, x, y: 1, z, life: 0.3, s: 6 * k, s1: 9 * k, r: 2, g: 1.5, b: 0.8, rot: 0 });
+  vfxP({ t: VT.flare, x, y: 1, z, life: 0.25, s: 4 * k, s1: 6 * k, r: 1.3, g: 0.95, b: 0.5, a: 0.6, rot: 0 });
   vfxP({ t: VT.ring, x, y: 0.6, z, life: 0.45, s: R * 0.8, s1: R * 2.6, r: 1.6, g: 1.1, b: 0.5, a: 0.9 }); // shockwave
   vfxP({ t: VT.burst, x, y: 1, z, life: 0.35, s: 3 * k, s1: 5 * k, r: 2, g: 1.2, b: 0.4, spin: 3 });
   vfxSparks(x, 0.8, z, 12 * k, [1.6, 1, 0.3], 9 * k, 0.25, 0.8);
@@ -505,12 +505,12 @@ function vfxStorm(x, z, life, big) {
       z: z + rand(-R * 0.6, R * 0.6),
       vx: rand(-0.3, 0.3),
       life: life * rand(0.9, 1.2),
-      s: rand(3.6, 5.2) * (big ? 1.25 : 1),
-      s1: rand(4.2, 5.8),
+      s: rand(2.6, 3.8) * (big ? 1.2 : 1),
+      s1: rand(3, 4.2),
       r: 0.1,
       g: 0.11,
       b: 0.16,
-      a: 0.92,
+      a: 0.38,
       fade: 1,
     });
   vfxEmit(x, z, life, (em, dt) => {
@@ -999,7 +999,7 @@ function vfxShots(now) {
       vshot(s.x, 1, s.z, VT.soft, 0.7, c, 0.7, 0);
     } else {
       // an energy orb: a hot core and a slowly turning halo
-      const k = st ? st.s * 2 : 1;
+      const k = st && st.s ? st.s * 2 : 1.2; // (the shells have no size of their own: an unset size drew a screen-wide white square)
       vshot(
         s.x,
         1,
