@@ -159,3 +159,7 @@ npm run format     # Prettier (الإعدادات في .prettierrc.json)
 كل أيقونات الواجهة SVG بدل الإيموجي (`js/data/icon-set.js`، يبنيه `tools/build-icons.py`؛ و`js/ui/icons.js` يبدّل أي إيموجي ينكتب بالصفحة بأيقونته تلقائياً):
 - game-icons.net (https://game-icons.net) by Lorc, Delapouite and contributors, licensed under CC BY 3.0.
 - Lucide (https://lucide.dev), ISC licence.
+
+## مؤثرات القتال
+
+ضربة السيف، الشرار، الانفجارات، وفلاش الأسلحة مرسومة بنسيج حقيقي من Kenney Particle Pack (https://kenney.nl/assets/particle-pack، رخصة CC0) في `assets/vfx/` (أطلس 4×4 تقراه `js/render/vfx.js`).

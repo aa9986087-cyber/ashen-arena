@@ -7,7 +7,7 @@ const UP = {
   crit: { n: 'ضربة حرجة', i: '🎯', r: 0, max: 5, d: 'فرصة الضربة الحرجة +7% بضرر مضاعف' },
   area: { n: 'مدى أوسع', i: '🔭', r: 0, max: 5, d: 'مدى السيف ومساحة الانفجارات +10%' },
   hp: { n: 'قلب قوي', i: '❤️', r: 0, max: 8, d: '+18 صحة قصوى مع شفاء فوري' },
-  regen: { n: 'تجدد', i: '💚', r: 0, max: 5, d: 'تستعيد 0.6 صحة كل ثانية' },
+  regen: { n: 'تجدد', i: '💚', r: 0, max: 5, d: 'تستعيد 1 صحة كل ثانية' },
   armor: { n: 'جلد حديدي', i: '🧱', r: 0, max: 5, d: 'الضرر المستلم −8%' },
   speed: { n: 'أقدام خفيفة', i: '👟', r: 0, max: 5, d: 'سرعة الحركة +8%' },
   dashlen: { n: 'مراوغة أبعد', i: '🌬️', r: 0, max: 3, d: 'مسافة المراوغة +30%' },
@@ -120,6 +120,24 @@ const UP = {
   thunderlord: { n: 'سيد الرعد', i: '🎆', r: 3, max: 1, d: 'كل البرق والصواعق ضررها مضاعف وتقفز أبعد' },
   midas: { n: 'لمسة ميداس', i: '🏺', r: 3, max: 1, d: 'العملات تعطيك خبرة، والأعداء يسقطون ذهباً أكثر' },
 };
+/* Build paths: an upgrade belongs to at most one path. A path's steps open in order (a step needs one level of
+   the step before it), you can walk only PATH_SLOTS paths at once (one more from level 15), and every
+   PATH_MASTERY steps in a path is a mastery: +8% damage. Upgrades in no path are the general cards (stats). */
+const PATHS = [
+  { id: 'fire', n: 'النار', i: '🔥', steps: ['fire', 'firering', 'corpse', 'meteor', 'phoenix'] },
+  { id: 'storm', n: 'العاصفة', i: '⚡', steps: ['bolt', 'shock', 'chain', 'aura', 'skystrike', 'thunderlord'] },
+  { id: 'frost', n: 'الجليد', i: '❄️', steps: ['frost', 'ice', 'frostnova', 'tslow', 'timewarp'] },
+  { id: 'blades', n: 'النصال', i: '⚔️', steps: ['orbit', 'blades', 'mirror', 'whirl', 'legend'] },
+  { id: 'volley', n: 'الرماية', i: '🏹', steps: ['multi', 'pierce', 'bounce', 'magic', 'shards'] },
+  { id: 'guard', n: 'الحصن', i: '🛡️', steps: ['shield', 'thorns', 'guardian', 'second', 'revive'] },
+  { id: 'blood', n: 'الدم', i: '🩸', steps: ['crit', 'critdmg', 'vamp', 'bloodlust', 'execute', 'overkill'] },
+  { id: 'legion', n: 'الجيش', i: '🪖', steps: ['army', 'drone', 'turret', 'clones'] },
+  { id: 'venom', n: 'السم', i: '☠️', steps: ['poison', 'spikes', 'mines', 'vortexdash', 'hole'] },
+];
+const PATH_OF = {};
+for (const P of PATHS) P.steps.forEach((id, k) => (PATH_OF[id] = { P, k }));
+const PATH_SLOTS = 3,
+  PATH_MASTERY = 3;
 const PACT = {
   heavy: {
     n: 'السلاح الثقيل',

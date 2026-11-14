@@ -14,16 +14,55 @@ const VFX_FS_GLOW =
 const VFX_FS_SMOKE =
   'varying vec4 vC; void main(){ float r = length(gl_PointCoord - 0.5) * 2.0; if (r > 1.0) discard;' +
   ' float a = smoothstep(1.0, 0.15, r); gl_FragColor = vec4(vC.rgb, vC.a * a); }';
-function vfxLayer(n, fs, blending, order) {
+/* ---- textured sprites: the Kenney Particle Pack (CC0) in one 4×4 atlas (assets/vfx/fx-atlas.png); each particle
+   picks a tile and turns (tr = tile, rotation). White textures: the colour comes from the particle. */
+const VFX_VS_T =
+  'attribute float size; attribute vec4 rgba; attribute vec2 tr; varying vec4 vC; varying vec2 vT; uniform float scale;' +
+  'void main(){ vC = rgba; vT = tr; vec4 mv = modelViewMatrix * vec4(position, 1.0);' +
+  ' gl_PointSize = min(size * scale / -mv.z, 768.0); gl_Position = projectionMatrix * mv; }';
+const VFX_TEX_UV =
+  'uniform sampler2D map; varying vec4 vC; varying vec2 vT;' +
+  'float texMask(){ vec2 p = gl_PointCoord - 0.5; float c = cos(vT.y), s = sin(vT.y); p = mat2(c, -s, s, c) * p;' +
+  ' if (abs(p.x) > 0.5 || abs(p.y) > 0.5) return 0.0;' +
+  ' float col = mod(vT.x, 4.0), row = floor(vT.x / 4.0);' +
+  ' vec2 uv = vec2((col + p.x + 0.5) / 4.0, 1.0 - (row + p.y + 0.5) / 4.0);' +
+  ' return texture2D(map, uv).a * smoothstep(0.5, 0.38, length(p)); }'; // round off: no square edges
+const VFX_FS_TADD =
+  VFX_TEX_UV + 'void main(){ float m = texMask() * vC.a; if (m < 0.003) discard; gl_FragColor = vec4(vC.rgb * m, m); }';
+const VFX_FS_TALPHA =
+  VFX_TEX_UV + 'void main(){ float m = texMask() * vC.a; if (m < 0.003) discard; gl_FragColor = vec4(vC.rgb, m); }';
+const VFX_ATLAS = new THREE.TextureLoader().load('assets/vfx/fx-atlas.png');
+/** Atlas tiles: a crescent slash, a thin arc, a crackle, a bolt, a flare, two stars, two smokes, a soft ball,
+    a muzzle burst, a streak, a flame, a swirl, a glowing ring, a burst. */
+const VT = {
+  slash: 0,
+  arc: 1,
+  crackle: 2,
+  bolt: 3,
+  flare: 4,
+  star: 5,
+  star2: 6,
+  smoke: 7,
+  smoke2: 8,
+  soft: 9,
+  muzzle: 10,
+  trace: 11,
+  flame: 12,
+  twirl: 13,
+  ring: 14,
+  burst: 15,
+};
+function vfxLayer(n, fs, blending, order, textured) {
   const g = new THREE.BufferGeometry();
   const dyn = a => a.setUsage(THREE.DynamicDrawUsage);
   g.setAttribute('position', dyn(new THREE.BufferAttribute(new Float32Array(n * 3), 3)));
   g.setAttribute('rgba', dyn(new THREE.BufferAttribute(new Float32Array(n * 4), 4)));
   g.setAttribute('size', dyn(new THREE.BufferAttribute(new Float32Array(n), 1)));
+  if (textured) g.setAttribute('tr', dyn(new THREE.BufferAttribute(new Float32Array(n * 2), 2)));
   g.setDrawRange(0, 0);
   const m = new THREE.ShaderMaterial({
-    uniforms: { scale: { value: 400 } },
-    vertexShader: VFX_VS,
+    uniforms: textured ? { scale: { value: 400 }, map: { value: VFX_ATLAS } } : { scale: { value: 400 } },
+    vertexShader: textured ? VFX_VS_T : VFX_VS,
     fragmentShader: fs,
     transparent: true,
     depthWrite: false,
@@ -34,6 +73,9 @@ function vfxLayer(n, fs, blending, order) {
     m.blendSrc = THREE.OneFactor;
     m.blendDst = THREE.OneFactor;
   }
+  // a big sprite low over the ground would be cut in half by the nearer ground (a point has one depth):
+  // the textured effects draw over the scene instead
+  if (textured) m.depthTest = false;
   const p = new THREE.Points(g, m);
   p.frustumCulled = false;
   p.renderOrder = order;
@@ -43,13 +85,15 @@ function vfxLayer(n, fs, blending, order) {
 const VFX = {
   glow: vfxLayer(2200, VFX_FS_GLOW, THREE.AdditiveBlending, 4),
   smoke: vfxLayer(900, VFX_FS_SMOKE, THREE.NormalBlending, 3),
+  tglow: vfxLayer(700, VFX_FS_TADD, THREE.AdditiveBlending, 5, true),
+  tsmoke: vfxLayer(400, VFX_FS_TALPHA, THREE.NormalBlending, 3, true),
   emitters: [],
   bolts: [],
 };
 /** Spawn one particle. o: x,y,z, vx,vy,vz, life, s (size), s1 (end size), r,g,b,a, drag, grav, smoke (layer),
     orbit: { cx, cz, ang, rad, w, rise, grow } — circles a centre (tornado / black hole) instead of flying. */
 function vfxP(o) {
-  const L = o.smoke ? VFX.smoke : VFX.glow;
+  const L = o.t !== undefined ? (o.smoke ? VFX.tsmoke : VFX.tglow) : o.smoke ? VFX.smoke : VFX.glow;
   if (L.list.length >= L.n) return;
   L.list.push({
     x: o.x,
@@ -70,6 +114,9 @@ function vfxP(o) {
     grav: o.grav || 0,
     fade: o.fade || (o.smoke ? 1 : 0), // 1 = fade in and out (smoke), 0 = bright then fade
     orb: o.orbit || null,
+    t: o.t || 0, // atlas tile (textured layers)
+    rot: o.rot === undefined ? Math.random() * TAU : o.rot,
+    spin: o.spin || 0,
   });
 }
 /** A continuous effect: fn(em, dt) runs every frame for `d` seconds (em.x/z can move, em.l is its age). */
@@ -80,14 +127,16 @@ function vfxEmit(x, z, d, fn, extra) {
 }
 function vfxClear() {
   for (const em of VFX.emitters) if (em.end) em.end();
-  VFX.glow.list.length = VFX.smoke.list.length = VFX.emitters.length = 0;
+  VFX.glow.list.length = VFX.smoke.list.length = VFX.tglow.list.length = VFX.tsmoke.list.length = 0;
+  VFX.emitters.length = 0;
   for (const b of VFX.bolts) b.mesh.visible = false;
   for (const m of VFX_TWISTER) m.visible = false;
 }
 function vfxStep(L, dt) {
   const pos = L.g.attributes.position.array,
     col = L.g.attributes.rgba.array,
-    siz = L.g.attributes.size.array;
+    siz = L.g.attributes.size.array,
+    tr = L.g.attributes.tr ? L.g.attributes.tr.array : null;
   let w = 0;
   for (const q of L.list) {
     q.l += dt;
@@ -122,11 +171,17 @@ function vfxStep(L, dt) {
     col[w * 4 + 2] = q.b;
     col[w * 4 + 3] = q.a * al;
     siz[w] = q.s0 + (q.s1 - q.s0) * k;
+    if (tr) {
+      q.rot += q.spin * dt;
+      tr[w * 2] = q.t;
+      tr[w * 2 + 1] = q.rot;
+    }
     L.list[w++] = q;
   }
   L.list.length = w;
   L.g.setDrawRange(0, w);
   L.g.attributes.position.needsUpdate = L.g.attributes.rgba.needsUpdate = L.g.attributes.size.needsUpdate = true;
+  if (tr) L.g.attributes.tr.needsUpdate = true;
 }
 
 /* ---- lightning: jagged ribbons that always face the camera, a white core inside a blue glow */
@@ -255,7 +310,11 @@ function vfxBoltForm(B) {
 
 /* ---- per-frame update */
 function vfxUpdate(dt) {
-  VFX.glow.p.material.uniforms.scale.value = VFX.smoke.p.material.uniforms.scale.value = H * DPR * 0.9;
+  VFX.glow.p.material.uniforms.scale.value =
+    VFX.smoke.p.material.uniforms.scale.value =
+    VFX.tglow.p.material.uniforms.scale.value =
+    VFX.tsmoke.p.material.uniforms.scale.value =
+      H * DPR * 0.9;
   for (const em of VFX.emitters) {
     em.l += dt;
     if (em.l < em.d) em.fn(em, dt);
@@ -267,6 +326,8 @@ function vfxUpdate(dt) {
   });
   vfxStep(VFX.glow, dt);
   vfxStep(VFX.smoke, dt);
+  vfxStep(VFX.tglow, dt);
+  vfxStep(VFX.tsmoke, dt);
   for (const B of VFX.bolts) {
     if (!B.mesh.visible) continue;
     B.l += dt;
@@ -387,8 +448,30 @@ function vfxExplosion(x, z, R, big) {
     });
   }
   vfxP({ x, y: 0.8, z, life: 0.22, s: 4 * k, s1: 6 * k, r: 2, g: 1.6, b: 0.9 }); // the flash
+  vfxP({ t: VT.flare, x, y: 1, z, life: 0.3, s: 6 * k, s1: 9 * k, r: 2, g: 1.5, b: 0.8, rot: 0 });
+  vfxP({ t: VT.ring, x, y: 0.6, z, life: 0.45, s: R * 0.8, s1: R * 2.6, r: 1.6, g: 1.1, b: 0.5, a: 0.9 }); // shockwave
+  vfxP({ t: VT.burst, x, y: 1, z, life: 0.35, s: 3 * k, s1: 5 * k, r: 2, g: 1.2, b: 0.4, spin: 3 });
   vfxSparks(x, 0.8, z, 12 * k, [1.6, 1, 0.3], 9 * k, 0.25, 0.8);
-  vfxSmoke(x, 0.5, z, 6 * k, [0.12, 0.1, 0.1, 0.6], 1.1 * k, 2 * k, 1.4, 1.3);
+  for (let i = 0; i < 5 * k; i++)
+    vfxP({
+      t: i % 2 ? VT.smoke : VT.smoke2,
+      smoke: 1,
+      x: x + rand(-1, 1) * k,
+      y: 0.8 + rand(0, 1),
+      z: z + rand(-1, 1) * k,
+      vx: rand(-0.6, 0.6),
+      vy: rand(0.7, 1.5),
+      vz: rand(-0.6, 0.6),
+      life: rand(1, 1.6),
+      s: 2.2 * k,
+      s1: 4.2 * k,
+      r: 0.16,
+      g: 0.13,
+      b: 0.12,
+      a: 0.55,
+      drag: 1.2,
+      spin: rand(-0.8, 0.8),
+    });
   if (big) vfxSmoke(x, 1.5, z, 6, [0.2, 0.16, 0.14, 0.5], 2.5 * k, 3 * k, 2, 2.2);
 }
 /** Flames licking up from a point (one burning enemy). */
@@ -778,4 +861,40 @@ function vfxBladeWhirl(R) {
       orbit: { cx: p.x, cz: p.z, ang: a, rad: R * 0.95, w: 12, grow: 1.5 },
     });
   }
+}
+
+/* =================== combat feel: textured hits, kills and muzzle flashes =================== */
+/** A blow landing: a sharp star flash and a crackle in the weapon's colour (bigger and golden on a critical). */
+function vfxHit(x, z, c, crit) {
+  const s = crit ? 1.6 : 1;
+  vfxP({ t: VT.star2, x, y: 1.1, z, life: 0.14, s: 1.6 * s, s1: 0.6, r: c[0] * 1.6, g: c[1] * 1.6, b: c[2] * 1.6 });
+  vfxP({ t: VT.crackle, x, y: 1.1, z, life: 0.16, s: 1.8 * s, s1: 2.4 * s, r: c[0], g: c[1], b: c[2], a: 0.9 });
+  if (crit) vfxP({ t: VT.burst, x, y: 1.2, z, life: 0.22, s: 2, s1: 3.6, r: 2, g: 1.6, b: 0.5, spin: 4 });
+}
+/** An enemy falling: a burst of light and a puff of dust. */
+function vfxKill(x, z, big) {
+  const k = big ? 1.8 : 1;
+  vfxP({ t: VT.burst, x, y: 1, z, life: 0.28, s: 1.6 * k, s1: 3.2 * k, r: 1.8, g: 1.3, b: 0.8, spin: 2 });
+  vfxP({ t: VT.ring, x, y: 0.4, z, life: 0.3, s: 0.6 * k, s1: 3 * k, r: 1.4, g: 1, b: 0.7, a: 0.7 });
+  vfxP({
+    t: VT.smoke2,
+    smoke: 1,
+    x,
+    y: 0.6,
+    z,
+    vy: 0.8,
+    life: 0.8,
+    s: 1.4 * k,
+    s1: 2.6 * k,
+    r: 0.3,
+    g: 0.26,
+    b: 0.22,
+    a: 0.4,
+    spin: rand(-1, 1),
+  });
+}
+/** A gun's muzzle flash at (x,z). */
+function vfxMuzzle(x, z, c) {
+  vfxP({ t: VT.star, x, y: 1.3, z, life: 0.08, s: 1.6, s1: 0.8, r: c[0] * 1.8, g: c[1] * 1.8, b: c[2] * 1.8 });
+  vfxP({ t: VT.soft, x, y: 1.3, z, life: 0.1, s: 1.2, s1: 0.4, r: c[0], g: c[1], b: c[2], a: 0.8 });
 }

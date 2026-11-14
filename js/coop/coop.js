@@ -837,7 +837,8 @@ function coopMirror(dt) {
     if (e.atkT > 0) e.atkT -= dt;
     // touching it hurts: judged here, against what we see
     if (e.hitCd > 0) e.hitCd -= dt;
-    else if (!p.dead && e.frz <= 0 && (e.x - p.x) ** 2 + (e.z - p.z) ** 2 < (e.r + p.r) ** 2) {
+    else if (!p.dead && e.frz <= 0 && G.contactCd <= 0 && (e.x - p.x) ** 2 + (e.z - p.z) ** 2 < (e.r + p.r) ** 2) {
+      G.contactCd = CONTACT_CD;
       e.hitCd = 0.5;
       e.atkT = ATK_T;
       hurt(e.dmg);

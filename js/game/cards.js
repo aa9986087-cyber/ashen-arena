@@ -1,6 +1,30 @@
 'use strict';
 /* Level-up / boss reward cards, and the HUD loadout chips. */
+/* ---------- build paths ---------- */
+/** Levels taken along a path (its progress). */
+const pathProg = P => P.steps.reduce((a, id) => a + (G.ups[id] || 0), 0);
+const pathOpen = P => pathProg(P) > 0;
+const pathSlots = () => PATH_SLOTS + (G.lvl >= 15 ? 1 : 0);
+const pathsOpen = () => PATHS.filter(pathOpen);
+/** Masteries across all paths (every PATH_MASTERY steps in one path). */
+const pathMastery = P => Math.min(3, Math.floor(pathProg(P) / PATH_MASTERY)); // at most 3 per path (+24%)
+const pathMasteries = () => PATHS.reduce((a, P) => a + pathMastery(P), 0);
+/** Can this upgrade be offered now? (general cards always; a path step once the step before it is taken, and
+    only on a path you're walking or while you have a free slot) */
+function pathAllows(id) {
+  const q = PATH_OF[id];
+  if (!q) return true;
+  if (q.k > 0 && !(G.ups[q.P.steps[q.k - 1]] > 0)) return false;
+  return pathOpen(q.P) || pathsOpen().length < pathSlots();
+}
 function rollCards(n, minR, skip) {
+  // the very first choice: open your first path (three openers from three different paths)
+  if (minR === 0 && !pathsOpen().length && !skip) {
+    const opts = PATHS.slice()
+      .sort(() => Math.random() - 0.5)
+      .slice(0, n);
+    return opts.map(P => ({ k: 'up', id: P.steps[0], r: UP[P.steps[0]].r, first: 1 }));
+  }
   const luck = S.tree.U4 ? 1.5 : 1,
     RW = [60, 24 * luck, 9 * luck, (3.2 + G.lvl * 0.22) * luck],
     pool = [],
@@ -8,8 +32,12 @@ function rollCards(n, minR, skip) {
   for (const id in UP) {
     const u = UP[id],
       l = G.ups[id] || 0;
-    if (l < u.max && u.r >= minR) {
-      const c = { k: 'up', id, r: u.r, w: RW[u.r] };
+    if (l < u.max && u.r >= minR && pathAllows(id)) {
+      const q = PATH_OF[id];
+      // your paths come first (their last step, the legendary, most of all); opening a new one less so;
+      // the general cards fill in
+      const w = !q ? RW[u.r] * 0.55 : pathOpen(q.P) ? (q.k === q.P.steps.length - 1 ? 300 : 70 + RW[u.r]) : 22;
+      const c = { k: 'up', id, r: u.r, w };
       if (!has(c)) pool.push(c);
     }
   }
@@ -55,6 +83,12 @@ function rollCards(n, minR, skip) {
       if (r <= 0) break;
     }
     out.push(pool.splice(i, 1)[0]);
+  }
+  // always at least one card that carries on one of your paths, when one can
+  const cont = c => c.k === 'up' && PATH_OF[c.id] && pathOpen(PATH_OF[c.id].P);
+  if (out.length && !out.some(cont)) {
+    const alt = pool.filter(cont);
+    if (alt.length) out[out.length - 1] = alt[(Math.random() * alt.length) | 0];
   }
   if (out.length < n && minR > 0) return out.concat(rollCards(n - out.length, 0, out));
   if (!out.length) out.push({ k: 'heal', r: 0 }, { k: 'gold', r: 0 });
@@ -122,10 +156,28 @@ function cardInfo(c) {
           ' ' +
           EVO[w.id].n +
           (w.lvl < 5 ? ' (لما يوصل المستوى 5)' : '');
+    // where it sits on a path: "Fire path · step 2 of 5" (or that it opens a new one)
+    const q = PATH_OF[c.id];
+    let pth = '';
+    if (q) {
+      const open = pathOpen(q.P),
+        last = q.k === q.P.steps.length - 1;
+      pth =
+        q.P.i +
+        ' مسار ' +
+        q.P.n +
+        ' · الخطوة ' +
+        (q.k + 1) +
+        ' من ' +
+        q.P.steps.length +
+        (last ? ' (الأسطورية)' : '') +
+        (open ? '' : ' · يفتح مسار جديد (' + (pathsOpen().length + 1) + ' من ' + pathSlots() + ')');
+    }
     return {
       i: u.i,
       n: u.n,
       d: u.d,
+      pth,
       st: upPreview(c.id),
       lv: u.max > 1 ? 'مستواك ' + l + ' ← ' + (l + 1) + ' (من ' + u.max + ')' : 'مرة وحدة',
       syn,
@@ -174,8 +226,18 @@ function openCards(mode) {
   G.cardMode = mode;
   const n = mode === 'boss' ? 3 : S.tree.U1 ? 4 : 3;
   curCards = rollCards(n, mode === 'boss' ? 2 : 0);
-  $('cardTitle').textContent = mode === 'boss' ? 'غنيمة الزعيم' : 'ارتفع مستواك!';
-  $('cardSub').textContent = mode === 'boss' ? 'اختر مكافأة نادرة' : 'المستوى ' + G.lvl + '. اختر تطويراً واحداً';
+  const first = curCards.some(c => c.first);
+  $('cardTitle').textContent = mode === 'boss' ? 'غنيمة الزعيم' : first ? 'اختر مسارك' : 'ارتفع مستواك!';
+  $('cardSub').textContent =
+    mode === 'boss'
+      ? 'اختر مكافأة نادرة'
+      : first
+        ? 'كل مسار طريق قوة تبني عليه: تقدر تمشي ' +
+          pathSlots() +
+          ' مسارات، وكل ' +
+          PATH_MASTERY +
+          ' خطوات فيه إتقان (+8% ضرر)'
+        : 'المستوى ' + G.lvl + '. اختر تطويراً واحداً';
   if (mode === 'level') {
     G.pending--;
     AU.play('level');
@@ -193,11 +255,13 @@ function drawCards() {
     if (c.k !== 'pact') b.style.setProperty('--rc', 'var(--r' + c.r + ')');
     b.style.animationDelay = i * 0.07 + 's';
     b.innerHTML =
-      '<span class="ic"></span><span class="body"><span class="rar"></span><h3></h3><p></p><span class="st"></span><span class="syn"></span><span class="lv"></span></span>';
+      '<span class="ic"></span><span class="body"><span class="rar"></span><h3></h3><span class="pth"></span><p></p><span class="st"></span><span class="syn"></span><span class="lv"></span></span>';
     b.querySelector('.ic').textContent = f.i;
     b.querySelector('.rar').textContent = c.k === 'pact' ? 'صفقة بثمن' : RAR[c.r];
     b.querySelector('h3').textContent = f.n;
     b.querySelector('p').textContent = f.d;
+    b.querySelector('.pth').textContent = f.pth || '';
+    b.querySelector('.pth').hidden = !f.pth;
     b.querySelector('.st').textContent = f.st || '';
     b.querySelector('.st').hidden = !f.st;
     b.querySelector('.syn').textContent = f.syn;
@@ -215,7 +279,13 @@ function chooseCard(i) {
   if (!c || (G.state !== 'cards' && !G.cardsOpen)) return;
   const p = G.p;
   if (c.k === 'up') {
+    const m0 = pathMasteries();
     G.ups[c.id] = (G.ups[c.id] || 0) + 1;
+    const q = PATH_OF[c.id];
+    if (q && pathMasteries() > m0) {
+      banner('إتقان مسار ' + q.P.n, 'ضررك +8%، كمّل المسار للبطاقة الأسطورية', 2.4);
+      AU.play('legend');
+    }
     if (c.id === 'revive') G.revives++;
     recalc();
     if (c.id === 'hp') heal(18);
@@ -308,6 +378,24 @@ function drawStats() {
   ])
     main.appendChild(el('span', '', k + ' ' + v));
   box.appendChild(main);
+  // your paths: how far along each one, and the masteries
+  const open = pathsOpen();
+  if (open.length) {
+    const pl = el('div', 'psPaths');
+    for (const P of open) {
+      const pr = Math.min(pathProg(P), 99),
+        k = P.steps.filter(id => G.ups[id]).length;
+      pl.appendChild(
+        el(
+          'span',
+          '',
+          P.i + ' مسار ' + P.n + ' ' + k + '/' + P.steps.length + (pathMastery(P) ? ' · إتقان ' + pathMastery(P) : '')
+        )
+      );
+    }
+    pl.appendChild(el('small', '', 'المسارات ' + open.length + ' من ' + pathSlots()));
+    box.appendChild(pl);
+  }
   const list = el('div', 'psList');
   for (const w of G.weapons)
     list.appendChild(

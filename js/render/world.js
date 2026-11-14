@@ -191,8 +191,24 @@ const zonePool = pool(48, () => {
   return m;
 });
 const ballPool = pool(48, () => new THREE.Mesh(SPH, new THREE.MeshBasicMaterial({ color: 0xff8a20 })));
-const slashGeo = [2.3, 3.6, TAU].map(a => new THREE.RingGeometry(0.45, 1, 28, 1, -a / 2, a));
-const slashPool = pool(6, () => new THREE.Mesh(slashGeo[0], addMat(0xffffff, 1)));
+/* The melee swing: a textured crescent (Kenney Particle Pack, CC0) lying on the ground in the swing's direction;
+   a full spin uses the swirl ring. */
+const SLASH_TEX = ['assets/vfx/slash.png', 'assets/vfx/whirl.png'].map(u => new THREE.TextureLoader().load(u));
+const slashGeo = new THREE.PlaneGeometry(2.5, 2.5);
+const slashPool = pool(
+  6,
+  () =>
+    new THREE.Mesh(
+      slashGeo,
+      new THREE.MeshBasicMaterial({
+        map: SLASH_TEX[0],
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+      })
+    )
+);
 const auraMesh = new THREE.Mesh(discGeo, addMat(0x4ab8ff, 0.16));
 auraMesh.rotation.x = -Math.PI / 2;
 auraMesh.position.y = 0.08;

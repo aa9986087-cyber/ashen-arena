@@ -254,6 +254,7 @@
     gap: 4px;
   }
   .card .st,
+  .card .pth,
   .card .lv,
   .card .syn {
     font-size: 11px;
@@ -264,4 +265,15 @@
   #reroll {
     margin-top: 8px;
   }
+}
+/* where the card sits on a build path */
+.card .pth {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffd27a;
+  background: rgba(255, 200, 80, 0.1);
+  border: 1px solid rgba(255, 200, 80, 0.25);
+  border-radius: 8px;
+  padding: 2px 8px;
+  align-self: stretch;
 }

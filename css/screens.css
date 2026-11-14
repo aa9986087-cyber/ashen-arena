@@ -886,3 +886,23 @@ textarea.txt {
   opacity: 0.85;
   text-decoration-thickness: 2px;
 }
+#pStats .psPaths {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+}
+#pStats .psPaths span {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffd27a;
+  background: rgba(255, 200, 80, 0.1);
+  border: 1px solid rgba(255, 200, 80, 0.3);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+#pStats .psPaths small {
+  font-size: 11px;
+  color: #c9bea0;
+}

@@ -53,9 +53,9 @@ function updEnemies(dt) {
       mz = 0,
       spd = e.spd;
     e.face = Math.atan2(dx, dz);
-    if (!e.boss && d > 32) {
+    if (!e.boss && d > 34) {
       e.offT = (e.offT || 0) + dt;
-      if (e.offT > 1.2) recycleEnemy(e, p);
+      if (e.offT > 3) recycleEnemy(e, p); // left far behind for a while: it comes back (beside or behind you)
     } else e.offT = 0;
     if (e.boss) {
       const rage = e.hp < e.maxHp * 0.5 ? 1.45 : 1,
@@ -370,10 +370,10 @@ function updEnemies(dt) {
         mz = uz;
         e.cd -= dt;
         e.aCd -= dt;
-        if (e.aCd <= 0 && d < 22) {
+        // a melee giant: no bullets; when you're close it slams the ground around it (a red ring warns first)
+        if (e.aCd <= 0 && d < 7) {
           e.aCd = 4.5;
-          eRing(e.x, e.z, 10, 7, e.dmg * 0.4, e.t);
-          AU.play('eshot');
+          zone(e.x, e.z, 4.5, 0.9, e.dmg * 0.8, false);
         }
         if (e.cd <= 0 && d < 5) {
           e.st = 1;
@@ -456,8 +456,10 @@ function updEnemies(dt) {
       e.x *= (ARENA + 4) / er;
       e.z *= (ARENA + 4) / er;
     }
-    if (p === P0 && !P0.dead && d < e.r + p.r && e.hitCd <= 0 && !(e.boss && e.st === 3)) {
+    if (p === P0 && !P0.dead && d < e.r + p.r && e.hitCd <= 0 && G.contactCd <= 0 && !(e.boss && e.st === 3)) {
       // (a teammate's contact damage is judged on his own device, against what he sees)
+      // fair crowds: bodies touching you land at most one blow every half second, however many there are
+      G.contactCd = CONTACT_CD;
       e.hitCd = 0.5;
       e.atkT = ATK_T;
       hurt(e.dmg);
@@ -495,13 +497,15 @@ function updEnemies(dt) {
   for (const e of E) if (!e.dead && !(e.boss && e.st === 3)) pushOutOfObstacles(e, e.r * 0.8);
 }
 
-/** An enemy left far behind off-screen re-enters at the screen edge, ahead of or beside the player's path. */
+/** An enemy left far behind off-screen re-enters at the screen edge, beside or behind the player's path: never
+    in front of a player running away (that made outrunning a crowd impossible). */
+const CONTACT_CD = 0.5;
 function recycleEnemy(e, p = G.p) {
   const L = p === G.p ? IN : p,
     mv = Math.hypot(L.mvx || 0, L.mvz || 0) > 0.1,
     base = mv ? Math.atan2(L.mvz, L.mvx) : Math.random() * TAU,
-    a = base + rand(-1.3, 1.3) * (mv ? 1 : Math.PI),
-    d = rand(19, 23);
+    a = mv ? base + (Math.random() < 0.5 ? -1 : 1) * rand(1.7, Math.PI) : base,
+    d = rand(20, 24);
   let x = p.x + Math.cos(a) * d,
     z = p.z + Math.sin(a) * d;
   const r = Math.hypot(x, z);

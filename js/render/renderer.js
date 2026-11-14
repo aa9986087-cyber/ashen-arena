@@ -374,14 +374,21 @@ function render(dt, now) {
     const q = G.slashes[i];
     m.visible = !!q;
     if (q) {
-      const k = q.l / FX_LIFE.slash;
-      m.geometry = slashGeo[q.tier];
+      const k = q.l / FX_LIFE.slash,
+        full = q.tier === 2;
+      if (m.material.map !== SLASH_TEX[full ? 1 : 0]) {
+        m.material.map = SLASH_TEX[full ? 1 : 0];
+        m.material.needsUpdate = true;
+      }
       m.position.set(p.x, 1, p.z);
-      m.rotation.set(-Math.PI / 2, 0, -q.a);
-      m.scale.set(q.R * (0.7 + 0.3 * k), q.R * (0.7 + 0.3 * k), 1);
+      // the crescent's arc faces the swing (local -Y of the plane → the swing direction on the ground); it sweeps
+      // a little through the swing and widens as it fades
+      m.rotation.set(-Math.PI / 2, 0, Math.PI / 2 - q.a + (full ? q.l * 9 : (k - 0.5) * 0.5));
+      const sc = q.R * (0.85 + 0.35 * k);
+      m.scale.set(sc, sc, 1);
       const c = TIERC[q.tier];
-      m.material.color.setRGB(c[0], c[1], c[2]);
-      m.material.opacity = 0.85 * (1 - k);
+      m.material.color.setRGB(c[0] * 1.4, c[1] * 1.4, c[2] * 1.4);
+      m.material.opacity = Math.min(1, (1 - k) * 1.6);
     }
   });
   vfxUpdate(G.state === 'play' || G.state === 'watch' ? dt : 0);

@@ -34,6 +34,7 @@ function newRun() {
     specCd: 0,
     potCd: 0, // the short gap between two potions
     pots: 0, // healing potions carried (none at the start)
+    contactCd: 0, // bodies touching you: one blow at most every CONTACT_CD
     buffT: 0,
     buff: {},
     rerolls: (S.tree.U2 ? 2 : 0) + (S.tree.U4 ? 1 : 0),
@@ -135,13 +136,17 @@ function recalc() {
   p.maxHp = ch.hp + (pm.hp || 0) * 10 + (S.tree.D1 ? 20 : 0) + L('hp') * 18;
   // permanent bonuses (shop + skill tree) add up with each other, so each shows exactly what it says;
   // the run's cards multiply on top
-  p.dmgMul = ch.dmg * (1 + 0.06 * (pm.dmg || 0) + (S.tree.A1 ? 0.1 : 0)) * (1 + 0.12 * L('dmg'));
+  p.dmgMul =
+    ch.dmg *
+    (1 + 0.06 * (pm.dmg || 0) + (S.tree.A1 ? 0.1 : 0)) *
+    (1 + 0.12 * L('dmg')) *
+    (1 + 0.08 * (typeof pathMasteries === 'function' && G.ups ? pathMasteries() : 0)); // path masteries
   p.aspd = 1 + 0.1 * L('aspd');
   p.crit = 0.05 + ch.crit + 0.07 * L('crit') + (S.tree.A2 ? 0.1 : 0);
   p.area = 1 + 0.1 * L('area');
   p.multi = L('multi');
   p.speed = ch.spd * (1 + 0.08 * L('speed')) * (1 + 0.03 * (pm.spd || 0));
-  p.regen = 0.6 * L('regen') + (S.tree.D2 ? 1 : 0);
+  p.regen = 1 * L('regen') + (S.tree.D2 ? 1 : 0);
   p.armor = Math.min(0.4, 0.08 * L('armor'));
   p.shieldMax = L('shield') ? 12 + 14 * L('shield') : 0;
   p.magnet = 3.2 * (1 + 0.1 * (pm.mag || 0) + (S.tree.W3 ? 0.25 : 0)) * (1 + 0.35 * L('magnet'));

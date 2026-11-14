@@ -233,8 +233,9 @@ function updWaves(dt) {
       const n = 8 + Math.min(gw, 10),
         a0 = Math.random() * TAU,
         t = gw >= 6 && Math.random() < 0.4 ? 'fast' : 'grunt';
+      // a ring with a gap (about a fifth of it open): surrounded, but there's always a way out
       for (let i = 0; i < n; i++) {
-        const a = a0 + (i / n) * TAU,
+        const a = a0 + (i / n) * TAU * 0.8,
           e = spawn(t, p.x + Math.cos(a) * 17, p.z + Math.sin(a) * 17);
         e.flank = false;
       }

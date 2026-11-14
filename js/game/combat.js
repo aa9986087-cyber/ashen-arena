@@ -44,6 +44,7 @@ function nearest(x, z, range, skip) {
   }
   return best;
 }
+const HIT_COL = [1, 0.85, 0.6]; // a blow's spark when the weapon gives no colour
 function hit(e, dmg, o) {
   if (e.dead) return;
   o = o || {};
@@ -111,6 +112,7 @@ function hit(e, dmg, o) {
     text(e.x, e.z, 'إعدام', '#c8a0ff', true);
   }
   if (!o.quiet || crit) text(e.x, e.z, Math.round(dmg), crit ? '#ffd23a' : o.burn ? '#ff9a4a' : '#ffffff', crit);
+  if (!o.quiet && !o.burn) vfxHit(e.x, e.z, o.col || HIT_COL, crit);
   if (!o.quiet) AU.play('hit');
   if (e.hp <= 0) {
     const extra = -e.hp;
@@ -135,7 +137,8 @@ function kill(e) {
   if (COOP.on && !COOP.host) COOP.predDead.set(e.nid, performance.now()); // gone here at once; the host confirms
   if (COOP.on && COOP.host && !e.boss) COOP.kd.push(e.nid); // the clients drop its corpse
   if (mine && p.leech && !e.boss) heal(p.leech);
-  parts(e.x, 1, e.z, e.boss ? 60 : e.elite ? 18 : 7, 1, 0.35, 0.25, e.boss ? 14 : 7, e.boss ? 0.4 : 0.22);
+  parts(e.x, 1, e.z, e.boss ? 60 : e.elite ? 12 : 4, 1, 0.35, 0.25, e.boss ? 14 : 7, e.boss ? 0.4 : 0.22);
+  vfxKill(e.x, e.z, e.boss || e.elite);
   AU.play(e.boss ? 'boom' : 'kill');
   if (e.boss) {
     if (!COOP.on || COOP.host) bossDown(e);
@@ -381,6 +384,7 @@ function fire(w, ang) {
       zone(e ? e.x : p.x + Math.cos(ang) * 6, e ? e.z : p.z + Math.sin(ang) * 6, R, 0.22 + i * 0.08, dmg, true);
     }
   } else {
+    vfxMuzzle(p.x + Math.cos(ang) * 0.9, p.z + Math.sin(ang) * 0.9, col);
     let n = 1 + p.multi,
       pierce = d.pierce + (d.pierce < 50 ? p.pierceAdd || 0 : 0),
       aoe = d.aoe || 0,
