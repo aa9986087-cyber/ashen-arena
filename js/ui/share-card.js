@@ -102,7 +102,7 @@ async function scoreCard() {
   x.font = '700 26px Tajawal, sans-serif';
   x.fillStyle = '#7f7a66';
   x.fillText(
-    'تحداني في ' + location.host + location.pathname.replace(/index\.html$/, '') + '  ·  صنعها Vamos',
+    'تحداني في ' + location.host + location.pathname.replace(/index\.html$/, '') + '  ·  صُنعت في الرافعية بواسطة Vamos',
     540,
     1330
   );

@@ -542,10 +542,13 @@ function dash() {
   }
   parts(p.x, 1, p.z, 10, 0.8, 0.9, 1, 5, 0.2, 0.35);
 }
+const HIT_CAP = 0.4;
 function hurt(d) {
   const p = G.p;
   if (p.inv > 0 || G.state !== 'play' || G.god || p.dead) return;
   d *= (1 - p.armor) * (p.taken || 1) * (G.superT > 0 ? 0.5 : 1) * buffMul('taken');
+  // fair play: no single blow takes more than 40% of your health (you die of mistakes, not of one unlucky hit)
+  d = Math.min(d, p.maxHp * HIT_CAP);
   p.shieldRe = 5;
   if (p.shield > 0) {
     const a = Math.min(p.shield, d);

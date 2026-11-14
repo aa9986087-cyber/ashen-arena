@@ -1,5 +1,6 @@
 'use strict';
 /* In-run HUD (bars, counters, cooldowns). Only touches the DOM when a value changes. */
+const LOW_HP = 0.3; // below this share of health: the danger warning
 const hud = { hp: -1, sh: -1, xp: -1, t: -1, k: -1, c: -1, l: -1, st: '' };
 function drawHud() {
   const p = G.p,
@@ -71,6 +72,24 @@ function drawHud() {
       hud.bw = bw;
       $('bossbar').querySelector('i').style.width = bw + '%';
     }
+  }
+  // close to death: a warning under the health bar, a heartbeat, and (renderer) the red pulse at the edges
+  const low = G.state === 'play' && !p.dead && p.hp < p.maxHp * LOW_HP;
+  if (low !== hud.low || (low && hud.lowPot !== G.pots > 0)) {
+    hud.low = low;
+    hud.lowPot = G.pots > 0;
+    const w = $('lowHp');
+    w.hidden = !low;
+    if (low) {
+      w.textContent = G.pots > 0 ? '⚠️ صحتك قليلة! اشرب جرعة' : '⚠️ صحتك قليلة! ابتعد عنهم';
+      pop(w);
+    }
+    $('hpbar').classList.toggle('low', low);
+  }
+  const tNow = performance.now();
+  if (low && tNow >= (hud.beatAt || 0)) {
+    hud.beatAt = tNow + (p.hp < p.maxHp * 0.15 ? 550 : 900); // faster when it's worse
+    AU.play('heart2');
   }
   cooldown($('bDash'), p.dashCd / p.dashMax);
   cooldown($('bSpec'), G.specCd / specCdMax());

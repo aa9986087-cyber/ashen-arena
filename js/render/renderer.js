@@ -450,7 +450,8 @@ function render(dt, now) {
     vig = Math.max(0, vig - dt * 2);
   }
   // the hurt vignette: touch the page only when its opacity really changes (style writes cost a recalc)
-  const vo = Math.round((vig + (playing && p.hp < p.maxHp * 0.25 ? 0.25 + 0.1 * Math.sin(now * 0.008) : 0)) * 50) / 50;
+  const danger = playing && !p.dead && p.hp < p.maxHp * LOW_HP,
+    vo = Math.round((vig + (danger ? 0.42 + 0.22 * Math.sin(now * 0.009) : 0)) * 50) / 50;
   if (vo !== vigShown) {
     vigShown = vo;
     $('vig').style.opacity = vo;

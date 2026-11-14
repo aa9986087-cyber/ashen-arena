@@ -263,6 +263,7 @@ const M_CH = [
     [92, 0, 4],
   ];
 const GAP = {
+  heart2: 500,
   select: 70,
   hit: 55,
   kill: 60,
@@ -279,6 +280,11 @@ const GAP = {
 };
 const SK = [293.66, 349.23, 392, 440, 523.25, 587.33, 698.46, 880, 1046.5, 1174.7];
 const SFX = {
+  // low health: a heartbeat (lub-dub)
+  heart2: a => {
+    a.tone(70, 0.13, 'sine', 0.32, 42);
+    a.tone(62, 0.12, 'sine', 0.24, 38, 0.2);
+  },
   tick: a => {
     a.tone(880, 0.09, 'triangle', 0.07, 660);
   },
