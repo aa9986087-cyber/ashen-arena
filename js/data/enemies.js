@@ -6,11 +6,11 @@ const EN = {
   archer: { hp: 16, spd: 3, dmg: 9, r: 0.5, xp: 2, sc: 1 },
   shield: { hp: 46, spd: 2.5, dmg: 12, r: 0.7, xp: 3, sc: 1.1 },
   brute: { hp: 240, spd: 2.5, dmg: 22, r: 1.3, xp: 10, sc: 1.5 },
-  wolf: { hp: 15, spd: 6.6, dmg: 9, r: 0.5, xp: 2, sc: 1 },
-  bomber: { hp: 14, spd: 5.2, dmg: 26, r: 0.5, xp: 2, sc: 0.95 },
+  wolf: { hp: 15, spd: 6.6, dmg: 7, r: 0.5, xp: 2, sc: 1 },
+  bomber: { hp: 14, spd: 5.2, dmg: 18, r: 0.5, xp: 2, sc: 0.95 },
   mage: { hp: 22, spd: 2.7, dmg: 14, r: 0.5, xp: 4, sc: 1 },
   shaman: { hp: 30, spd: 2.8, dmg: 6, r: 0.5, xp: 4, sc: 1 },
-  runner: { hp: 18, spd: 10, dmg: 11, r: 0.45, xp: 3, sc: 1.05 },
+  runner: { hp: 18, spd: 9, dmg: 5, r: 0.45, xp: 3, sc: 1.05 }, // the snake: small and quick, a light bite
   golem: { hp: 620, spd: 1.9, dmg: 34, r: 1.7, xp: 25, sc: 1.9 },
 };
 let ARENA = 58; // the ring's radius (co-op plays on a bigger one, see coopArena)

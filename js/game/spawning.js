@@ -208,9 +208,13 @@ function updWaves(dt) {
         G.waveT = 0;
         G.wave = w;
         banner('الموجة ' + (G.wave + 1), G.wave === 2 || G.wave === 4 ? 'عدو قوي يقترب' : '', 1.8);
+        // every two waves: a strong one with a special ability (from the second stage, one more beside it):
+        // never more than two such enemies at a time
         if (G.wave === 2 || G.wave === 4) {
           const e = spawnAround('brute', true);
           e.mini = true;
+          if (gwave() >= 8 && G.enemies.filter(q => q.elite && !q.dead && !q.boss).length < 2)
+            spawnAround(pickType(gwave()), true);
           AU.play('boss');
         }
       }
@@ -222,7 +226,7 @@ function updWaves(dt) {
     G.spawnAcc -= 1;
     if (G.enemies.length >= cap) continue;
     const t = pickType(gw),
-      e0 = spawnAround(t, gw >= 3 && Math.random() < Math.min(0.02 + gw * 0.01, 0.28));
+      e0 = spawnAround(t, false); // the ones with special abilities come only every two waves (above)
     if (t === 'wolf') spawnPack('wolf', 2, e0.x, e0.z, 2);
     if (t === 'runner' && Math.random() < 0.5) spawnPack('runner', 1, e0.x, e0.z, 2);
   }
