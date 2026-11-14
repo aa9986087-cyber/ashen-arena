@@ -305,7 +305,7 @@ function chooseCard(i) {
     G.ups[c.id] = (G.ups[c.id] || 0) + 1;
     if (c.id === 'revive') G.revives++;
     recalc();
-    if (c.id === 'hp') heal(18);
+    if (c.id === 'hp') heal(18, true);
     if (c.id === 'shield') p.shield = p.shieldMax;
   } else if (c.k === 'wup') {
     const w = G.weapons.find(x => x.id === c.id);
@@ -323,7 +323,7 @@ function chooseCard(i) {
     G.pacts[c.id] = 1;
     recalc();
     p.hp = Math.max(1, Math.min(p.maxHp, r0 * p.maxHp));
-  } else if (c.k === 'heal') heal(p.maxHp * 0.4);
+  } else if (c.k === 'heal') heal(p.maxHp * 0.4, true);
   else if (c.k === 'pot') G.pots = Math.min(POT_MAX, (G.pots || 0) + 1);
   else G.coins += 40;
   if (c.r === 3 && c.k === 'evo')

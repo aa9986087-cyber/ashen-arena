@@ -25,8 +25,12 @@ function pushOutOfObstacles(o, r) {
   }
 }
 /** Restore player health, capped at max. */
-function heal(v) {
+/** Online, while you choose your cards the world goes on for the others, but you stand outside the fight:
+    you deal no damage, take none, and don't heal (except what the card you pick gives). */
+const choosingCards = () => COOP.on && G.cardsOpen && !G.p.dead;
+function heal(v, fromCard) {
   const p = G.p;
+  if (choosingCards() && !fromCard) return;
   p.hp = Math.min(p.maxHp, p.hp + v);
 }
 function nearest(x, z, range, skip) {
@@ -46,7 +50,7 @@ function nearest(x, z, range, skip) {
 }
 const HIT_COL = [1, 0.85, 0.6]; // a blow's spark when the weapon gives no colour
 function hit(e, dmg, o) {
-  if (e.dead) return;
+  if (e.dead || choosingCards()) return;
   o = o || {};
   let crit = false;
   if (!o.noCrit && ((G.buffT > 0 && G.buff.crit) || Math.random() < G.p.crit + (o.crit || 0))) {
@@ -655,7 +659,7 @@ function dash() {
 const HIT_CAP = 0.4;
 function hurt(d) {
   const p = G.p;
-  if (p.inv > 0 || G.state !== 'play' || G.god || p.dead) return;
+  if (p.inv > 0 || G.state !== 'play' || G.god || p.dead || choosingCards()) return;
   d *= (1 - p.armor) * (p.taken || 1) * (G.superT > 0 ? 0.5 : 1) * buffMul('taken');
   // fair play: no single blow takes more than 40% of your health (you die of mistakes, not of one unlucky hit)
   d = Math.min(d, p.maxHp * HIT_CAP);

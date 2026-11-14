@@ -290,6 +290,7 @@ function update(dt) {
   const manual = IN.md && !IN.touch,
     mAng = Math.atan2(IN.mz - p.z, IN.mx - p.x);
   for (const w of G.weapons) {
+    if (choosingCards()) break; // online, choosing cards: your weapons rest
     w.cd -=
       dt *
       p.aspd *
