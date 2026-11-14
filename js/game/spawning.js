@@ -91,11 +91,18 @@ function pickType(gw) {
 function spawnBoss() {
   const k = G.forceBoss != null ? G.forceBoss : G.abyss ? (Math.random() * 6) | 0 : STAGES[G.stage].bk,
     p = G.p,
-    a = Math.random() * TAU,
-    si = G.abyss ? 6 + G.depth * 0.7 : G.stage;
+    a = Math.random() * TAU;
   G.bossName = G.forceBoss != null ? bossNameOf(k) : G.abyss ? 'ظلّ ' + bossNameOf(k) : STAGES[G.stage].boss;
+  makeBoss(k, p.x + Math.cos(a) * 20, p.z + Math.sin(a) * 20);
+  AU.play('boss');
+  shake(0.8);
+  banner(G.bossName, 'الزعيم وصل. اقرأ هجماته وراوغ الدوائر الحمراء.', 3);
+}
+/** The boss of kind k at (x,z), quietly (co-op: a new host takes over the boss already fighting). */
+function makeBoss(k, x, z) {
+  const si = G.abyss ? 6 + G.depth * 0.7 : G.stage;
   const hp = 2200 * 1.35 * Math.pow(1.55, si) * (1 + G.cycle * 3) * COOP.bossMul;
-  const e = spawn('brute', p.x + Math.cos(a) * 20, p.z + Math.sin(a) * 20, false);
+  const e = spawn('brute', x, z, false);
   Object.assign(e, {
     boss: true,
     kind: k,
@@ -132,9 +139,7 @@ function spawnBoss() {
     CM.el.currentTime = 0;
     CM.kick();
   }
-  AU.play('boss');
-  shake(0.8);
-  banner(G.bossName, 'الزعيم وصل. اقرأ هجماته وراوغ الدوائر الحمراء.', 3);
+  return e;
 }
 function updWaves(dt) {
   const p = COOP.on ? coopAnchor() : G.p,

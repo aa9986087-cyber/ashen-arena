@@ -95,6 +95,13 @@ async function coopCreate() {
     return toast('ما قدرت أفتح الجلسة');
   }
   const R = (CLOB.room = { id, ch, host: true, list: [coopMe()], hostName: S.name });
+  coopHostRoom(R);
+  coopLobbyTick();
+  coopLobbyDraw();
+}
+/** Run a room as its host: take the hellos and goodbyes, keep the roster. */
+function coopHostRoom(R) {
+  const ch = R.ch;
   ch.on('hi', m => {
     if (!m || !m.id || R.started) return;
     const old = R.list.find(x => x.id === m.id);
@@ -110,8 +117,6 @@ async function coopCreate() {
     ch.send('ro', { list: R.list });
     coopLobbyDraw();
   });
-  coopLobbyTick();
-  coopLobbyDraw();
 }
 /** Join someone's room. */
 async function coopJoin(id, hostName) {
@@ -123,7 +128,7 @@ async function coopJoin(id, hostName) {
   }
   const R = (CLOB.room = { id, ch, host: false, list: [], hostName });
   ch.on('ro', m => {
-    if (!m || R.started) return;
+    if (!m || R.started || R.host) return;
     R.list = m.list || [];
     coopLobbyDraw();
   })
@@ -134,10 +139,24 @@ async function coopJoin(id, hostName) {
       }
     })
     .on('bye', m => {
-      if (m && R.list[0] && m.id === R.list[0].id) {
-        toast('المضيف ألغى الجلسة');
-        coopRoomLeave(true);
+      if (!m || R.host) return;
+      const was = R.list[0];
+      R.list = R.list.filter(x => x.id !== m.id);
+      if (!was || m.id !== was.id) return coopLobbyDraw();
+      // the host left: the room stays open, the next player in it hosts
+      const next = R.list[0];
+      if (!next) {
+        toast('المضيف طلع والجلسة فاضية');
+        return coopRoomLeave(true);
       }
+      R.hostName = next.n;
+      if (next.id === myPid()) {
+        R.host = true;
+        coopHostRoom(R);
+        coopLobbyTick();
+        toast('👑 المضيف طلع وصرت أنت المضيف');
+      } else toast('👑 المضيف طلع و' + next.n + ' صار المضيف');
+      coopLobbyDraw();
     })
     .on('go', m => {
       if (R.started || !m || !m.list || !m.list.some(x => x.id === myPid())) return;

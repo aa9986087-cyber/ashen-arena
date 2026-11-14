@@ -10,8 +10,10 @@
    - A CLIENT mirrors the host's world: snapshots are buffered and played back a little behind, interpolated
      (the same way watching someone's run works), so enemies glide smoothly whatever the network does. An enemy
      its own hits kill vanishes at once (the host confirms it a moment later).
-   - Shared: the world, the stages, the bosses, and the experience (any gem anyone picks up, everyone gains).
-     Your own: hero, weapons, upgrades, level-up cards (they don't pause the world: you're shielded meanwhile).
+   - Shared: the world, the stages, the bosses.
+     Your own: hero, weapons, upgrades, the gems / coins / hearts you pick up, level-up cards (they don't pause
+     the world: you're shielded meanwhile).
+   - If the host leaves, the next player in the room takes the world over (coopTakeOver) and the run goes on.
    - Damage to you is judged on your device against what you see (dodged on screen = dodged).
    - Difficulty scales with the team: see coopScale. */
 const COOP = {
@@ -34,7 +36,6 @@ const COOP = {
   zb: [], // host: detonations (zones, bombers) each player checks himself against
   gifts: [], // host: coins / hearts picked up by a teammate
   kd: [], // host: enemies killed since the last snapshot (clients drop a corpse)
-  xpT: 0, // host: all the experience ever shared; clients: how much of it they've taken
   rvN: 0, // revivals so far (a stage cleared)
   // client
   buf: [],
@@ -81,9 +82,6 @@ function coopBoom(x, z, r, dmg) {
   const p = G.p;
   if (!p.dead && (p.x - x) ** 2 + (p.z - z) ** 2 < r * r) hurt(dmg);
   if (COOP.on && COOP.host) COOP.zb.push(r1(x), r1(z), r1(r), Math.round(dmg));
-}
-function coopXp(v) {
-  if (COOP.on && COOP.host) COOP.xpT += v;
 }
 /** Every standing player as {x, z, r, speed, mvx, mvz} (the host's hero and the teammates). */
 function coopPlayers() {
@@ -182,6 +180,7 @@ function coopStart(ch, roster, isHost) {
   COOP.ch = ch;
   COOP.me = myPid();
   COOP.hostId = roster[0].id;
+  COOP.order = roster.map(r => r.id); // who hosts next if the host leaves
   COOP.peers.clear();
   for (const r of roster)
     if (r.id !== COOP.me)
@@ -195,7 +194,6 @@ function coopStart(ch, roster, isHost) {
     zb: [],
     gifts: [],
     kd: [],
-    xpT: 0,
     rvN: 0,
     buf: [],
     vt: null,
@@ -207,8 +205,8 @@ function coopStart(ch, roster, isHost) {
   COOP.n = roster.length;
   coopScale(roster.length);
   coopArena(Math.round(58 * 1.35));
-  ch.on('w', s => isHost || coopRecvWorld(s))
-    .on('c', m => isHost && coopRecvClient(m))
+  ch.on('w', s => COOP.host || coopRecvWorld(s))
+    .on('c', m => COOP.host && coopRecvClient(m))
     .on('end', m => coopEndHere(m && m.won))
     .on('bye', m => coopPeerLeft(m && m.id));
   AU.init();
@@ -264,17 +262,77 @@ function coopClose() {
   G.p.dead = false;
 }
 function coopPeerLeft(id) {
-  if (COOP.on && !COOP.host && id === COOP.hostId) {
-    toast('المضيف طلع من المعركة');
-    return coopEndHere(false);
-  }
+  if (!COOP.on || !id || id === COOP.me) return;
+  COOP.order = (COOP.order || []).filter(x => x !== id);
   const q = COOP.peers.get(id);
+  if (q) {
+    if (q.rig && q.rig.g) scene.remove(q.rig.g);
+    COOP.peers.delete(id);
+  }
+  if (!COOP.host && id === COOP.hostId) return coopHostGone(q);
   if (!q) return;
-  if (q.rig && q.rig.g) scene.remove(q.rig.g);
-  COOP.peers.delete(id);
   toast('🚪 ' + (q.n || 'لاعب') + ' طلع من المعركة');
   if (!COOP.host && !COOP.peers.size) return;
   if (COOP.host) coopCheckAllDown();
+}
+
+/** The host left: the next player in the room (the same choice on every device) becomes the host. */
+function coopHostGone(q) {
+  const next = COOP.order.find(id => id === COOP.me || COOP.peers.has(id));
+  if (!next || (next !== COOP.me && !COOP.peers.size)) {
+    toast('المضيف طلع وما بقى أحد معك');
+    return coopEndHere(false);
+  }
+  COOP.hostId = next;
+  // a new host's clock: start the snapshot playback afresh
+  COOP.buf = [];
+  COOP.vt = null;
+  COOP.evTs = 0;
+  COOP.lastRx = performance.now() + 3000;
+  if (next === COOP.me) {
+    coopTakeOver();
+    toast('👑 ' + ((q && q.n) || 'المضيف') + ' طلع، وصرت أنت المضيف. المعركة مستمرة');
+  } else toast('👑 ' + ((q && q.n) || 'المضيف') + ' طلع، و' + (COOP.peers.get(next).n || 'لاعب') + ' صار المضيف');
+}
+/** We become the host: the world we were mirroring becomes the real one, and we run it from here. */
+function coopTakeOver() {
+  COOP.host = true;
+  const old = G.enemies;
+  G.enemies = [];
+  G.boss = null;
+  G.bossOn = false;
+  COOP.boss = null;
+  let top = G.nidC || 0;
+  for (const m of old) {
+    if (m.dead) continue;
+    top = Math.max(top, m.nid || 0);
+    let e;
+    if (m.boss) {
+      e = makeBoss(m.kind || 0, m.x, m.z);
+      G.boss = e;
+      G.bossOn = true;
+    } else e = spawn(m.type, m.x, m.z, m.elite);
+    Object.assign(e, { nid: m.nid, hp: m.hp, maxHp: m.maxHp, face: m.face || 0 });
+  }
+  G.nidC = top + 1;
+  // the mirrored shots and zones go; the pickups stay (the snapshots carry their values)
+  G.eshots = [];
+  G.zones = G.zones.filter(z => !z.m);
+  for (const q of G.picks) {
+    q.v = q.v || 1;
+    q.mag = false;
+    q.to = null;
+  }
+  COOP.ens.clear();
+  COOP.predDead.clear();
+  COOP.usedES.clear();
+  Object.assign(COOP, { sendT: 0, ev: [], sh: [], hits: [], relay: [], zb: [], gifts: [], kd: [] });
+  for (const q of COOP.peers.values()) {
+    q.buf = [];
+    q.vt = undefined;
+    q.lastRx = performance.now();
+  }
+  coopCheckAllDown();
 }
 
 /* ---------- falling and rising ---------- */
@@ -329,10 +387,9 @@ function coopFrame(dt) {
       }
     coopInterpPeers(dt);
   } else {
-    if (now - COOP.lastRx > 9000) {
-      toast('انقطع الاتصال بالمضيف');
-      return coopEndHere(false);
-    }
+    // no word from the host for a while: he's gone (closed the game) — the next player takes over
+    if (now - COOP.lastRx > 6000) coopPeerLeft(COOP.hostId);
+    if (!COOP.on) return;
     if (G.state === 'play') coopMirror(dt);
   }
   // the fallen watch a teammate
@@ -378,8 +435,8 @@ function coopSendWorld() {
   }
   for (const z of G.zones) if (!z.f) zn.push(r1(z.x), r1(z.z), r1(z.r), r2(z.l), r2(z.d), z.sty | 0);
   for (const q of G.picks) {
-    pk.push(q.k, r1(q.x), r1(q.z));
-    if (pk.length >= 3 * 240) break;
+    pk.push(q.k, r1(q.x), r1(q.z), Math.round(q.v * 10) / 10);
+    if (pk.length >= 4 * 240) break;
   }
   const pl = [
     [
@@ -449,10 +506,12 @@ function coopSendWorld() {
       G.wave,
       G.bossesRun,
       G.kills,
-      Math.round(COOP.xpT),
+      0,
       COOP.rvN,
       Math.round(coopDmgF(gwave()) * 100) / 100,
       r1(G.calmT || 0),
+      r1(G.waveT || 0),
+      G.cycle || 0,
     ],
     bn: G.bossName,
     ev: COOP.ev.splice(0),
@@ -536,7 +595,7 @@ function coopApplyHit(e, dmg, kx, kz, fl) {
     }
   }
 }
-/** Host: gems fly to the teammate whose magnet reaches them; experience is shared, coins and hearts are his. */
+/** Host: pickups fly to the teammate whose magnet reaches them; what he picks up (gems, coins, hearts) is his. */
 function coopHostPicks(dt) {
   const peers = [...COOP.peers.values()].filter(q => !q.dead && q.x !== undefined);
   for (const q of G.picks) {
@@ -562,10 +621,7 @@ function coopHostPicks(dt) {
     q.z += (dz / d) * s * dt;
     if (d2 < 1.2) {
       q.got = true;
-      if (q.k === 0) {
-        addXp(q.v); // shared: the host gains it too
-        coopXp(q.v);
-      } else COOP.gifts.push(q.to, q.k, Math.round(q.v));
+      COOP.gifts.push(q.to, q.k, Math.round(q.v * 10) / 10);
     }
   }
 }
@@ -660,14 +716,20 @@ function coopMirror(dt) {
         if (q.gf[o] === COOP.me) {
           const kind = q.gf[o + 1],
             v = q.gf[o + 2];
-          if (kind === 1) {
+          if (kind === 0) {
+            if (!p.dead) addXp(v);
+            if (G.ups.pickup) heal(0.3 * G.ups.pickup);
+            AU.play('gem');
+          } else if (kind === 1) {
             const c = Math.max(1, Math.round(v * p.goldMul));
+            if (G.ups.midas) addXp(c * 2);
             G.coins += c;
             AU.play('coin');
             text(p.x, p.z, '+' + c + ' 🪙', '#ffd23a');
           } else {
             heal(v);
             AU.play('heart');
+            text(p.x, p.z, '+' + Math.round(v), '#6dff8a', true);
           }
         }
       for (const nid of q.kd || [])
@@ -826,12 +888,13 @@ function coopMirror(dt) {
       f: false,
     });
   // pickups (drawn only; the host hands them out)
-  const P = (G.picks = G.picks.length === sb.pk.length / 3 ? G.picks : []);
-  for (let o = 0, j = 0; o < sb.pk.length; o += 3, j++) {
+  const P = (G.picks = G.picks.length === sb.pk.length / 4 ? G.picks : []);
+  for (let o = 0, j = 0; o < sb.pk.length; o += 4, j++) {
     const q = P[j] || (P[j] = { t: Math.random() * 6 });
     q.k = sb.pk[o];
     q.x = sb.pk[o + 1];
     q.z = sb.pk[o + 2];
+    q.v = sb.pk[o + 3];
     q.t += dt;
   }
   // teammates
@@ -849,20 +912,23 @@ function coopMirror(dt) {
     q.rmoving = q.moving = r[4];
     q.rswing = q.swing = r[5];
     Object.assign(q, { hp: r[6], maxHp: r[7], dead: !!r[8], ch: r[9], w: r[10], lvl: r[11], n: r[12] });
+    q.plT = nowMs;
   }
+  // a teammate the host listed but no longer does (for 2 s) has left
+  for (const q of [...COOP.peers.values()])
+    if (q.plT && nowMs - q.plT > 2000 && q.id !== COOP.hostId) coopPeerLeft(q.id);
 }
 /** Client: the host's shared progress (stage, bosses, experience, revivals, the clock). */
 function coopShared(g, bn) {
   if (!g) return;
-  const [t, stage, ab, depth, wave, bosses, kills, xpT, rvN] = g;
+  const [t, stage, ab, depth, wave, bosses, kills, , rvN] = g;
   G.t = t;
   G.wave = wave;
+  // kept in step so a client can take over as host (coopTakeOver)
+  G.waveT = g[11] || 0;
+  G.cycle = g[12] || 0;
   G.bossName = bn || G.bossName;
   G.calmT = g[10] || 0;
-  if (xpT > COOP.xpT) {
-    if (!G.p.dead) addXp(xpT - COOP.xpT);
-    COOP.xpT = xpT;
-  }
   if (bosses > G.bossesRun) {
     // a boss fell: everyone gets the boss's reward cards
     G.bossesRun = bosses;

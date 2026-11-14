@@ -680,7 +680,6 @@ function update(dt) {
       q.got = true;
       if (q.k === 0) {
         addXp(q.v);
-        coopXp(q.v); // shared: every teammate gets it too
         if (u.pickup) heal(0.3 * u.pickup);
         AU.play('gem');
       } else if (q.k === 1) {

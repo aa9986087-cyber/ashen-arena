@@ -435,3 +435,23 @@
   padding: 10px;
   animation: viewersGlow 1.6s ease-in-out infinite;
 }
+
+/* top corner: settings and live side by side, the same size and style */
+.mTopBtns {
+  display: flex;
+  gap: 8px;
+}
+#menuTop .iconBtn .gi {
+  width: 24px;
+  height: 24px;
+}
+#menuTop .iconBtn .gi svg {
+  color: #f6c45a !important;
+}
+#mSet .gi svg {
+  transition: transform 0.4s;
+}
+#mSet:hover .gi svg,
+#mSet:active .gi svg {
+  transform: rotate(60deg);
+}

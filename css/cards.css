@@ -2,7 +2,7 @@
 /* ---------- cards ---------- */
 #cards {
   align-items: center;
-  justify-content: center;
+  justify-content: safe center;
   z-index: 30;
   background: radial-gradient(ellipse at 50% 40%, rgba(30, 24, 52, 0.82), rgba(4, 4, 10, 0.92) 75%);
 }
@@ -24,18 +24,20 @@
   margin-bottom: 18px;
   text-align: center;
 }
+/* all the cards in one row (they shrink to fit; never stacked on top of each other) */
 #cardRow {
   display: flex;
   gap: 16px;
-  flex-wrap: wrap;
   justify-content: center;
+  width: 100%;
   max-width: 1000px;
 }
 /* a card: rarity-coloured frame (--rc), inner hairline, ribbon, medallion, one shine sweep when dealt */
 .card {
   position: relative;
   overflow: hidden;
-  width: 214px;
+  flex: 0 1 214px;
+  min-width: 0;
   min-height: 290px;
   background:
     radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--rc) 22%, transparent), transparent 60%),
@@ -212,4 +214,54 @@
     0 5px 0 #7a4a00;
   text-align: center;
   line-height: 1.05;
+}
+
+/* a short screen (a phone on its side): smaller title and cards so everything fits without scrolling */
+@media (max-height: 520px) and (min-width: 641px) {
+  #cards {
+    padding-top: calc(var(--st) + 8px);
+    padding-bottom: calc(var(--sb) + 8px);
+  }
+  #cards h2 {
+    font-size: 30px;
+  }
+  #cards > p {
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  #cardRow {
+    gap: 10px;
+  }
+  .card {
+    min-height: 0;
+    padding: 10px 10px 10px;
+    gap: 5px;
+    border-radius: 14px;
+  }
+  .card .ic {
+    width: 54px;
+    height: 54px;
+    font-size: 28px;
+  }
+  .card h3 {
+    font-size: 19px;
+  }
+  .card p {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .card .body {
+    gap: 4px;
+  }
+  .card .st,
+  .card .lv,
+  .card .syn {
+    font-size: 11px;
+  }
+  .card .lv {
+    padding-top: 4px;
+  }
+  #reroll {
+    margin-top: 8px;
+  }
 }
