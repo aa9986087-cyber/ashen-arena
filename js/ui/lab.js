@@ -31,6 +31,24 @@ function buildLab() {
     spawnAround(pick(Object.keys(EN)), true, 11);
     closeLab();
   });
+  // try a weapon: its card at level 1, at 5, or evolved
+  const Wp = $('labWep');
+  Wp.innerHTML = '';
+  for (const id in WEP)
+    labBtn(Wp, WEP[id].i + ' ' + WEP[id].n, () => {
+      closeLab();
+      G.state = 'cards';
+      G.cardMode = 'level';
+      curCards = [
+        { k: 'labw', id, lvl: 1, r: 1 },
+        { k: 'labw', id, lvl: 5, r: 2 },
+        { k: 'labw', id, lvl: 5, evo: 1, r: 3 },
+      ];
+      $('cardTitle').textContent = 'جرّب ' + WEP[id].n;
+      $('cardSub').textContent = 'اختر المستوى اللي تبي تجربه';
+      drawCards();
+      show('cards', true);
+    });
   STAGES.filter(q => !q.abyss).forEach(q =>
     labBtn(B, q.boss, () => {
       clearField();

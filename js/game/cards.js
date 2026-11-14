@@ -235,6 +235,19 @@ function cardInfo(c) {
       lv: '',
       syn: '',
     };
+  if (c.k === 'labw') {
+    // the lab: try a weapon at a chosen level (or evolved)
+    const d = WEP[c.id],
+      v = EVO[c.id];
+    return {
+      i: c.evo ? v.i : d.i,
+      n: c.evo ? v.n : d.n,
+      d: c.evo ? v.d : d.d,
+      pips: c.evo ? null : [c.lvl - 1, 5],
+      lv: c.evo ? 'متطور (مع ' + UP[v.up].n + ')' : '',
+      syn: c.evo ? '' : 'المستوى ' + c.lvl + (c.lvl >= 3 ? ': ' + d.evo[c.lvl >= 5 ? 1 : 0] : ''),
+    };
+  }
   return { i: '💰', n: 'كنز', d: '+40 عملة', lv: '', syn: '' };
 }
 let curCards = [];
@@ -318,8 +331,22 @@ function chooseCard(i) {
     p.hp = Math.max(1, Math.min(p.maxHp, r0 * p.maxHp));
   } else if (c.k === 'heal') heal(p.maxHp * 0.4, true);
   else if (c.k === 'pot') G.pots = Math.min(POT_MAX, (G.pots || 0) + 1);
-  else G.coins += 40;
-  if (c.r === 3 && c.k === 'evo')
+  else if (c.k === 'labw') {
+    // the lab: the weapon goes in (or replaces the one of the same kind) at that level
+    let w = G.weapons.find(x => x.id === c.id);
+    if (!w) {
+      if (G.weapons.length >= 4) G.weapons.pop();
+      G.weapons.push((w = { id: c.id, lvl: 1, cd: 0.2 }));
+    }
+    w.lvl = c.lvl;
+    w.evo = c.evo ? 1 : 0;
+    if (c.evo) G.ups[EVO[c.id].up] = Math.max(1, G.ups[EVO[c.id].up] || 0);
+    recalc();
+    if (w === G.weapons[0]) buildWeapon();
+    if (c.evo) evoFx(c.id);
+    refreshLoadout();
+  } else G.coins += 40;
+  if (c.r === 3 && (c.k === 'evo' || c.k === 'labw'))
     S.stats.legend++; // its own scene (evoFx) instead of the banner
   else if (c.r === 3) {
     S.stats.legend++;
