@@ -1,12 +1,12 @@
 'use strict';
-/* The living menu (preview: open the game with #menu2). The 3D scene becomes a cinematic still that breathes:
+/* The living menu (the main menu; #menu1 in the address shows the old plain one). The 3D scene becomes a cinematic still that breathes:
    a low camera drifting in on your hero, who swings his weapon now and then; a brazier burning before him with
    rising embers and a flickering light; ground fog rolling; a giant's silhouette looming in the fog behind.
-   The menu's buttons get the motion to match (css/menu2.css). Nothing changes without #menu2. */
-const M2 = { on: /menu2/.test(location.hash), t: 0, swingT: 2, boss: null, light: null, fog: 0 };
+   The menu's buttons get the motion to match (css/menu2.css). */
+const M2 = { on: !/menu1/.test(location.hash), t: 0, swingT: 2, boss: null, light: null, fog: 0 };
 if (M2.on) document.body.classList.add('m2');
 addEventListener('hashchange', () => {
-  M2.on = /menu2/.test(location.hash);
+  M2.on = !/menu1/.test(location.hash);
   document.body.classList.toggle('m2', M2.on);
 });
 function menu2Frame(dt, now) {
