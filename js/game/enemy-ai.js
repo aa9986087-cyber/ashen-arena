@@ -389,13 +389,10 @@ function updEnemies(dt) {
         e.cd -= dt;
         e.aCd -= dt;
         // the spread of bolts is a mini-boss move; a plain brute only charges
-        if (e.mini && e.aCd <= 0 && d > 7 && d < 24) {
+        // the mini-boss giant fights up close: when you're near it slams the ground (a red ring warns first)
+        if (e.mini && e.aCd <= 0 && d < 7) {
           e.aCd = 3.2;
-          const aa = Math.atan2(dz, dx);
-          eShot(e.x, e.z, aa, 10, e.dmg * 0.55);
-          eShot(e.x, e.z, aa + 0.22, 10, e.dmg * 0.4);
-          eShot(e.x, e.z, aa - 0.22, 10, e.dmg * 0.4);
-          AU.play('eshot');
+          zone(e.x, e.z, 4, 0.9, e.dmg * 0.7, false);
         }
         if (e.cd <= 0 && d < 10) {
           e.st = 1;
