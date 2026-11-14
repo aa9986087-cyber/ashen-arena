@@ -239,7 +239,12 @@ const PERM = {
 };
 /** What the shop gives for a stat right now, e.g. "+20" or "+12%" ('' if nothing). */
 const permBonus = (id, l = S.perm[id] || 0) => (l ? '+' + l * PERM[id].a + PERM[id].u : '');
-const permCost = l => 150 + l * 130;
+/* Shop prices. SHOP_SALE: the sale on everything in the shop (0.7 = 30% off); the old price shows beside it. */
+const SHOP_SALE = 0.7;
+const salePrice = v => Math.round((v * SHOP_SALE) / 10) * 10;
+const permCostOld = l => 150 + l * 130;
+const permCost = l => salePrice(permCostOld(l));
+const wepCost = id => salePrice(WEP[id].cost);
 /** Skill tree: five branches, each unlocked bottom-up; c = skill-point cost. Effects are read where noted. */
 const TREE = [
   {

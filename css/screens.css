@@ -877,3 +877,12 @@ textarea.txt {
   color: #8ff0a8;
   font-variant-numeric: tabular-nums;
 }
+/* the sale: the old price, struck through, beside the new one */
+.oldPrice {
+  margin-inline-start: 8px;
+  font-size: 0.82em;
+  font-weight: 700;
+  color: #ff8a7a;
+  opacity: 0.85;
+  text-decoration-thickness: 2px;
+}

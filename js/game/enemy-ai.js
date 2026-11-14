@@ -388,7 +388,8 @@ function updEnemies(dt) {
         mz = uz;
         e.cd -= dt;
         e.aCd -= dt;
-        if (e.aCd <= 0 && d > 7 && d < 24) {
+        // the spread of bolts is a mini-boss move; a plain brute only charges
+        if (e.mini && e.aCd <= 0 && d > 7 && d < 24) {
           e.aCd = 3.2;
           const aa = Math.atan2(dz, dx);
           eShot(e.x, e.z, aa, 10, e.dmg * 0.55);
@@ -434,7 +435,8 @@ function updEnemies(dt) {
       spd *= 0.75 - 0.08 * (G.ups.frost || 1);
     }
     if (G.tslowT > 0) spd *= 0.5;
-    if (e.elite && !e.boss) {
+    // only shooters fire: an elite archer or mage gets an extra aimed bolt (the others hit harder, but don't shoot)
+    if (e.elite && !e.boss && (e.type === 'archer' || e.type === 'mage')) {
       e.eCd = (e.eCd === undefined ? rand(1, 3) : e.eCd) - dt;
       if (e.eCd <= 0 && d > 4 && d < 22) {
         e.eCd = 2.8;

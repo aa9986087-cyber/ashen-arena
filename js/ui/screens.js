@@ -86,6 +86,7 @@ function itemCard(parent, o) {
   it.append(h, ...o.body);
   if (o.btn != null) {
     const b = el('button', 'btn sm', o.btn);
+    if (o.old) b.appendChild(el('s', 'oldPrice', o.old + ' 🪙')); // the price before the sale
     b.disabled = o.disabled;
     b.onclick = o.onClick;
     it.appendChild(b);
@@ -249,6 +250,7 @@ function drawShop() {
         pips(l, u.max),
       ],
       btn: l >= u.max ? 'اكتمل' : 'طوّر بـ ' + permCost(l) + ' 🪙',
+      old: l < u.max && permCostOld(l) !== permCost(l) ? permCostOld(l) : 0,
       disabled: l >= u.max,
       onClick: () =>
         buy(permCost(l), () => {
@@ -285,10 +287,11 @@ function drawShop() {
             EVO[id].n
         ),
       ],
-      btn: own ? 'مفتوح' : 'افتح بـ ' + d.cost + ' 🪙',
+      btn: own ? 'مفتوح' : 'افتح بـ ' + wepCost(id) + ' 🪙',
+      old: !own && wepCost(id) !== d.cost ? d.cost : 0,
       disabled: !!own,
       onClick: () =>
-        buy(d.cost, () => {
+        buy(wepCost(id), () => {
           S.weps[id] = 1;
           drawShop();
         }),

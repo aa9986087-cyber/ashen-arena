@@ -9,10 +9,10 @@ function openNews() {
   const L = $('newsList');
   L.innerHTML = '';
   NEWS.forEach((n, k) => {
-    const card = el('article', 'nItem' + (k === 0 ? ' latest' : ''));
+    const card = el('article', 'nItem' + (k === 0 ? ' latest' : '') + (n.good ? ' good' : ''));
     const hd = el('header');
     hd.append(el('h3', '', n.title), el('small', 'nWhen', n.date + (n.time ? ' · ' + n.time : '')));
-    if (n.tag && k === 0) hd.appendChild(el('span', 'nTag', n.tag));
+    if (n.tag && (k === 0 || n.good)) hd.appendChild(el('span', 'nTag', n.tag));
     card.appendChild(hd);
     const ul = el('ul');
     for (const it of n.items) {
@@ -38,6 +38,7 @@ $('newsClose').onclick = closeNews;
 $('newsOk').onclick = closeNews;
 $('news').onclick = e => e.target === $('news') && closeNews();
 newsDot();
+$('saleTag').hidden = !(SHOP_SALE < 1); // the shop button wears the sale
 // a new update: show it once, when the menu is up (after the intro and the name)
 (function newsAuto() {
   if (!newsUnseen()) return;

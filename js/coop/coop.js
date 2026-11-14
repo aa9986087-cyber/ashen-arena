@@ -59,7 +59,7 @@ function coopScale(n) {
 }
 /** Enemy damage factor at wave gw (the same everywhere, so a client works out contact damage like the host). */
 function coopDmgF(gw) {
-  return (1 + gw * 0.08) * Math.pow(1.02, gw) * ((G && G.p.enemyMul) || 1) * COOP.dmgMul;
+  return (1 + gw * 0.075) * Math.pow(1.018, gw) * ((G && G.p.enemyMul) || 1) * COOP.dmgMul;
 }
 /** The ring is bigger in co-op (room for a team). */
 function coopArena(R) {

@@ -14,8 +14,8 @@ const easeIn = gw => Math.min(1, 0.65 + gw * 0.07);
 const bossEase = si => (si === 0 && !G.cycle ? 0.8 : 1);
 /** Enemies coming in per second at wave gw (before the boss / abyss / co-op factors). */
 const spawnRate = gw => Math.min(0.9 + gw * 0.27, 11);
-/** Enemy damage: every enemy hits 1.4× its base, growing with the waves. */
-const EN_DMG = 1.4;
+/** Enemy damage: every enemy hits 1.2× its base, growing with the waves. */
+const EN_DMG = 1.2;
 function spawn(type, x, z, elite) {
   const d = EN[type],
     gw = gwave(),
