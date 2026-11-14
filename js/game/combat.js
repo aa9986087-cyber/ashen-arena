@@ -62,11 +62,13 @@ function hit(e, dmg, o) {
   if (G.ups.rage && G.p.hp < G.p.maxHp * 0.35) dmg *= 1 + 0.25 * G.ups.rage;
   if (crit && G.ups.vamp) heal(G.ups.vamp);
   if (e.boss || e.elite) dmg *= G.p.bossMul || 1;
-  if (crit && G.ups.ice && !e.boss) {
-    e.frz = Math.max(e.frz || 0, 0.4 + 0.25 * G.ups.ice);
+  const iceL = (G.ups.ice || 0) + (G.ups.frost || 0), // frost freezes on a critical (the old ice card)
+    shockL = (G.ups.shock || 0) + Math.ceil((G.ups.bolt || 0) / 2); // lightning pulses (the old shock card)
+  if (crit && iceL && !e.boss) {
+    e.frz = Math.max(e.frz || 0, 0.4 + 0.2 * iceL);
     vfxSparks(e.x, 1, e.z, 8, [0.7, 1.1, 1.8], 4, 0.3, 0.45);
   }
-  if (G.ups.shock && !o.aoe && ++G.shockN >= 14 - 2 * G.ups.shock) {
+  if (shockL && !o.aoe && ++G.shockN >= 14 - 2 * Math.min(4, shockL)) {
     G.shockN = 0;
     ring(e.x, e.z, 0.3, 3 * G.p.area, 0.3, [0.5, 0.9, 1.5]);
     for (let i = 0; i < 5; i++) {
@@ -85,7 +87,7 @@ function hit(e, dmg, o) {
       e.x,
       e.z,
       3 * G.p.area,
-      q => q !== e && hit(q, (12 + 8 * G.ups.shock) * G.p.dmgMul, { aoe: 1, quiet: 1, noCrit: 1 })
+      q => q !== e && hit(q, (12 + 8 * shockL) * G.p.dmgMul, { aoe: 1, quiet: 1, noCrit: 1 })
     );
   }
   if (e.type === 'shield' && !e.boss && !o.aoe) {

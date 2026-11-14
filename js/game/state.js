@@ -148,7 +148,7 @@ function recalc() {
   p.shieldMax = L('shield') ? 12 + 14 * L('shield') : 0;
   p.magnet = 3.2 * (1 + 0.1 * (pm.mag || 0) + (S.tree.W3 ? 0.25 : 0)) * (1 + 0.35 * L('magnet'));
   p.dashMax = 2.2 * (1 - 0.2 * L('dash')) * (S.tree.S2 ? 0.85 : 1);
-  p.dashLen = 6 * (1 + 0.3 * L('dashlen'));
+  p.dashLen = 6 * (1 + 0.3 * L('dashlen') + 0.25 * L('dash'));
   p.xpMul = (1 + 0.08 * (pm.xp || 0) + (S.tree.W2 ? 0.1 : 0)) * (1 + 0.1 * L('xp'));
   p.goldMul = (1 + 0.1 * (pm.gold || 0) + (S.tree.W1 ? 0.1 : 0)) * (1 + 0.15 * L('coins'));
   p.taken = S.tree.D4 ? 0.9 : 1;
@@ -162,11 +162,11 @@ function recalc() {
   p.critMul += 0.3 * L('critdmg');
   p.pspd = 1 + 0.15 * L('pspeed');
   p.pierceAdd = L('pierce');
-  p.sizeMul = 1 + 0.2 * L('size');
-  p.cdr = 1 - 0.1 * L('cdr');
+  p.sizeMul = 1 + 0.2 * (L('size') + L('pspeed'));
+  p.cdr = 1 - 0.1 * L('cdr') - 0.05 * L('aspd');
   p.dashMax *= p.cdr;
-  p.kbMul = 1 + 0.4 * L('kb');
-  p.iframe = 0.15 * L('iframe');
+  p.kbMul = 1 + 0.4 * L('kb') + 0.15 * L('dmg');
+  p.iframe = 0.15 * L('iframe') + 0.08 * L('armor');
   p.bossMul = 1 + 0.2 * L('bossdmg');
   p.maxHp = Math.round(p.maxHp);
   if (p.hp > p.maxHp) p.hp = p.maxHp;

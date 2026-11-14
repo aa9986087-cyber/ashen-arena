@@ -11,20 +11,8 @@ const SKILL_SLOTS = 6,
 const isSkill = id => UP[id].r >= 1 && id !== 'luck'; // luck is a stat (it doesn't take a skill slot)
 const ownedUps = skill => Object.keys(G.ups).filter(id => G.ups[id] > 0 && UP[id] && isSkill(id) === skill);
 /** Upgrades that suit fighting from afar / up close. */
-const RANGED_UPS = ['multi', 'pierce', 'bounce', 'pspeed', 'size', 'magic', 'shards', 'mirror', 'bolt', 'chain'];
-const MELEE_UPS = [
-  'orbit',
-  'blades',
-  'whirl',
-  'area',
-  'kb',
-  'legend',
-  'dash',
-  'vortexdash',
-  'nova',
-  'thorns',
-  'guardian',
-];
+const RANGED_UPS = ['multi', 'pierce', 'bounce', 'pspeed', 'magic', 'shards', 'mirror', 'bolt', 'chain'];
+const MELEE_UPS = ['orbit', 'blades', 'whirl', 'area', 'legend', 'dash', 'vortexdash', 'nova', 'thorns', 'guardian'];
 /** How much the build leans to range: +1 all long-range weapons, −1 all close-range. */
 function rangeLean() {
   const W = G.weapons;
@@ -36,7 +24,7 @@ function upWeight(id, RW) {
   const u = UP[id],
     l = G.ups[id] || 0,
     skill = isSkill(id);
-  if (l >= u.max) return 0;
+  if (l >= u.max || u.off) return 0; // retired from the cards
   let w;
   if (l > 0)
     w = skill ? 90 : 60; // an upgrade of something you have: the usual offer
