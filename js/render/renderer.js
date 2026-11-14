@@ -397,7 +397,7 @@ function render(dt, now) {
         m.material.map = SLASH_TEX[full ? 1 : 0];
         m.material.needsUpdate = true;
       }
-      m.position.set(p.x, 1, p.z);
+      m.position.set(q.x, 1, q.z); // around whoever swung
       // the crescent's arc faces the swing (local -Y of the plane → the swing direction on the ground); it sweeps
       // a little through the swing and widens as it fades
       m.rotation.set(-Math.PI / 2, 0, Math.PI / 2 - q.a + (full ? q.l * 9 : (k - 0.5) * 0.5));

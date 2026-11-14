@@ -141,8 +141,8 @@ function updExpansionAbilities(dt) {
   }
   if (u.whirl && every('whirl', 5 - 0.5 * u.whirl)) {
     const R = 4 * p.area;
-    slashFx(0, 2, R);
-    vfxBladeWhirl(R);
+    slashFx(0, 2, R, r1(p.x), r1(p.z));
+    vfxBladeWhirl(R, r1(p.x), r1(p.z));
     AU.play('sword');
     eachInRadius(p.x, p.z, R, (e, ang) => hit(e, (20 + 12 * u.whirl) * p.dmgMul, { kb: 8, ang }));
   }
@@ -675,14 +675,14 @@ function update(dt) {
   // fires on the ground (molotov): burn whoever stands in them, about three times a second
   for (const q of G.pools) {
     q.l += dt;
-    if ((q.tick -= dt) <= 0) {
+    if (q.dmg > 0 && (q.tick -= dt) <= 0) {
       q.tick = 0.33;
       eachInRadius(q.x, q.z, q.r, e => {
         hit(e, q.dmg, { quiet: 1, burn: 1, noCrit: 1 });
         if (!e.dead) e.burn = Math.max(e.burn || 0, 1.5);
       });
     }
-    vfxFirePool(q, dt);
+    if (q.vis) vfxFirePool(q, dt);
   }
   G.pools = G.pools.filter(q => q.l < q.d);
   const eslow = G.tslowT > 0 ? 0.5 : 1;

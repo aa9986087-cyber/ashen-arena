@@ -824,8 +824,8 @@ function vfxPhoenix(x, z) {
 }
 /** The blade whirl: a ring of glowing steel arcs and wind sweeping round the hero at sword's reach
     (the hero stays visible in the middle). */
-function vfxBladeWhirl(R) {
-  const p = G.p;
+function vfxBladeWhirl(R, x, z) {
+  const p = x === undefined ? G.p : { x, z }; // where it spins: its owner's place
   // a solid ring of bright steel, plus a fainter echo trailing just behind it
   for (const [n, rad, sz, bright] of [
     [110, 0.85, 0.7, 1],

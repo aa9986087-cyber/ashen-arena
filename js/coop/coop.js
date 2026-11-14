@@ -132,6 +132,8 @@ function coopShotOut(x, z, ang, o) {
     r1(c[0]),
     r1(c[1]),
     r1(c[2]),
+    // how it flies: 1 bounces (the ball), 2 a thrown brick, 3 a thrown bottle; 4 its evolved form
+    (o.ball ? 1 : o.lob === 'brick' ? 2 : o.lob === 'molotov' ? 3 : 0) + (o.evo ? 4 : 0),
   ]);
 }
 function coopGhostShots(list) {
@@ -144,6 +146,9 @@ function coopGhostShots(list) {
       col: [s[7], s[8], s[9]],
       dmg: 0,
       ghost: 1,
+      ball: (s[10] & 3) === 1,
+      lob: (s[10] & 3) === 2 ? 'brick' : (s[10] & 3) === 3 ? 'molotov' : '',
+      evo: !!(s[10] & 4),
     });
 }
 /** Visual effects (rings, slashes, bursts, lightning…) are recorded and replayed on the teammates' screens. */

@@ -322,8 +322,9 @@ function zone(x, z, r, delay, dmg, friendly, kind) {
       { size: kind === 'meteor' ? 1.3 : 0.8 }
     );
 }
-function slashFx(ang, tier, R) {
-  G.slashes.push({ a: ang, tier, R, l: 0 });
+/** A melee swing's crescent at (x,z): the attacker's place, so a teammate's swing shows around him, not you. */
+function slashFx(ang, tier, R, x, z) {
+  G.slashes.push({ a: ang, tier, R, l: 0, x: x === undefined ? G.p.x : x, z: z === undefined ? G.p.z : z });
 }
 function fire(w, ang) {
   const p = G.p,
@@ -351,7 +352,7 @@ function fire(w, ang) {
       if (dd < R + e.r && (arc >= TAU || angDiff(Math.atan2(dz, dx), ang) < arc / 2))
         hit(e, dmg, { kb, ang: Math.atan2(dz, dx) });
     }
-    slashFx(ang, arc >= TAU ? 2 : Math.min(t, 1), R);
+    slashFx(ang, arc >= TAU ? 2 : Math.min(t, 1), R, r1(p.x), r1(p.z));
     if (club) {
       shake(0.25);
       // the spiked club: a shockwave rolls out all around
@@ -593,7 +594,12 @@ function lobLand(s) {
 }
 /** A fire on the ground (the molotov): it burns whoever stands in it, a few times a second. */
 function firePool(x, z, r, dur, dmg) {
-  G.pools.push({ x, z, r, l: 0, d: dur, dmg, tick: 0 });
+  G.pools.push({ x, z, r, l: 0, d: dur, dmg, tick: 0 }); // it burns (drawn by its twin below)
+  firePoolFx(r1(x), r1(z), r1(r), r1(dur));
+}
+/** The fire seen on the ground: no damage of its own, and shown on the teammates' screens too. */
+function firePoolFx(x, z, r, dur) {
+  G.pools.push({ x, z, r, l: 0, d: dur, dmg: 0, tick: 0, vis: 1 });
 }
 /** Lightning that jumps between enemies. sky: the bolt card — it falls from a storm cloud onto the first one. */
 function boltStrike(n, dmg, fromX, fromZ, sky) {

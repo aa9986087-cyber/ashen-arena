@@ -227,6 +227,7 @@ const LIVE_FX = [
   'vfxExplosion',
   'vfxSparks',
   'vfxLaser',
+  'firePoolFx',
 ];
 LIVE.ev = [];
 LIVE.depth = 0;
