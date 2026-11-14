@@ -52,25 +52,22 @@ async function avatarSave(data) {
   avatarRefresh();
   return true;
 }
-/** The 📷 button in your own card: pick a photo, upload it. */
-function avatarPick() {
-  const inp = document.createElement('input');
-  inp.type = 'file';
-  inp.accept = 'image/*';
-  inp.onchange = async () => {
-    const f = inp.files && inp.files[0];
-    if (!f) return;
-    let d;
-    try {
-      d = await avatarEncode(f);
-    } catch (e) {
-      return toast('ما قدرت أقرأ الصورة، جرّب صورة ثانية');
-    }
-    $('pcPic').style.backgroundImage = 'url(' + d + ')';
-    if (await avatarSave(d)) profileOpen(S.name);
-  };
-  inp.click();
-}
+// The 📷 button in your own card picks a photo and uploads it. The file input lives in the page for good and the 📷 button is a <label> for it: iPhone Safari drops a picker
+// made on the fly (its choice never arrives), and a label is the one way every browser opens the photo picker.
+$('avaFile').onchange = async () => {
+  const inp = $('avaFile'),
+    f = inp.files && inp.files[0];
+  inp.value = ''; // the same photo can be picked again
+  if (!f) return;
+  let d;
+  try {
+    d = await avatarEncode(f);
+  } catch (e) {
+    return toast('ما قدرت أقرأ الصورة، جرّب صورة ثانية');
+  }
+  $('pcPic').style.backgroundImage = 'url(' + d + ')';
+  if (await avatarSave(d)) profileOpen(S.name);
+};
 /** What to show for a player: his photo, else his hero, else nothing (the caller draws his initial). */
 function avatarOf(name) {
   if (name === S.name && S.avatar) return S.avatar;

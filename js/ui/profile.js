@@ -93,8 +93,8 @@ async function profileOpen(name) {
   if (mine) {
     // your card: change or remove your picture
     const row = el('div', 'pcAva');
-    const up = el('button', 'btn sm go', photo ? '📷 غيّر صورتك' : '📷 حط صورتك');
-    up.onclick = avatarPick;
+    const up = el('label', 'btn sm go', photo ? '📷 غيّر صورتك' : '📷 حط صورتك');
+    up.htmlFor = 'avaFile';
     row.appendChild(up);
     if (photo) {
       const rm = el('button', 'btn sm', '🗑 احذفها');

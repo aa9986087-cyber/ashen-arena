@@ -991,3 +991,11 @@ textarea.txt {
   gap: 8px;
   margin: 2px 0 10px;
 }
+/* the photo picker's input: in the page (iPhone needs that) but out of sight; its label is the 📷 button */
+#avaFile {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
