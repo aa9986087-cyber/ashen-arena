@@ -144,6 +144,7 @@ class Duelist {
   /** gltf: a freshly parsed duelist.glb; tint: hue (degrees) for the cloth, so the two fighters are told apart. */
   constructor(gltf, tint, pitch = 110) {
     this.pitch = pitch; // voice pitch (Hz) of this fighter's grunts
+    this.hue = tint;
     this.root = gltf.scene;
     this.mixer = new THREE.AnimationMixer(this.root);
     this.acts = {};
@@ -157,8 +158,10 @@ class Duelist {
         if (/Hood|SuperHero|Hair|Beard|Eyebrow|Eyes|Plane/i.test(o.name) || /hair|beard/i.test(o.material.name))
           this.headMeshes.push(o);
         if (!/Arms/i.test(o.name)) this.fpHide.push(o);
-        if (tint !== undefined && /Ranger/i.test(o.name) && o.material.map)
-          o.material.map = duelRecolor(o.material.map, tint);
+        if (/Ranger/i.test(o.name) && o.material.map) {
+          o.userData.map0 = o.material.map; // the original cloth, kept so the colour can change later (the melee)
+          if (tint !== undefined) o.material.map = duelRecolor(o.material.map, tint);
+        }
       }
       if (o.isBone && o.name === 'hand_r' && !this.hand) this.hand = o;
       if (o.isBone && o.name === 'Head' && !this.headBone) this.headBone = o;
@@ -171,6 +174,17 @@ class Duelist {
     this.setWeapon('sword');
     this.want = { mx: 0, mz: 0, block: false };
     this.reset(0, 0, 0);
+  }
+  /** Dye the cloth another colour (hue in degrees). */
+  tint(hue) {
+    if (this.hue === hue) return;
+    this.hue = hue;
+    this.root.traverse(o => {
+      if (o.isMesh && o.userData.map0) {
+        o.material.map = duelRecolor(o.userData.map0, hue);
+        o.material.needsUpdate = true;
+      }
+    });
   }
   /** Take up weapon `id` (duel-weapons.js): its mesh in the hand, its moves. */
   setWeapon(id) {
@@ -391,10 +405,10 @@ class Duelist {
     this.st = s.st;
     this.want.block = s.a === 'block';
     if (s.a === this.act) return;
-    const other = this === DUEL.me ? DUEL.foe : DUEL.me;
+    const other = DUEL.ffa ? this.lastFrom || ffaNearest(this) || DUEL.me : this === DUEL.me ? DUEL.foe : DUEL.me;
     if (s.a === 'hit' || s.a === 'knock') goreHit(this, other, s.a === 'hit' ? 'light' : 'heavy');
     if (s.a === 'dead') {
-      if (!duelFinisher(this, other, s.fv)) {
+      if (DUEL.ffa || !duelFinisher(this, other, s.fv)) {
         this.start('dead');
         this.play('death', 0.1, 0, true);
         DS.death(this);
@@ -423,6 +437,7 @@ class Duelist {
   /** Took a hit (kind: light | heavy | chip). */
   damage(v, from, kind) {
     this.hp = Math.max(0, this.hp - v);
+    if (from && from !== this) this.lastFrom = from; // who to credit if this blow kills (the melee's kill feed)
     if (this.hp <= 0) duelLethalGate(this); // may hold him at 1 (a dead man's blow, or the host must agree first)
     const ax = this.x - from.x,
       az = this.z - from.z,
@@ -432,7 +447,12 @@ class Duelist {
     this.kx = (ax / L) * kb;
     this.kz = (az / L) * kb;
     // the killing blow: a staged finisher plays it out (the wound comes when its blade gets there)
-    if (this.hp <= 0 && typeof duelFinisher === 'function' && duelFinisher(this, from, finPick(this, this.execute))) {
+    if (
+      this.hp <= 0 &&
+      !DUEL.ffa &&
+      typeof duelFinisher === 'function' &&
+      duelFinisher(this, from, finPick(this, this.execute))
+    ) {
       this.execute = false;
       return;
     }
@@ -571,17 +591,28 @@ class Duelist {
       0
     );
     if (
-      !foe.remote &&
       (this.act === 'light' || this.act === 'heavy' || this.act === 'kick') &&
       !this.hitDone &&
       this.t >= M.hitFrom &&
       this.t <= M.hitTo
     ) {
-      const dx = foe.x - this.x,
-        dz = foe.z - this.z;
-      if (Math.hypot(dx, dz) < M.reach && Math.abs(wrapAng(Math.atan2(dx, dz) - this.face)) < M.arc) {
+      // the blade lands on the nearest fighter inside its reach and arc (in the melee, anyone; in a duel, the foe).
+      // Only fighters run on this machine are judged here: a remote one is judged by its owner.
+      let best = null,
+        bd = M.reach;
+      for (const o of this.others || [foe]) {
+        if (!o || o === this || o.remote || o.act === 'dead' || o.gone) continue;
+        const dx = o.x - this.x,
+          dz = o.z - this.z,
+          d = Math.hypot(dx, dz);
+        if (d < bd && Math.abs(wrapAng(Math.atan2(dx, dz) - this.face)) < M.arc) {
+          best = o;
+          bd = d;
+        }
+      }
+      if (best) {
         this.hitDone = true;
-        this.onHit && this.onHit(duelResolve(this, foe, this.act));
+        this.onHit && this.onHit(duelResolve(this, best, this.act), best);
       }
     }
     // end of timed states
@@ -615,12 +646,15 @@ class Duelist {
     this.z += (vz + this.kz) * dt;
     this.kx *= kd;
     this.kz *= kd;
-    const sx = this.x - foe.x,
-      sz = this.z - foe.z,
-      sd = Math.hypot(sx, sz);
-    if (sd < 0.8 && sd > 0.001) {
-      this.x = foe.x + (sx / sd) * 0.8;
-      this.z = foe.z + (sz / sd) * 0.8;
+    for (const o of this.others || [foe]) {
+      if (!o || o === this || o.gone || (this.others && o.act === 'dead')) continue;
+      const sx = this.x - o.x,
+        sz = this.z - o.z,
+        sd = Math.hypot(sx, sz);
+      if (sd < 0.8 && sd > 0.001) {
+        this.x = o.x + (sx / sd) * 0.8;
+        this.z = o.z + (sz / sd) * 0.8;
+      }
     }
     const r = Math.hypot(this.x, this.z);
     if (r > DM.arena) {

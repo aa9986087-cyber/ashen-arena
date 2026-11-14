@@ -198,6 +198,7 @@ async function duelStart(online, watch) {
   duelRound();
 }
 function duelExit() {
+  if (DUEL.ffa) ffaCleanup();
   DUEL.intro = DUEL.fin = DUEL.kc = null;
   DUEL.rotWait = 0;
   $('dRotate').hidden = true;
@@ -657,7 +658,7 @@ const dV = new THREE.Vector3(),
   dLook = new THREE.Vector3(0, 1.2, 0);
 function duelCamera(dt) {
   const me = DUEL.me,
-    foe = DUEL.foe,
+    foe = DUEL.tgt || DUEL.foe, // the melee: whoever you're facing
     cam = DUEL.cam,
     fp = DUEL.view === 'fp' && me.act !== 'dead',
     f = me.face,
@@ -755,6 +756,7 @@ function duelFrame(rdt) {
     renderer.clear();
     return;
   }
+  if (DUEL.ffa) return ffaFrame(rdt);
   if (DUEL.watch) {
     DUEL.shake = 0;
     const ts = DUEL.kc ? duelKcScale() : 1;
@@ -978,6 +980,7 @@ async function duelStartOnline(room, host, foeName) {
     - the host's own death stands at once (it is the arbiter) unless it already let the guest die;
     - the guest asks the host first ('die'), held at 1 health until the answer ('dieok' kills him, 'dieno' spares him). */
 function duelLethalGate(v) {
+  if (DUEL.ffa) return; // the melee: everyone may fall
   const N = DUEL.net;
   if (!N || v.remote) return;
   const foe = v === DUEL.me ? DUEL.foe : DUEL.me;

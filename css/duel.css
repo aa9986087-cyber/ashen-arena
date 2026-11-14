@@ -820,3 +820,114 @@ html.cine #gl {
     transform: rotate(0deg);
   }
 }
+/* the melee: the opponent's side gives way to a board of all four fighters; a kill feed on the other side */
+#duel.ffa .dSide.foe,
+#duel.ffa #dPipsMe {
+  visibility: hidden;
+}
+#dFfa,
+#dFeed {
+  display: none;
+}
+#duel.ffa #dFfa {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: 12px;
+  width: min(230px, 34vw);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  pointer-events: none;
+}
+#duel.ffa #dBtns {
+  top: calc(max(10px, env(safe-area-inset-top)) + 112px);
+}
+.fRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 54px auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(10, 8, 16, 0.6);
+  border-inline-start: 4px solid var(--c);
+  font-size: 12px;
+  color: #fff4dc;
+  text-shadow: 0 1px 2px #000;
+}
+.fRow.me {
+  background: color-mix(in srgb, var(--c) 28%, rgba(10, 8, 16, 0.7));
+}
+.fRow.gone {
+  opacity: 0.35;
+}
+.fRow b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fHp {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+.fHp i {
+  display: block;
+  height: 100%;
+  background: var(--c);
+  transition: width 0.15s;
+}
+.fPip {
+  color: var(--c);
+  letter-spacing: 1px;
+}
+.fRow small {
+  font-size: 11px;
+  font-weight: 800;
+}
+#duel.ffa #dFeed {
+  position: absolute;
+  top: calc(max(10px, env(safe-area-inset-top)) + 70px);
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  pointer-events: none;
+}
+.fFeed {
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: rgba(10, 8, 16, 0.7);
+  font-size: 14px;
+  color: #fff4dc;
+  animation: fadeUp 0.25s backwards;
+}
+.fFeed i {
+  font-style: normal;
+}
+/* the melee in the ⚔️ menu */
+#ffaTrain,
+#ffaCreate,
+#ffaStart,
+#ffaLeave {
+  width: 100%;
+  margin-bottom: 8px;
+}
+#ffaTrain {
+  font-size: 20px;
+  padding: 14px;
+}
+#ffaPlayers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.cmP i.fDot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.5);
+}

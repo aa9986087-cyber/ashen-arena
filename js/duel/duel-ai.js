@@ -10,6 +10,14 @@ class DuelBot {
     this.seen = null; // the move of the player it already reacted to
   }
   update(dt) {
+    // the melee: go for whoever is nearest (a little loyal to the one already chosen)
+    if (
+      DUEL.ffa &&
+      ((this.pickT = (this.pickT || 0) - dt) <= 0 || !this.foe || this.foe.act === 'dead' || this.foe.gone)
+    ) {
+      this.pickT = rand(1, 2.2);
+      this.foe = ffaNearest(this.me, this.foe) || this.foe;
+    }
     const me = this.me,
       foe = this.foe,
       d = Math.hypot(foe.x - me.x, foe.z - me.z);
