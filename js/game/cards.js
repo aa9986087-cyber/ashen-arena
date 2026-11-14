@@ -8,7 +8,7 @@
    a card from the same family (fire, storm, frost…) as one you own comes more often. */
 const SKILL_SLOTS = 6,
   STAT_SLOTS = 6;
-const isSkill = id => UP[id].r >= 1;
+const isSkill = id => UP[id].r >= 1 && id !== 'luck'; // luck is a stat (it doesn't take a skill slot)
 const ownedUps = skill => Object.keys(G.ups).filter(id => G.ups[id] > 0 && UP[id] && isSkill(id) === skill);
 /** Upgrades that suit fighting from afar / up close. */
 const RANGED_UPS = ['multi', 'pierce', 'bounce', 'pspeed', 'size', 'magic', 'shards', 'mirror', 'bolt', 'chain'];
@@ -50,10 +50,14 @@ function upWeight(id, RW) {
   // the family: more of what you've started (fire with fire, storm with storm…)
   const fam = PATH_OF[id];
   if (fam && l === 0 && fam.P.steps.some(x => x !== id && G.ups[x] > 0)) w *= 2.2;
+  // the luck card: the rarer the card, the more often it comes (and the plain ones less)
+  const lk = G.ups.luck || 0;
+  if (lk) w *= u.r ? 1 + lk * 0.5 * u.r * u.r : 1 / (1 + lk * 0.35);
   return Math.max(0, w);
 }
 function rollCards(n, minR, skip) {
-  const luck = S.tree.U4 ? 1.5 : 1,
+  // luck: the skill tree's "lucky" and the luck card (+60% / +120% / +180% to the good cards)
+  const luck = (S.tree.U4 ? 1.5 : 1) * (1 + 0.6 * (G.ups.luck || 0)),
     RW = [60, 24 * luck, 9 * luck, (3.2 + G.lvl * 0.22) * luck],
     pool = [],
     has = k => skip && skip.some(c => c.k === k.k && c.id === k.id);
@@ -146,6 +150,7 @@ const UP_STAT = {
   iframe: ['حماية بعد الضربة', p => '+' + p.iframe.toFixed(2) + 'ث'],
   bossdmg: ['ضرر الزعماء', p => pctOf(p.bossMul)],
   army: ['الجنود', () => (G.ups.army ? 1 + G.ups.army : 0)],
+  luck: ['فرصة البطاقات الحلوة', () => '+' + (G.ups.luck || 0) * 60 + '%'],
 };
 /** "Max health: 120 ← 138": the stat an upgrade changes, now and after taking it (worked out, then undone). */
 function upPreview(id) {
