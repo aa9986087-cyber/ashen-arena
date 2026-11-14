@@ -21,7 +21,7 @@ function menu2Frame(dt, now) {
   if (!M2.boss && BA) {
     M2.boss = new THREE.Mesh(BA[0], new THREE.MeshLambertMaterial({ color: 0x2a1e1c, vertexColors: true }));
     M2.boss.position.set(2.5, 0, -21);
-    M2.boss.scale.setScalar(5.4);
+    M2.boss.scale.setScalar(3.9);
     scene.add(M2.boss);
     M2.light = new THREE.PointLight(0xff8a3a, 0, 16, 1.4);
     scene.add(M2.light);
@@ -31,8 +31,12 @@ function menu2Frame(dt, now) {
   }
   const b = M2.boss;
   if (b) {
-    b.geometry = BA[Math.floor(M2.t * 2.2) % BA.length];
-    b.rotation.y = -0.25 + Math.sin(M2.t * 0.15) * 0.08;
+    // smooth, continuous life instead of stepping through a few frames: it breathes, sways and leans in
+    const lean = Math.max(0, Math.sin(M2.t * 0.35)) ** 3; // now and then it bends toward you
+    b.rotation.set(lean * 0.18, -0.25 + Math.sin(M2.t * 0.15) * 0.08, Math.sin(M2.t * 0.5) * 0.03);
+    b.scale.set(3.9, 3.9 * (1 + Math.sin(M2.t * 1.4) * 0.015), 3.9);
+    b.position.y = Math.sin(M2.t * 1.4) * 0.08;
+    menu2Grin(b);
     M2.rim.position.set(2.5, 10, -30);
     M2.rim.intensity = 2.4;
   }
@@ -102,3 +106,76 @@ function menu2Frame(dt, now) {
   camera.lookAt(0, pr ? 1.7 : 2.2, -4);
   return true;
 }
+/** The demon's face: burning eyes and a wide glowing grin with fangs; now and then it laughs (the grin opens
+    wider, the eyes flare, the head shakes). Built once on the giant, sized from the model's own bounds. */
+function menu2Grin(b) {
+  if (!M2.face) {
+    const g = b.geometry;
+    g.computeBoundingBox();
+    const bb = g.boundingBox,
+      H = bb.max.y - bb.min.y,
+      cx = (bb.min.x + bb.max.x) / 2,
+      add = (c, o) =>
+        new THREE.MeshBasicMaterial({
+          color: c,
+          transparent: true,
+          opacity: o,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+          fog: false,
+        }),
+      F = new THREE.Group(),
+      w = H * 0.065; // half the grin's width
+    F.position.set(cx + M2_FACE.x * H, bb.min.y + M2_FACE.y * H, bb.max.z * M2_FACE.z);
+    // eyes: a hot core in a wide glow
+    const eyes = [];
+    for (const s of [-1, 1]) {
+      const core = new THREE.Mesh(new THREE.SphereGeometry(H * 0.011, 10, 8), add(0xfff2c0, 1)),
+        halo = new THREE.Mesh(new THREE.SphereGeometry(H * 0.022, 10, 8), add(0xff2a10, 0.35));
+      core.position.set(s * w * 0.62, H * 0.07, 0);
+      halo.position.copy(core.position);
+      F.add(core, halo);
+      eyes.push(halo);
+    }
+    // the grin: a curve dipping in the middle, a bright core inside a red glow
+    const curve = new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(-w, H * 0.012, 0),
+      new THREE.Vector3(0, -w * 0.95, 0),
+      new THREE.Vector3(w, H * 0.012, 0)
+    );
+    const mouth = new THREE.Group();
+    mouth.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 24, H * 0.005, 6), add(0xffd27a, 0.9)));
+    mouth.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 24, H * 0.013, 8), add(0xff3010, 0.35)));
+    // fangs along it, top and bottom
+    for (let i = 1; i < 8; i++) {
+      const k = i / 8,
+        pt = curve.getPoint(k),
+        len = H * (i === 2 || i === 6 ? 0.03 : 0.018);
+      for (const up of [1, -1]) {
+        const t = new THREE.Mesh(new THREE.ConeGeometry(H * 0.006, len, 4), add(0xfff0d0, 0.95));
+        t.position.set(pt.x, pt.y + (up > 0 ? -len * 0.4 : len * 0.4), 0.01);
+        if (up > 0) t.rotation.z = Math.PI; // the top row hangs down
+        mouth.add(t);
+      }
+    }
+    F.add(mouth);
+    b.add(F);
+    M2.face = { F, mouth, eyes, laugh: 3 };
+  }
+  // the laugh: every few seconds, for about a second and a half
+  const fc = M2.face;
+  fc.laugh -= 1 / 60;
+  let k = 0;
+  if (fc.laugh < 0) {
+    k = Math.sin(Math.min(1, -fc.laugh / 1.5) * Math.PI);
+    if (fc.laugh < -1.5) fc.laugh = rand(4, 7);
+  }
+  fc.mouth.scale.set(1 + k * 0.35, 1 + k * 0.9 + Math.sin(M2.t * 30) * 0.08 * k, 1);
+  fc.F.rotation.z = Math.sin(M2.t * 24) * 0.04 * k; // the head shakes with it
+  for (const e of fc.eyes) {
+    e.material.opacity = 0.3 + 0.15 * Math.sin(M2.t * 3) + 0.4 * k;
+    e.scale.setScalar(1 + k * 0.6);
+  }
+}
+/** Where the face sits on the model, as fractions of its height (x across, y up from the feet, z of the front). */
+const M2_FACE = { x: 0, y: 0.78, z: 1 };

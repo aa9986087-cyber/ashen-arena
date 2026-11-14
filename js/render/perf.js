@@ -61,6 +61,7 @@ const PERF = { avg: 0, best: 1e9, acc: 0, good: 0, n: 0, fpsT: 0, fpsN: 0, slowN
     play runs at the display's rate, or a steady 60 when this device can't hold 120 (or battery saver is on). */
 function frameGap() {
   const st = G.state;
+  if (st === 'menu' && typeof M2 !== 'undefined' && M2.on) return 1000 / 60 - 2; // the living menu moves: 60
   if (!DUEL.on && st !== 'play' && st !== 'watch' && st !== 'count') return 1000 / 30 - 2;
   if (S.set.eco || PERF.cap60) return 1000 / 60 - 2;
   return 0;
@@ -84,8 +85,10 @@ function perfTick(ms) {
   PERF.acc += ms;
   if (PERF.acc < 1000) return;
   PERF.acc = 0;
+  // a screen drawn slower on purpose (menus at 30) is not a slow device: judge frames against that pace,
+  // or the menus would wrongly drop the resolution (they did: down to 55%)
   const capped = S.set.eco || PERF.cap60,
-    target = capped ? Math.max(PERF.best, 1000 / 60) : PERF.best,
+    target = Math.max(capped ? Math.max(PERF.best, 1000 / 60) : PERF.best, frameGap() + 2),
     slow = PERF.avg > target * 1.3,
     fine = PERF.avg < target * 1.08;
   // a fast (≈120 Hz) display this device can't keep up with: settle on a steady 60 first — smoother, cooler,
