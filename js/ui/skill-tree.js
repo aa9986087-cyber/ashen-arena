@@ -38,8 +38,14 @@ function treeState(br, i) {
   return S.tree[n.id] ? 'own' : i === 0 || S.tree[br.nodes[i - 1].id] ? 'av' : 'lock';
 }
 const treeSvg = id => '<svg viewBox="0 0 24 24" aria-hidden="true">' + (TREE_IC[id] || '') + '</svg>';
-function drawTree() {
-  const V = $('treeView');
+/** open: the screen is being opened (columns fade in); otherwise a redraw after a tap keeps everything still,
+    including how far the columns are scrolled. */
+function drawTree(open = true) {
+  const V = $('treeView'),
+    sx = V.scrollLeft,
+    sy = $('tree').scrollTop;
+  if (open) treeSel = null;
+  V.classList.toggle('still', !open);
   V.innerHTML = '';
   TREE.forEach((br, bi) => {
     const col = el('section', 'tcol');
@@ -64,12 +70,14 @@ function drawTree() {
       b.onclick = () => {
         treeSel = treeSel === n.id ? null : n.id;
         AU.play('select');
-        drawTree();
+        drawTree(false);
       };
       col.appendChild(b);
     });
     V.appendChild(col);
   });
+  V.scrollLeft = sx;
+  $('tree').scrollTop = sy;
   treeSheet();
 }
 /** The sheet with the chosen skill: what it does, its cost, and the button to unlock it. */
@@ -118,14 +126,14 @@ function treeSheet() {
     AU.play('unlock');
     save();
     newRun();
-    drawTree();
+    drawTree(false);
     wallet();
   };
   const x = el('button', 'iconBtn tx', '✖');
   x.setAttribute('aria-label', 'إغلاق');
   x.onclick = () => {
     treeSel = null;
-    drawTree();
+    drawTree(false);
   };
   I.append(ic, txt, b, x);
 }

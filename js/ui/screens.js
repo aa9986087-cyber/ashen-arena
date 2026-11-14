@@ -156,6 +156,9 @@ function heroStartStats(noPerm) {
   try {
     if (noPerm) S.perm = {};
     G = { p: { hp: 0, x: 0, z: 0 }, ups: {}, pacts: {}, allies: [] };
+    // what newRun gives from the skill tree
+    if (S.tree.A3) G.ups.multi = 1;
+    if (S.tree.D3) G.ups.shield = 1;
     recalc();
     return G.p;
   } finally {
@@ -204,6 +207,8 @@ function drawShopHero() {
   row('📘', 'الخبرة', p.xpMul, b.xpMul, pct);
   row('🪙', 'العملات', p.goldMul, b.goldMul, pct);
   row('💨', 'تجهيز المراوغة', p.dashMax, b.dashMax, v => v.toFixed(1) + 'ث');
+  if (p.multi) row('🔱', 'مقذوفات إضافية', p.multi, b.multi, v => '+' + v);
+  if (p.shieldMax) row('🔵', 'درع الطاقة', p.shieldMax, b.shieldMax, n0);
   info.appendChild(grid);
   // the special, the starting weapon, and what the skill tree adds
   const extra = el('div', 'shExtra');

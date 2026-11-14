@@ -215,7 +215,7 @@ function coopStart(ch, roster, isHost) {
   G.state = 'play';
   enterArena();
   S.stats.runs++;
-  if (S.tree.U5) G.pending++;
+  runPerks();
   $('coopTeam').hidden = false;
   if (isHost) for (let i = 0; i < 6 + 3 * (roster.length - 1); i++) spawnAround('grunt', false, rand(13, 18));
   banner('🤝 التعاون', roster.length + ' محاربين · الوحوش أقوى بقدركم', 3.5);
