@@ -538,7 +538,7 @@ function coopSendWorld() {
       G.kills,
       0,
       COOP.rvN,
-      Math.round(coopDmgF(gwave()) * 100) / 100,
+      Math.round(coopDmgF(gwave()) * easeIn(gwave()) * 100) / 100, // what an enemy's hit is worth now
       r1(G.calmT || 0),
       r1(G.waveT || 0),
       G.cycle || 0,
