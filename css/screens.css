@@ -999,3 +999,21 @@ textarea.txt {
   opacity: 0;
   pointer-events: none;
 }
+/* 🗑 on your own messages */
+.cDel {
+  margin-inline-start: 8px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1e7d0;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.75;
+}
+.cDel.arm {
+  background: #c8352a;
+  color: #fff;
+  opacity: 1;
+}

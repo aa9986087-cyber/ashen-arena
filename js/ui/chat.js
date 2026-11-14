@@ -14,7 +14,14 @@ const CHAT = {
 /** Fetch the latest messages (newest 60). */
 async function chatLoad() {
   try {
-    const rows = await api('/rest/v1/chat?select=id,name,msg,created_at&order=id.desc&limit=60');
+    chatMyHash();
+    // owner_hash: whose device sent it (to offer 🗑 on your own). A server without it yet: the old columns.
+    const cols = 'id,name,msg,created_at' + (CHAT.noOwner ? '' : ',owner_hash');
+    const rows = await api('/rest/v1/chat?select=' + cols + '&order=id.desc&limit=60').catch(e => {
+      if (CHAT.noOwner || !String(e.message).includes('400')) throw e;
+      CHAT.noOwner = true;
+      return api('/rest/v1/chat?select=id,name,msg,created_at&order=id.desc&limit=60');
+    });
     CHAT.rows = rows.reverse();
     CHAT.ok = true;
   } catch (err) {
@@ -28,6 +35,51 @@ async function chatLoad() {
     if (fresh || !$('chatList').childElementCount) chatDraw();
   }
   chatBadge();
+}
+/** This device's mark on its messages: the same hash the server keeps (sha256 of '#ashen-chat' + the device key). */
+async function chatMyHash() {
+  const k = profileKey();
+  if (CHAT.hashKey === k || CHAT.hashing || !(window.crypto && crypto.subtle)) return;
+  CHAT.hashing = true;
+  try {
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('#ashen-chat' + k));
+    CHAT.hashKey = k;
+    CHAT.myHash = [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+    if (!$('chat').hidden) chatDraw();
+  } catch (e) {}
+  CHAT.hashing = false;
+}
+/** 🗑 on your own message: a first tap arms it, a second (within 3 s) deletes it. */
+function chatDelBtn(r) {
+  const b = el('button', 'cDel', '🗑');
+  b.setAttribute('aria-label', 'احذف رسالتك');
+  b.onclick = async e => {
+    e.stopPropagation();
+    if (!b.classList.contains('arm')) {
+      b.classList.add('arm');
+      b.textContent = 'احذف؟';
+      setTimeout(() => {
+        b.classList.remove('arm');
+        b.textContent = '🗑';
+      }, 3000);
+      return;
+    }
+    b.disabled = true;
+    try {
+      const n = await api('/rest/v1/rpc/delete_my_chat', {
+        method: 'POST',
+        body: JSON.stringify({ p_id: r.id, p_key: profileKey() }),
+      });
+      if (!n) throw new Error('none');
+      CHAT.rows = CHAT.rows.filter(x => x.id !== r.id);
+      AU.play('select');
+      chatDraw();
+    } catch (err) {
+      b.disabled = false;
+      toast('ما انحذفت، تأكد من الإنترنت');
+    }
+  };
+  return b;
 }
 function chatSeen() {
   CHAT.seenId = CHAT.lastId;
@@ -71,7 +123,9 @@ function chatDraw() {
         chatModBar();
       };
     const body = el('div', 'cmB');
-    body.append(profileLink(el('b', '', r.name), r.name), el('small', '', chatAgo(r.created_at)), el('p', '', r.msg));
+    body.append(profileLink(el('b', '', r.name), r.name), el('small', '', chatAgo(r.created_at)));
+    if (r.owner_hash && CHAT.myHash && r.owner_hash === CHAT.myHash && !CHAT.pick) body.appendChild(chatDelBtn(r));
+    body.appendChild(el('p', '', r.msg));
     m.append(avatarEl(r.name), body);
     L.appendChild(m);
   }
@@ -116,7 +170,12 @@ async function chatSend() {
   inp.value = ''; // clear right away; put it back only if sending fails
   $('chatSend').disabled = true;
   try {
-    await api('/rest/v1/rpc/send_chat', { method: 'POST', body: JSON.stringify({ p_name: S.name, p_msg: msg }) });
+    // signed with this device's key (so you can delete it later); a server without that yet: the old way
+    const send = b => api('/rest/v1/rpc/send_chat', { method: 'POST', body: JSON.stringify(b) });
+    await send({ p_name: S.name, p_msg: msg, p_key: profileKey() }).catch(e => {
+      if (!String(e.message).includes('404')) throw e;
+      return send({ p_name: S.name, p_msg: msg });
+    });
     AU.play('select');
   } catch (err) {
     if (!inp.value) inp.value = msg;
