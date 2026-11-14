@@ -4,11 +4,18 @@
    icon), t: the line. Not for here: money / gift codes, chat clean-ups, score resets. */
 const NEWS = [
   {
+    id: '2026-11-14-1904',
+    date: '14 نوفمبر',
+    time: '7:04 م',
+    title: 'الصدارة بالتقدم',
+    tag: 'جديد',
+    items: [{ i: '🏆', t: 'الصدارة صارت بالزعماء اللي هزمتهم أول، ثم عدد القتلى، ثم الأسرع' }],
+  },
+  {
     id: '2026-11-14-1851',
     date: '14 نوفمبر',
     time: '6:51 م',
     title: 'أعداء أقوياء بس ينقتلون',
-    tag: 'جديد',
     items: [
       {
         i: '🛡️',

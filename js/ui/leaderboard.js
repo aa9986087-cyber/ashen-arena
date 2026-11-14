@@ -10,15 +10,17 @@ function readCode(txt) {
   const e = { n: p[0].slice(0, 14), k: +p[1], l: +p[2], t: +p[3], b: +p[4] };
   return e.n && isFinite(e.k + e.l + e.t + e.b) ? e : null;
 }
+/** The ranking: how far you got (bosses beaten) first, then kills, then the faster time. */
+const rankCmp = (a, b) => (b.b || 0) - (a.b || 0) || b.k - a.k || a.t - b.t;
 function addScore(e) {
   const B = S.board,
     i = B.findIndex(x => x.n === e.n);
   if (i >= 0) {
-    if (B[i].k >= e.k) return false;
+    if (rankCmp(e, B[i]) >= 0) return false; // not better than the run already there
     B.splice(i, 1);
   }
   B.push({ n: e.n, k: e.k, l: e.l, t: e.t, b: e.b });
-  B.sort((a, b) => b.k - a.k);
+  B.sort(rankCmp);
   if (B.length > 30) B.length = 30;
   save();
   return true;
@@ -74,7 +76,9 @@ async function api(path, opt) {
 }
 async function loadOnline() {
   try {
-    const rows = await api('/rest/v1/scores?select=name,kills,lvl,t,bosses&order=kills.desc&limit=300');
+    const rows = await api(
+      '/rest/v1/scores?select=name,kills,lvl,t,bosses&order=bosses.desc,kills.desc,t.asc&limit=300'
+    );
     onlineRows = rows.map(r => ({ n: String(r.name), k: +r.kills, l: +r.lvl, t: +r.t, b: +r.bosses }));
     onlineOK = true;
   } catch (err) {
@@ -97,7 +101,10 @@ function drawBoard() {
   $('bName').textContent = '✏️ ' + (S.name || 'اسمك');
   const live = onlineOK && onlineRows,
     list = live ? onlineRows : S.board;
-  $('boardMode').textContent = live ? '🌐 قائمة مباشرة لكل اللاعبين' : '📱 قائمة هذا الجهاز فقط';
+  $('boardMode').textContent =
+    (live ? '🌐 قائمة مباشرة لكل اللاعبين' : '📱 قائمة هذا الجهاز فقط') +
+    ' · الترتيب: الزعماء اللي هزمتهم، ثم القتلى، ثم الأسرع';
+  if (!live) S.board.sort(rankCmp);
   $('offBox').hidden = !!live;
   if (!list.length) L.appendChild(el('p', '', 'ما فيه نتائج للحين. العب جولة وسجّل أول رقم.'));
   list.forEach((e, i) => {
@@ -107,7 +114,8 @@ function drawBoard() {
     r.append(
       el('i', '', i + 1),
       profileLink(el('span', '', e.n), e.n),
-      el('b', '', '💀 ' + e.k),
+      el('b', '', '👑 ' + (e.b || 0)),
+      el('small', '', '💀 ' + e.k),
       el('small', '', 'مستوى ' + e.l),
       el('small', '', fmtT(e.t))
     );
