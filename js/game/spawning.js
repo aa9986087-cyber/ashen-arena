@@ -88,6 +88,30 @@ function pickType(gw) {
   }
   return 'grunt';
 }
+/** The enemies to defeat in this stage before its boss: six waves, each a little bigger (and bigger with a
+    co-op team, who also face more enemies). {total, ends: where each wave ends, waveAt(kills)}. */
+function stageQuota() {
+  const key = [G.abyss, G.stage, G.depth, G.cycle, COOP.cntMul].join();
+  if (G.quota && G.quota.key === key) return G.quota;
+  const base = gwave() - G.wave,
+    ends = [];
+  let t = 0;
+  for (let w = 0; w < 6; w++) {
+    // about as many as come in a wave's 28 s (the spawn rate), so the pace is what it was
+    t += Math.round(Math.min(28 * Math.min(1 + (base + w) * 0.24, 10) * 0.75, 80) * COOP.cntMul);
+    ends.push(t);
+  }
+  return (G.quota = {
+    key,
+    total: t,
+    ends,
+    waveAt: k =>
+      Math.min(
+        5,
+        ends.findIndex(e => k < e)
+      ),
+  });
+}
 function spawnBoss() {
   const k = G.forceBoss != null ? G.forceBoss : G.abyss ? (Math.random() * 6) | 0 : STAGES[G.stage].bk,
     p = G.p,
@@ -149,15 +173,16 @@ function updWaves(dt) {
     G.calmT -= dt;
     return;
   }
-  if (!G.bossOn && !(G.bossReward > 0) && !G.noWaves) {
-    G.waveT += dt;
-    if (G.waveT >= 28) {
-      G.waveT = 0;
-      G.wave++;
-      if (G.wave >= 6) {
-        G.wave = 5;
-        spawnBoss();
-      } else {
+  // the stage moves on by enemies defeated: each wave has its share, and when the count runs out the boss comes
+  if (!G.bossOn && !(G.bossReward > 0) && !G.noWaves && !G.bossDone) {
+    const Q = stageQuota();
+    if (G.sk >= Q.total) {
+      G.wave = 5;
+      spawnBoss();
+    } else {
+      const w = Q.waveAt(G.sk);
+      if (w > G.wave) {
+        G.wave = w;
         banner('الموجة ' + (G.wave + 1), G.wave === 2 || G.wave === 4 ? 'عدو قوي يقترب' : '', 1.8);
         if (G.wave === 2 || G.wave === 4) {
           const e = spawnAround('brute', true);

@@ -17,6 +17,8 @@ function newRun() {
     stage: 0,
     wave: 0,
     waveT: 0,
+    sk: 0, // enemies defeated this stage (the countdown to its boss)
+    bossDone: false,
     cycle: 0,
     bossOn: false,
     bossesRun: 0,
@@ -30,6 +32,7 @@ function newRun() {
     slow: 0,
     superT: 0,
     specCd: 0,
+    potCd: 0, // the healing potion's cooldown
     buffT: 0,
     buff: {},
     rerolls: (S.tree.U2 ? 2 : 0) + (S.tree.U4 ? 1 : 0),

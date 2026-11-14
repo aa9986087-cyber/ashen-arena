@@ -126,6 +126,8 @@ function kill(e) {
   e.dead = true;
   G.kills++;
   S.stats.kills++;
+  // the stage's countdown (the host keeps it in co-op and tells the others)
+  if (!e.boss && !G.bossOn && !(COOP.on && !COOP.host)) G.sk = (G.sk || 0) + 1;
   dailyTrack('kill', 1);
   if (e.elite) dailyTrack('elite', 1);
   const p = G.p,
@@ -629,4 +631,20 @@ function levelUpFx() {
       b: 1.4,
     });
   }
+}
+
+/* The healing potion (the button that used to be "attack": attacks are automatic). */
+const POT_CD = 40;
+function potion() {
+  const p = G.p;
+  if (G.state !== 'play' || p.dead || G.cardsOpen) return;
+  if (G.potCd > 0) return toast('الجرعة تنشحن… ' + Math.ceil(G.potCd) + ' ث');
+  if (p.hp >= p.maxHp) return toast('صحتك كاملة');
+  G.potCd = POT_CD;
+  const v = Math.round(p.maxHp * 0.35);
+  heal(v);
+  text(p.x, p.z, '+' + v, '#6dff8a', true);
+  ring(p.x, p.z, 0.5, 4, 0.5, [0.3, 1, 0.5]);
+  parts(p.x, 1.2, p.z, 24, 0.3, 1, 0.45, 6, 0.25, 0.8);
+  AU.play('heart');
 }

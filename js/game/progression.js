@@ -28,6 +28,7 @@ function bossDown(e) {
   drop(e.x, e.z + 1, 2, 40);
   for (const q of G.picks) q.mag = true;
   G.bossesRun++;
+  G.bossDone = true; // the stage's boss is beaten: no other until the next stage
   S.stats.bosses++;
   S.stats.maxBoss = Math.max(S.stats.maxBoss, G.bossesRun);
   S.sp++;
@@ -49,6 +50,8 @@ function nextStage() {
   } else G.stage++;
   G.wave = 0;
   G.waveT = 0;
+  G.sk = 0;
+  G.bossDone = false;
   G.ringT = 12;
   G.calmT = 5; // five quiet seconds before the next stage's soldiers march in
   if (!G.abyss) setStage(G.stage);
@@ -77,6 +80,8 @@ $('endGo').onclick = () => {
   G.stage = STAGES.length - 1;
   G.wave = 0;
   G.waveT = 0;
+  G.sk = 0;
+  G.bossDone = false;
   G.ringT = 8;
   setStage(G.stage);
   G.p.hp = G.p.maxHp;

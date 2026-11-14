@@ -1,5 +1,6 @@
 'use strict';
-/* Skill tree screen: three branches drawn bottom-up as hexagon nodes, plus a detail panel for the selected node. */
+/* Skill tree screen: one column per branch (first skill at the top), each skill a tile; tapping a skill opens
+   its details at once in a sheet fixed to the bottom of the screen, with its unlock button. */
 /** Line icons (SVG path markup, 24×24 viewBox) for each TREE node id. */
 const TREE_IC = {
   A1: '<path d="M5 19 17 7l2-4-4 2L3 17zM4 14l6 6M3 21l2-2"/>',
@@ -28,99 +29,103 @@ const TREE_IC = {
   W4: '<path d="M4 9h16v11H4z"/><path d="M4 9l2-5h12l2 5M12 9v11M9 14h6"/>',
   W5: '<rect x="4" y="5" width="16" height="15" rx="2"/><circle cx="12" cy="12.5" r="3"/><path d="M12 9.5V8M8 20v1M16 20v1"/>',
 };
-/** Id of the node shown in the detail panel (null = none). */
+const TREE_COL = ['#ff7a5a', '#5aaaff', '#3fd6b8', '#b98aff', '#ffcf40'];
+/** Id of the skill shown in the sheet (null = none). */
 let treeSel = null;
-/** 'own' (unlocked), 'av' (can be unlocked now) or 'lock' (previous node missing). */
+/** 'own' (unlocked), 'av' (can be unlocked now) or 'lock' (the one before it isn't yet). */
 function treeState(br, i) {
   const n = br.nodes[i];
   return S.tree[n.id] ? 'own' : i === 0 || S.tree[br.nodes[i - 1].id] ? 'av' : 'lock';
 }
+const treeSvg = id => '<svg viewBox="0 0 24 24" aria-hidden="true">' + (TREE_IC[id] || '') + '</svg>';
 function drawTree() {
   const V = $('treeView');
   V.innerHTML = '';
-  const row = el('div', 'tvb');
   TREE.forEach((br, bi) => {
-    const col = el('div', 'tvcol');
-    col.dataset.b = bi;
-    const nm = el('div', 'tvname', br.n);
-    nm.style.animationDelay = bi * 0.08 + 's';
-    col.appendChild(nm);
-    for (let i = br.nodes.length - 1; i >= 0; i--) {
-      const n = br.nodes[i],
-        stt = treeState(br, i),
-        d = el('div', 'tvn ' + stt + (treeSel === n.id ? ' sel' : ''));
-      d.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + (TREE_IC[n.id] || '') + '</svg>';
-      d.appendChild(el('span', 'cost', n.c + ' ✨'));
-      d.style.animationDelay = 0.12 + bi * 0.06 + (br.nodes.length - 1 - i) * 0.1 + 's';
-      d.setAttribute('role', 'button');
-      d.setAttribute('aria-label', n.n);
-      d.onclick = () => {
-        treeSel = n.id;
+    const col = el('section', 'tcol');
+    col.style.setProperty('--bc', TREE_COL[bi % TREE_COL.length]);
+    col.style.animationDelay = bi * 0.05 + 's';
+    const own = br.nodes.filter(n => S.tree[n.id]).length,
+      head = el('header', 'thead');
+    head.append(el('b', '', br.n), el('small', '', own + ' / ' + br.nodes.length));
+    const bar = el('i', 'tprog');
+    bar.appendChild(el('em')).style.width = (own / br.nodes.length) * 100 + '%';
+    head.appendChild(bar);
+    col.appendChild(head);
+    br.nodes.forEach((n, i) => {
+      const stt = treeState(br, i),
+        b = el(
+          'button',
+          'tnode ' + stt + (treeSel === n.id ? ' sel' : '') + (stt === 'av' && S.sp >= n.c ? ' can' : '')
+        );
+      b.innerHTML = '<span class="tic">' + treeSvg(n.id) + '</span>';
+      b.append(el('span', 'tnm', n.n), el('span', 'tco', stt === 'own' ? '✓' : stt === 'lock' ? '🔒' : n.c + ' ✨'));
+      b.setAttribute('aria-label', n.n);
+      b.onclick = () => {
+        treeSel = treeSel === n.id ? null : n.id;
         AU.play('select');
         drawTree();
       };
-      col.appendChild(d);
-      col.appendChild(el('div', 'tvlink' + (stt === 'own' ? ' on' : '')));
-    }
-    row.appendChild(col);
+      col.appendChild(b);
+    });
+    V.appendChild(col);
   });
-  V.appendChild(row);
-  V.appendChild(el('div', 'tvjoin'));
-  const root = el('div', 'tvroot');
-  root.innerHTML = '<div><b>' + S.sp + '</b><small>نقاط مهارة</small></div>';
-  V.appendChild(root);
+  treeSheet();
+}
+/** The sheet with the chosen skill: what it does, its cost, and the button to unlock it. */
+function treeSheet() {
   const I = $('tvInfo');
-  I.innerHTML = '';
-  let found = null,
-    bi = 0,
-    ni = 0;
+  let bi = -1,
+    ni = -1;
   TREE.forEach((br, b) =>
     br.nodes.forEach((n, i) => {
-      if (n.id === treeSel) {
-        found = n;
-        bi = b;
-        ni = i;
-      }
+      if (n.id === treeSel) ((bi = b), (ni = i));
     })
   );
-  if (!found) {
-    const t = el('div', 'tvi');
-    t.append(
-      el('h3', '', 'اختر مهارة'),
-      el(
-        'p',
-        'hint',
-        'اضغط أي شكل في الشجرة تشوف وش يسوي. تكسب نقطة ✨ عن كل زعيم تهزمه وعن بعض الإنجازات، وكل فرع ينفتح من تحت لفوق.'
-      )
-    );
-    I.appendChild(t);
-    return;
-  }
+  I.classList.toggle('on', bi >= 0);
+  if (bi < 0) return;
   const br = TREE[bi],
-    stt = treeState(br, ni),
-    t = el('div', 'tvi');
-  t.dataset.b = bi;
-  t.append(el('h3', '', found.n + ' · ' + br.n), el('p', '', found.d));
+    n = br.nodes[ni],
+    stt = treeState(br, ni);
+  I.innerHTML = '';
+  I.style.setProperty('--bc', TREE_COL[bi % TREE_COL.length]);
+  const ic = el('span', 'tic big');
+  ic.innerHTML = treeSvg(n.id);
+  const txt = el('div', 'ttxt');
+  txt.append(
+    el('small', '', br.n + ' · المهارة ' + (ni + 1) + ' من ' + br.nodes.length),
+    el('h3', '', n.n),
+    el('p', '', n.d)
+  );
   const b = el(
     'button',
-    'btn',
-    stt === 'own' ? '✓ مفعّلة' : stt === 'lock' ? '🔒 افتح اللي قبلها أول' : 'فعّلها بـ ' + found.c + ' ✨'
+    'btn' + (stt === 'av' ? ' go' : ''),
+    stt === 'own'
+      ? '✓ مفعّلة'
+      : stt === 'lock'
+        ? '🔒 فعّل «' + br.nodes[ni - 1].n + '» أول'
+        : 'فعّلها بـ ' + n.c + ' ✨'
   );
   b.disabled = stt !== 'av';
   b.onclick = () => {
-    if (S.sp < found.c) {
+    if (S.sp < n.c) {
       AU.play('deny');
-      toast('تحتاج ' + (found.c - S.sp) + ' نقطة مهارة إضافية');
+      toast('تحتاج ' + (n.c - S.sp) + ' نقطة مهارة إضافية');
       return;
     }
-    S.sp -= found.c;
-    S.tree[found.id] = 1;
+    S.sp -= n.c;
+    S.tree[n.id] = 1;
     AU.play('unlock');
     save();
     newRun();
     drawTree();
     wallet();
   };
-  t.appendChild(b);
-  I.appendChild(t);
+  const x = el('button', 'iconBtn tx', '✖');
+  x.setAttribute('aria-label', 'إغلاق');
+  x.onclick = () => {
+    treeSel = null;
+    drawTree();
+  };
+  I.append(ic, txt, b, x);
 }

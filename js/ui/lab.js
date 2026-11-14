@@ -49,6 +49,8 @@ function buildLab() {
       G.stage = i;
       G.wave = 0;
       G.waveT = 0;
+      G.sk = 0;
+      G.bossDone = false;
       setStage(i);
       banner(q.n, '', 1.5);
       closeLab();

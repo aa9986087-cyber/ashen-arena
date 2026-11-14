@@ -44,13 +44,26 @@ function drawHud() {
     hud.l = G.lvl;
     $('lvl').textContent = G.lvl;
   }
-  const st =
-    STAGES[G.stage].n +
-    (G.abyss ? '، العمق ' + (G.depth + 1) : '') +
-    (G.bossOn ? '، الزعيم' : '، الموجة ' + (G.wave + 1) + ' من 6');
+  // the stage line, and a small countdown of the enemies left before its boss
+  const Q = stageQuota(),
+    left = Math.max(0, Q.total - (G.sk || 0)),
+    st =
+      STAGES[G.stage].n +
+      (G.abyss ? '، العمق ' + (G.depth + 1) : '') +
+      (G.bossOn ? '' : '، الموجة ' + (G.wave + 1) + ' من 6');
   if (hud.st !== st) {
     hud.st = st;
-    $('stageInfo').textContent = st;
+    $('siName').textContent = st;
+  }
+  const cnt = G.bossOn ? 'boss' : G.bossDone ? 'done' : left;
+  if (hud.left !== cnt) {
+    const was = hud.left;
+    hud.left = cnt;
+    const b = $('siLeft');
+    b.textContent = cnt === 'boss' ? '👑 الزعيم' : cnt === 'done' ? '✓' : '💀 ' + left;
+    b.className = cnt === 'boss' ? 'boss' : '';
+    b.style.setProperty('--left', (typeof cnt === 'number' ? (left / Q.total) * 100 : 0) + '%');
+    if (typeof was === 'number' && typeof cnt === 'number' && cnt < was && cnt <= 10) pop(b);
   }
   if (G.boss) {
     const bw = Math.max(0, Math.round((G.boss.hp / G.boss.maxHp) * 400) / 4); // only restyle when it moves a quarter percent
@@ -61,6 +74,7 @@ function drawHud() {
   }
   cooldown($('bDash'), p.dashCd / p.dashMax);
   cooldown($('bSpec'), G.specCd / specCdMax());
+  cooldown($('bPot'), G.potCd / POT_CD);
 }
 /** Show a button's cooldown (1 = just used, 0 = ready) and flash it when it comes back. */
 function cooldown(btn, k) {

@@ -9,6 +9,7 @@ addEventListener('keydown', e => {
       dash();
     }
     if (e.code === 'KeyQ' || e.code === 'KeyE') special();
+    if (e.code === 'KeyR' || e.code === 'KeyH') potion();
     if (e.code === 'Escape' || e.code === 'KeyP') pause(true);
     if (e.code === 'KeyL' && LAB) openLab();
   } else if (G.state === 'paused' && (e.code === 'Escape' || e.code === 'KeyP')) {
@@ -113,14 +114,4 @@ const hold = (id, down, up) => {
 };
 hold('bDash', dash);
 hold('bSpec', special);
-hold(
-  'bAtk',
-  () => {
-    IN.atk = true;
-    $('bAtk').classList.add('held');
-  },
-  () => {
-    IN.atk = false;
-    $('bAtk').classList.remove('held');
-  }
-);
+hold('bPot', potion);

@@ -12,7 +12,7 @@ M = {
 '👁️':(['l:eye'],'#cfe6ff'),'👁':(['l:eye'],'#cfe6ff'),'💀':(['death-skull','skull-crossed-bones'],'#eeeeee'),'🎯':(['bullseye','archery-target'],'#ff6a5a'),
 '👑':(['crown','queen-crown'],'#ffcf40'),'🏆':(['trophy-cup','trophy'],'#ffcf40'),'🛡️':(['checked-shield','shield'],'#9fc3ff'),
 '🔥':(['flame','fire'],'#ff8a3a'),'🌀':(['vortex','whirlwind'],'#8fd0ff'),'🧨':(['dynamite','bundle-grenade'],'#ff5a3a'),
-'⚠️':(['l:triangle-alert','l:alert-triangle'],'#ffcf40'),'⚠':(['l:triangle-alert','l:alert-triangle'],'#ffcf40'),'📺':(['l:tv'],'#cfe6ff'),'🧪':(['test-tubes','potion-ball'],'#7cf0a0'),
+'⚠️':(['l:triangle-alert','l:alert-triangle'],'#ffcf40'),'⚠':(['l:triangle-alert','l:alert-triangle'],'#ffcf40'),'📺':(['l:tv'],'#cfe6ff'),'🧪':(['test-tubes','potion-ball'],'#7cf0a0'),'⚗️':(['health-potion','round-potion'],'#ff5a6a'),
 '⏱':(['l:timer'],'#e8e8e8'),'🗑':(['l:trash-2'],'#ff8a7a'),'⚡':(['lightning-helix','power-lightning','lightning-bolt'],'#ffe24a'),
 '☠️':(['skull-crossed-bones','death-skull'],'#eeeeee'),'☠':(['skull-crossed-bones','death-skull'],'#eeeeee'),'🩸':(['drop','droplets','bleeding-wound'],'#e0283a'),
 '⭐':(['star-formation','l:star'],'#ffd84a'),'★':(['star-formation','l:star'],'#ffd84a'),'🌐':(['l:globe'],'#8fd0ff'),'🤝':(['shaking-hands','handshake'],'#ffd7a0'),

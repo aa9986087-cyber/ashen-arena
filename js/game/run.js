@@ -21,6 +21,7 @@ function saveRun() {
         stage: G.stage,
         wave: G.wave,
         waveT: G.waveT,
+        sk: G.sk,
         cycle: G.cycle,
         abyss: G.abyss,
         depth: G.depth,
@@ -33,6 +34,7 @@ function saveRun() {
         pacts: G.pacts,
         weapons: G.weapons.map(w => ({ id: w.id, lvl: w.lvl, evo: w.evo ? 1 : 0 })),
         specCd: G.specCd,
+        potCd: G.potCd,
         hp: p.hp,
         shield: p.shield,
         legCount: p.legCount,
@@ -84,6 +86,7 @@ function resumeRun() {
     stage: o.stage | 0,
     wave: clamp(o.wave | 0, 0, 5),
     waveT: +o.waveT || 0,
+    sk: o.sk | 0,
     cycle: o.cycle | 0,
     abyss: !!o.abyss,
     depth: o.depth | 0,
@@ -93,6 +96,7 @@ function resumeRun() {
     ups: o.ups || {},
     pacts: o.pacts || {},
     specCd: +o.specCd || 0,
+    potCd: +o.potCd || 0,
   });
   G.need = xpNeed(G.lvl);
   G.weapons = o.weapons
@@ -101,10 +105,10 @@ function resumeRun() {
   if (!G.weapons.length) G.weapons = [{ id: CHARS[o.char].wep, lvl: 1, cd: 0.3 }];
   if (o.bossOn) {
     G.wave = 5;
-    G.waveT = 23;
+    G.sk = 1e6; // its boss comes back as soon as the run goes on
   }
   if (o.bossRew) {
-    G.waveT = 0;
+    G.bossDone = true;
     G.bossReward = 0.8;
   }
   recalc();
@@ -142,8 +146,8 @@ function startRun() {
   banner(
     STAGES[0].n,
     IN.touch
-      ? 'اسحب بإصبعك في أي مكان للحركة\nالأسلحة تهاجم وحدها'
-      : 'WASD للحركة، Space للمراوغة، Q للضربة الخاصة\nالأسلحة تهاجم وحدها، واضغط الفأرة للتصويب اليدوي',
+      ? 'اسحب بإصبعك في أي مكان للحركة\nالأسلحة تهاجم وحدها، والأزرار: مراوغة، ضربة خاصة، جرعة شفاء'
+      : 'الأسهم للحركة، المسافة للمراوغة، حرف Q للضربة الخاصة، حرف R للجرعة\nالأسلحة تهاجم وحدها، واضغط الفأرة للتصويب اليدوي',
     4.5
   );
   for (let i = 0; i < 6; i++) spawnAround('grunt', false, rand(13, 18));

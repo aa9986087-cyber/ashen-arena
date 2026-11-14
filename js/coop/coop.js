@@ -512,6 +512,8 @@ function coopSendWorld() {
       r1(G.calmT || 0),
       r1(G.waveT || 0),
       G.cycle || 0,
+      G.sk || 0,
+      G.bossDone ? 1 : 0,
     ],
     bn: G.bossName,
     ev: COOP.ev.splice(0),
@@ -927,6 +929,8 @@ function coopShared(g, bn) {
   // kept in step so a client can take over as host (coopTakeOver)
   G.waveT = g[11] || 0;
   G.cycle = g[12] || 0;
+  G.sk = g[13] || 0;
+  G.bossDone = !!g[14];
   G.bossName = bn || G.bossName;
   G.calmT = g[10] || 0;
   if (bosses > G.bossesRun) {

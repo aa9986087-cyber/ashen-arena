@@ -279,6 +279,7 @@ function update(dt) {
   if (p.inv > 0) p.inv -= dt;
   if (p.swing > 0) p.swing = Math.max(0, p.swing - dt * 5);
   if (G.specCd > 0) G.specCd -= dt;
+  if (G.potCd > 0) G.potCd -= dt;
   if (G.superT > 0) G.superT -= dt;
   if (G.buffT > 0) G.buffT -= dt;
   if (p.regen > 0 && p.hp < p.maxHp) heal(p.regen * dt);
