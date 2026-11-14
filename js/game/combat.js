@@ -268,6 +268,12 @@ function shot(x, z, ang, o) {
     fx: o.fx || '',
     bounce: (o.bounce || 0) + (o.kind === 3 ? 0 : G.ups.bounce || 0),
     ghost: !!o.ghost,
+    lob: o.lob || '', // thrown in an arc: 'brick' or 'molotov' (lands at the end of its life)
+    pool: o.pool || 0,
+    poolT: o.poolT || 0,
+    kb: o.kb || 0,
+    evo: !!o.evo,
+    ball: !!o.ball, // bounces off enemies and the arena's edge
     life0: o.life || o.range / o.spd,
     hits: [],
     t: 0,
@@ -330,18 +336,32 @@ function fire(w, ang) {
   p.swing = 1;
   AU.play(w.id);
   if (d.melee) {
-    const arc = [2.3, 3.6, TAU][t],
-      R = d.range * p.area * (t === 2 ? 1.25 : 1);
+    // a blow in front: the katana is quick and light, the club heavy and sends them flying
+    const club = w.id === 'hammer',
+      full = ev && club,
+      arc = full ? TAU : d.arc[t],
+      R = d.range * p.area * (t === 2 ? 1.25 : 1),
+      kb = d.kb * (club && t === 2 ? 1.4 : 1);
     for (const e of G.enemies) {
       if (e.dead) continue;
       const dx = e.x - p.x,
         dz = e.z - p.z,
         dd = Math.hypot(dx, dz);
-      if (dd < R + e.r && (t === 2 || angDiff(Math.atan2(dz, dx), ang) < arc / 2))
-        hit(e, dmg, { kb: 7, ang: Math.atan2(dz, dx) });
+      if (dd < R + e.r && (arc >= TAU || angDiff(Math.atan2(dz, dx), ang) < arc / 2))
+        hit(e, dmg, { kb, ang: Math.atan2(dz, dx) });
     }
-    slashFx(ang, t, R);
-    if (ev)
+    slashFx(ang, arc >= TAU ? 2 : Math.min(t, 1), R);
+    if (club) {
+      shake(0.25);
+      // the spiked club: a shockwave rolls out all around
+      if (ev) {
+        ring(p.x, p.z, 0.5, R * 2.2, 0.4, [1.6, 0.8, 0.3]);
+        eachInRadius(p.x, p.z, R * 2.2, e => {
+          const a = Math.atan2(e.z - p.z, e.x - p.x);
+          hit(e, dmg * 0.4, { kb: 22, ang: a, quiet: 1 });
+        });
+      }
+    } else if (ev)
       for (let i = 0; i < 6; i++)
         shot(p.x, p.z, ang + (i / 6) * TAU, {
           spd: 20,
@@ -374,21 +394,49 @@ function fire(w, ang) {
         for (const b of G.bolts.slice(b0))
           for (const q of b.pts.slice(1)) eachInRadius(q[0], q[1], 0.5, e => (e.frz = Math.max(e.frz || 0, 0.35)));
     }
-  } else if (d.slam) {
-    // thunder hammer: a heavy blow lands on (or near) the closest enemies
-    const near = G.enemies.filter(e => !e.dead && (e.x - p.x) ** 2 + (e.z - p.z) ** 2 < d.range * d.range),
-      n = 1 + (t === 2 ? 1 : 0) + (ev ? 3 : 0) + p.multi,
-      R = (2.8 + (t >= 1 ? 0.7 : 0) + (ev ? 1 : 0)) * p.area;
+  } else if (d.laser) {
+    // a beam: everything in line takes it at once (the sun cannon: three wide burning beams)
+    const n = (t === 2 ? 2 : 1) + (ev ? 1 : 0) + p.multi,
+      len = d.range * (1 + 0.1 * t),
+      wid = d.width * (1 + 0.35 * t) * (ev ? 1.6 : 1) * (p.sizeMul || 1);
     for (let i = 0; i < n; i++) {
-      const e = near.length ? near[i % near.length] : null;
-      zone(e ? e.x : p.x + Math.cos(ang) * 6, e ? e.z : p.z + Math.sin(ang) * 6, R, 0.22 + i * 0.08, dmg, true);
+      const a = ang + (i - (n - 1) / 2) * 0.32;
+      laserBeam(p.x, p.z, a, len, wid, i ? dmg * 0.8 : dmg, ev);
+    }
+  } else if (d.lob) {
+    // thrown in an arc at the nearest enemy (or ahead): a brick lands heavy, a bottle leaves fire
+    const tg = nearest(p.x, p.z, d.range),
+      dist = tg ? Math.min(d.range, Math.hypot(tg.x - p.x, tg.z - p.z)) : d.range * 0.7,
+      n = 1 + (d.lob === 'molotov' ? (t >= 1 ? 1 : 0) + (ev ? 1 : 0) : (t === 2 ? 1 : 0) + (ev ? 1 : 0)) + p.multi;
+    for (let i = 0; i < n; i++) {
+      const a = ang + (i - (n - 1) / 2) * 0.35,
+        D = dist * (i ? rand(0.75, 1.1) : 1),
+        T = 0.55 + D * 0.02;
+      shot(p.x, p.z, a, {
+        spd: D / T,
+        dmg,
+        size: d.lob === 'brick' ? (ev ? 0.85 : 0.5 + 0.1 * t) : 0.3,
+        pierce: 99,
+        life: T,
+        kind: 7,
+        col,
+        lob: d.lob,
+        aoe: (d.aoe || 0) * p.area * (1 + 0.25 * t) * (ev ? 1.8 : 1),
+        pool: d.pool ? d.pool * p.area * (t === 2 ? 1.3 : 1) * (ev ? 1.6 : 1) : 0,
+        poolT: d.poolT ? d.poolT * (t === 2 ? 1.3 : 1) * (ev ? 1.4 : 1) : 0,
+        kb: d.kb || 0,
+        evo: !!ev,
+      });
     }
   } else {
     vfxMuzzle(p.x + Math.cos(ang) * 0.9, p.z + Math.sin(ang) * 0.9, col);
-    let n = 1 + p.multi,
+    let n = (d.pellets || 1) + p.multi,
       pierce = d.pierce + (d.pierce < 50 ? p.pierceAdd || 0 : 0),
       aoe = d.aoe || 0,
-      crit = 0;
+      crit = 0,
+      size = d.size,
+      spd = d.spd,
+      life = d.life;
     if (w.id === 'axe') n += t;
     if (w.id === 'bow') {
       n += t;
@@ -399,8 +447,11 @@ function fire(w, ang) {
       if (t === 2) n++;
     }
     if (w.id === 'rifle') {
-      if (t >= 1) pierce++;
-      if (t === 2) n++;
+      // the shotgun: more pellets and they pierce, then a wider, longer burst
+      if (t >= 1) {
+        n += 2;
+        pierce++;
+      }
     }
     if (w.id === 'rocket') {
       if (t >= 1) aoe *= 1.3;
@@ -410,69 +461,82 @@ function fire(w, ang) {
       if (t >= 1) n++;
       if (t === 2) aoe = 1.7;
     }
-    let range = d.range,
-      sp = d.spread || 0.1,
-      off = 0,
+    if (w.id === 'ball') {
+      if (t >= 1) n++;
+      if (t === 2) {
+        size *= 1.3;
+        spd *= 1.2;
+      }
+    }
+    let range = d.range * (w.id === 'rifle' && t === 2 ? 1.3 : 1),
+      sp = (d.spread || 0.1) * (w.id === 'rifle' && t === 2 ? 1.25 : 1),
       bounce = d.bounce || 0;
-    if (w.id === 'flame') {
-      n += 3 + t;
-      if (t === 2) range *= 1.3;
+    if (w.id === 'shuriken') n += (t >= 1 ? 1 : 0) + (t === 2 ? 1 : 0);
+    if (w.id === 'spear') {
+      if (t >= 1) n++;
+      if (t === 2) size *= 1.35;
     }
-    if (w.id === 'shuriken') {
-      n += 1 + (t >= 1 ? 1 : 0);
-      if (t === 2) bounce++;
-    }
-    if (w.id === 'spear' && t >= 1) n++;
-    let fx = w.id === 'flame' ? 'burn' : '';
+    let fx = d.back ? 'return' : '';
     if (ev) {
-      if (w.id === 'flame') {
-        range *= 1.7;
-        off = Math.PI; // a second jet behind
-      } else if (w.id === 'shuriken') {
-        n = 8;
-        sp = TAU / 8;
+      if (w.id === 'shuriken') {
+        // the shadow star: the usual volley, and eight stars all around that ricochet
+        for (let i = 0; i < 8; i++)
+          shot(p.x, p.z, ang + (i / 8) * TAU, {
+            spd: d.spd * 0.8 * (p.pspd || 1),
+            dmg: dmg * 0.7,
+            size: 0.32,
+            pierce: 1,
+            range: d.range,
+            kind: 2,
+            col,
+            bounce: 2,
+          });
       } else if (w.id === 'spear') {
         n += 2;
+        size *= 1.3;
         aoe = 2.2;
-      }
-      if (w.id === 'pistol') {
+      } else if (w.id === 'pistol') {
         n += 2;
         pierce += 2;
         aoe = 1.2;
       } else if (w.id === 'rifle') {
+        // the rotary cannon: one hard-hitting stream
+        n = 1 + p.multi;
+        sp = 0.08;
         pierce += 2;
-        aoe = 1.2;
+        range *= 1.6;
       } else if (w.id === 'axe') {
-        n++;
-        fx = 'return';
-      } else fx = { bow: 'split', staff: 'chain', rocket: 'cluster', flame: 'burn' }[w.id] || '';
+        n += 2;
+        size *= 1.3;
+      } else if (w.id === 'ball') {
+        n += 2;
+        fx = 'shock';
+      } else fx = { bow: 'split', staff: 'chain', rocket: 'cluster' }[w.id] || fx;
     }
-    const fireCol = w.id === 'flame' && !ev ? [2, 0.75, 0.15] : col,
-      shoot = a0 => {
-        for (let i = 0; i < n; i++)
-          shot(
-            p.x + Math.cos(a0) * 0.8,
-            p.z + Math.sin(a0) * 0.8,
-            a0 + (i - (n - 1) / 2) * sp + (d.jit ? rand(-d.jit, d.jit) : 0),
-            {
-              spd: d.spd * (p.pspd || 1),
-              dmg,
-              size: d.size * (w.id === 'axe' && t === 2 ? 1.3 : 1) * (p.sizeMul || 1),
-              pierce,
-              range: range * 1.15,
-              life: d.life,
-              aoe: aoe * p.area,
-              homing: d.homing,
-              kind: d.kind,
-              col: fireCol,
-              crit,
-              fx,
-              bounce,
-            }
-          );
-      };
-    shoot(ang);
-    if (off) shoot(ang + off);
+    const kind = d.kind,
+      all = sp * n >= TAU - 0.01; // all around: one of them goes straight at the target
+    for (let i = 0; i < n; i++)
+      shot(
+        p.x + Math.cos(ang) * 0.8,
+        p.z + Math.sin(ang) * 0.8,
+        ang + (all ? i : i - (n - 1) / 2) * sp + (d.jit ? rand(-d.jit, d.jit) : 0),
+        {
+          spd: spd * (p.pspd || 1),
+          dmg,
+          size: size * (w.id === 'axe' && t === 2 ? 1.3 : 1) * (p.sizeMul || 1),
+          pierce,
+          range: range * 1.15,
+          life,
+          aoe: aoe * p.area,
+          homing: d.homing,
+          kind,
+          col,
+          crit,
+          fx,
+          bounce,
+          ball: w.id === 'ball',
+        }
+      );
   }
   if (G.ups.legend && w === G.weapons[0] && ++p.legCount % 3 === 0) {
     for (let i = 0; i < 8; i++)
@@ -487,6 +551,48 @@ function fire(w, ang) {
       });
     ring(p.x, p.z, 0.5, 3, 0.25, [1, 0.8, 0.2]);
   }
+}
+/** The laser: everything within `wid` of the line from (x,z) along `ang` for `len` is hit at once. */
+function laserBeam(x, z, ang, len, wid, dmg, ev) {
+  const ux = Math.cos(ang),
+    uz = Math.sin(ang);
+  for (const e of G.enemies) {
+    if (e.dead) continue;
+    const dx = e.x - x,
+      dz = e.z - z,
+      along = dx * ux + dz * uz;
+    if (along < 0 || along > len) continue;
+    if (Math.abs(dx * uz - dz * ux) < wid + e.r) {
+      hit(e, dmg, { kb: 1.5, ang, quiet: 0 });
+      if (ev && !e.dead) e.burn = 3;
+    }
+  }
+  vfxLaser(x, z, ang, len, wid, ev);
+}
+/** A thrown brick or bottle lands. */
+function lobLand(s) {
+  if (s.lob === 'brick') {
+    // a heavy stone (an iron beam when evolved): hurts and throws back everything around where it lands
+    const R = Math.max(1.2, s.aoe);
+    eachInRadius(s.x, s.z, R, e => {
+      hit(e, s.dmg, { kb: s.kb, ang: Math.atan2(e.z - s.z, e.x - s.x) });
+      if (s.evo && !e.dead && !e.boss) e.frz = Math.max(e.frz || 0, 0.6);
+    });
+    ring(s.x, s.z, 0.3, R * 1.3, 0.35, [1.2, 0.9, 0.6]);
+    vfxKill(s.x, s.z, s.evo);
+    shake(s.evo ? 0.35 : 0.15);
+    AU.play('boom');
+  } else {
+    // the bottle breaks: the ground catches fire (the barrel first bursts)
+    if (s.evo) explode(s.x, s.z, s.pool * 0.8, s.dmg * 3, true);
+    firePool(s.x, s.z, s.pool, s.poolT, s.dmg);
+    vfxSparks(s.x, 0.4, s.z, 10, [1.8, 0.8, 0.2], 5, 0.25, 0.5);
+    AU.play('flame');
+  }
+}
+/** A fire on the ground (the molotov): it burns whoever stands in it, a few times a second. */
+function firePool(x, z, r, dur, dmg) {
+  G.pools.push({ x, z, r, l: 0, d: dur, dmg, tick: 0 });
 }
 /** Lightning that jumps between enemies. sky: the bolt card — it falls from a storm cloud onto the first one. */
 function boltStrike(n, dmg, fromX, fromZ, sky) {

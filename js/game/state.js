@@ -35,6 +35,7 @@ function newRun() {
     potCd: 0, // the short gap between two potions
     pots: 0, // healing potions carried (none at the start)
     contactCd: 0, // bodies touching you: one blow at most every CONTACT_CD
+    pools: [], // fires burning on the ground (the molotov)
     buffT: 0,
     buff: {},
     rerolls: (S.tree.U2 ? 2 : 0) + (S.tree.U4 ? 1 : 0),

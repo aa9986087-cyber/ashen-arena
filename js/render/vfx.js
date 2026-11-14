@@ -929,6 +929,23 @@ function vfxShots(now) {
   for (const s of G.shots) {
     const c = s.col || [1, 0.85, 0.5],
       hot = [Math.min(2, c[0] * 1.5 + 0.3), Math.min(2, c[1] * 1.5 + 0.3), Math.min(2, c[2] * 1.5 + 0.3)];
+    if (s.kind === 6) {
+      // the drill: a whirl of light around the spinning bit, sparks flying off
+      vshot(s.x, 1.1, s.z, VT.twirl, s.r * 3.2 + 0.8, hot, 0.9, t * 22);
+      vshot(s.x, 1.1, s.z, VT.trace, s.r * 3 + 1.4, c, 0.7, vshotAng(s.x, s.z, -s.vx, -s.vz));
+      continue;
+    }
+    if (s.kind === 7) {
+      // thrown in an arc (the 3D brick / bottle is in renderer): a burning wick on the bottle
+      if (s.lob === 'molotov') vshot(s.x, (s.y || 1.1) + 0.45, s.z, VT.flame, 0.9, [2, 0.9, 0.2], 1, 0);
+      continue;
+    }
+    if (s.kind === 8) {
+      // the ball: a soft glow around it (an electric one when evolved)
+      vshot(s.x, 1, s.z, VT.soft, s.r * 3.4, s.fx === 'shock' ? [0.6, 1.2, 2] : [1.2, 1.1, 0.9], 0.55, 0);
+      if (s.fx === 'shock') vshot(s.x, 1, s.z, VT.crackle, s.r * 4, [0.7, 1.3, 2], 0.8, t * 9);
+      continue;
+    }
     if (s.kind === 2) {
       // spinning blades (shuriken, axes): a turning arc of light
       vshot(s.x, 1.1, s.z, VT.twirl, s.r * 5 + 1, hot, 1, t * 18);
@@ -1001,4 +1018,87 @@ function vfxShots(now) {
   L.g.setDrawRange(0, VSHOT.n);
   const A = L.g.attributes;
   A.position.needsUpdate = A.rgba.needsUpdate = A.size.needsUpdate = A.tr.needsUpdate = true;
+}
+
+/* =================== weapon effects =================== */
+/** The laser: a hot core along the beam with a glow around it, a flash at the muzzle and sparks at the end. */
+function vfxLaser(x, z, ang, len, wid, evo) {
+  const c = evo ? [2, 1.5, 0.5] : [1.9, 0.35, 0.6],
+    ux = Math.cos(ang),
+    uz = Math.sin(ang),
+    n = Math.ceil(len / 0.7);
+  for (let i = 0; i <= n; i++) {
+    const k = i / n,
+      px = x + ux * len * k,
+      pz = z + uz * len * k;
+    vfxP({
+      t: VT.soft,
+      x: px,
+      y: 1.1,
+      z: pz,
+      life: 0.32,
+      s: wid * 4.2,
+      s1: wid * 1.2,
+      r: c[0],
+      g: c[1],
+      b: c[2],
+      a: 0.9,
+      rot: 0,
+    });
+    if (i % 2 === 0) vfxP({ x: px, y: 1.1, z: pz, life: 0.22, s: wid * 2, s1: 0.1, r: 2, g: 2, b: 2 });
+  }
+  vfxP({ t: VT.flare, x: x + ux, y: 1.2, z: z + uz, life: 0.16, s: 2.4, s1: 3.4, r: c[0], g: c[1], b: c[2], rot: 0 });
+  vfxP({
+    t: VT.burst,
+    x: x + ux * len,
+    y: 1.1,
+    z: z + uz * len,
+    life: 0.2,
+    s: 1.6,
+    s1: 2.8,
+    r: c[0],
+    g: c[1],
+    b: c[2],
+    spin: 4,
+  });
+}
+/** A fire burning on the ground: flames licking up across it and a hot glow under them. */
+function vfxFirePool(q, dt) {
+  const k = 1 - q.l / q.d,
+    n = (q.acc = (q.acc || 0) + dt * q.r * q.r * 4) | 0;
+  q.acc -= n;
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * TAU,
+      r = Math.sqrt(Math.random()) * q.r;
+    vfxP({
+      t: VT.flame,
+      x: q.x + Math.cos(a) * r,
+      y: 0.4,
+      z: q.z + Math.sin(a) * r,
+      vy: rand(1, 2.2),
+      life: rand(0.35, 0.6),
+      s: rand(0.7, 1.2),
+      s1: 0.2,
+      r: 1.9,
+      g: rand(0.6, 0.9),
+      b: 0.15,
+      a: 0.9 * k,
+      rot: rand(-0.3, 0.3),
+    });
+  }
+  if (Math.random() < dt * 6)
+    vfxP({
+      t: VT.soft,
+      x: q.x,
+      y: 0.2,
+      z: q.z,
+      life: 0.4,
+      s: q.r * 2.4,
+      s1: q.r * 2.6,
+      r: 1.4,
+      g: 0.45,
+      b: 0.1,
+      a: 0.35 * k,
+      rot: 0,
+    });
 }

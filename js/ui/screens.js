@@ -261,40 +261,34 @@ function drawShop() {
   }
   const w = $('wepGrid');
   w.innerHTML = '';
+  // the weapons' encyclopedia: each weapon as it starts and as it evolves, its numbers, and what it needs
   for (const id in WEP) {
     const d = WEP[id],
-      own = S.weps[id];
+      v = EVO[id];
+    const pics = el('div', 'wPics');
+    pics.append(el('i', 'wFrom', d.i), el('b', '', '←'), el('i', 'wTo', v.i));
+    const stats = el('div', 'wStats'),
+      stat = (k, val) => stats.appendChild(el('span', '', k + ' ' + val));
+    stat('ضرر', Math.round(d.dmg) + (d.pellets ? ' × ' + d.pellets : ''));
+    stat('ضربات/ث', (1 / d.cd).toFixed(1));
+    stat('المدى', d.range + 'م');
+    stat('الأهداف', d.hits || '');
+    const evoTxt = el('div', 'wEvo');
+    evoTxt.append(
+      el('b', '', 'التطور: ' + v.n),
+      el('span', '', 'يحتاج: السلاح بالمستوى 5 + ' + UP[v.up].i + ' ' + UP[v.up].n),
+      el('span', '', v.d)
+    );
     itemCard(w, {
-      cls: own ? ' done' : '',
       icon: d.i,
       title: d.n,
       body: [
-        el(
-          'p',
-          '',
-          d.melee ? 'سلاح قريب يضرب كل من أمامك.' : 'عند المستوى 3: ' + d.evo[0] + '. عند 5: ' + d.evo[1] + '.'
-        ),
-        el(
-          'p',
-          'spx',
-          'التطور الكامل: المستوى 5 + ' +
-            UP[EVO[id].up].i +
-            ' ' +
-            UP[EVO[id].up].n +
-            ' ← ' +
-            EVO[id].i +
-            ' ' +
-            EVO[id].n
-        ),
+        pics,
+        el('p', '', d.d),
+        el('p', 'spx', 'المستوى 3: ' + d.evo[0] + ' · المستوى 5: ' + d.evo[1]),
+        stats,
+        evoTxt,
       ],
-      btn: own ? 'مفتوح' : 'افتح بـ ' + wepCost(id) + ' 🪙',
-      old: !own && wepCost(id) !== d.cost ? d.cost : 0,
-      disabled: !!own,
-      onClick: () =>
-        buy(wepCost(id), () => {
-          S.weps[id] = 1;
-          drawShop();
-        }),
     });
   }
 }

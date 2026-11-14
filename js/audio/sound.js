@@ -405,6 +405,10 @@ const SFX = {
   over: a => [440, 392, 349.23, 293.66].forEach((f, i) => a.vio(f, 0.7, 0.08, i * 0.3, a.sg)),
   win: a => [293.66, 440, 587.33, 880].forEach((f, i) => a.soft(f, 0.45, 0.12, i * 0.12, a.sg)),
 };
+// the new weapons borrow the closest sound
+SFX.brick = SFX.hammer;
+SFX.laser = SFX.whip;
+SFX.ball = SFX.axe;
 addEventListener(
   'click',
   e => {

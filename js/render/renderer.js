@@ -251,6 +251,34 @@ function render(dt, now) {
   if (G.ups.orbit) forOrbitBlades((a, x, z) => put(IBlade, x, 1.1, z, -a, 1.2, 1.2, 1.2, 1.2, 1.3, 1.6));
   flush(IBlade);
   // shots, yours and the enemies', drawn as textured light (js/render/vfx.js)
+  // the solid ones: a brick or a bottle flying in its arc, the drill's bit, the iron ball
+  for (const s of G.shots) {
+    if (s.kind === 7) {
+      const k = Math.min(1, s.t / s.life0);
+      s.y = 1.1 + Math.sin(Math.PI * k) * (2 + s.life0 * 2.5);
+      if (s.lob === 'brick')
+        s.evo
+          ? put(IB, s.x, s.y, s.z, s.t * 6, 1.7, 0.35, 0.45, 0.62, 0.66, 0.72, s.t * 5) // the iron beam
+          : put(IB, s.x, s.y, s.z, s.t * 9, s.r * 1.5, s.r * 0.8, s.r, 0.78, 0.33, 0.22, s.t * 7);
+      else
+        put(
+          IB,
+          s.x,
+          s.y,
+          s.z,
+          s.t * 8,
+          0.22,
+          0.48,
+          0.22,
+          s.evo ? 1 : 0.35,
+          s.evo ? 0.25 : 0.85,
+          s.evo ? 0.15 : 0.4,
+          s.t * 6
+        );
+    } else if (s.kind === 8) put(IS, s.x, 1, s.z, 0, s.r, s.r, s.r, 1.1, 1.1, 1.15);
+    else if (s.kind === 6)
+      put(IB, s.x, 1.1, s.z, Math.atan2(s.vx, s.vz), s.r * 0.6, s.r * 0.6, s.r * 1.9, 0.85, 0.82, 0.7, 0, s.t * 25);
+  }
   vfxShots(now);
   forDrones((x, z) => {
     put(IB, x, 2.3 + Math.sin(now * 0.006 + x) * 0.15, z, now * 0.004, 0.55, 0.18, 0.55, 0.5, 1.3, 1.6);

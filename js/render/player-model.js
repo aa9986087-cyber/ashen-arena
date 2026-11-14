@@ -152,8 +152,7 @@ const WEP_MODEL = {
   pistol: { m: ['blaster', 'blaster', 'blaster'], len: [0.6, 0.65, 0.7], axis: 'z+' },
   rifle: { m: ['repeater', 'repeater', 'repeater'], len: [0.9, 0.95, 1], axis: 'z+' },
   rocket: { m: ['repeater', 'repeater', 'repeater'], len: [1.05, 1.1, 1.15], axis: 'z+', tint: 0x6a7040 },
-  flame: { m: ['blaster', 'blaster', 'blaster'], len: [0.8, 0.85, 0.9], axis: 'z+', tint: 0xb04020 },
-  spear: { duel: 'duelSpear', len: [2.4, 2.6, 2.8] },
+  laser: { m: ['blaster', 'blaster', 'blaster'], len: [0.75, 0.8, 0.85], axis: 'z+', tint: 0xd03a8a },
   hammer: { duel: 'duelMace', len: [1.5, 1.7, 1.9] },
 };
 const WEP_MODELS = {};
@@ -271,10 +270,6 @@ function buildWeapon(R = PM, wep) {
           ev ? em : 0x1a5a88
         )
       );
-  } else if (id === 'flame') {
-    w.add(mesh(CYL, 0x8a2a1a, 0, -0.35, -0.12, 0.26, 0.6, 0.26));
-    w.add(mesh(CYL, 0x30343c, 0, -0.85 * s, 0, 0.1, 0.7 * s, 0.1));
-    w.add(mesh(CONE, ev ? tc : 0xff8a20, 0, -1.3 * s, 0, 0.14, 0.25, 0.14, ev ? em : 0x803000));
   } else if (id === 'shuriken') {
     for (const r of [0, Math.PI / 4]) {
       const b = mesh(BOX, tc, 0, -0.45, 0, 0.5 * s, 0.07, 0.12, em);
@@ -282,10 +277,21 @@ function buildWeapon(R = PM, wep) {
       w.add(b);
     }
   } else if (id === 'spear') {
-    w.add(mesh(CYL, 0x6b4a2a, 0, -0.9, 0, 0.07, 2.4 * s, 0.07));
-    const tip = mesh(CONE, tc, 0, -2.2 * s, 0, 0.16, 0.45, 0.16, em);
-    tip.rotation.x = Math.PI;
-    w.add(tip);
+    // the drill: a grip, a motor and a long bit
+    w.add(mesh(BOX, 0x3a3e46, 0, -0.2, 0, 0.18, 0.4, 0.22));
+    w.add(mesh(CYL, 0xd9a020, 0, -0.5, 0, 0.26, 0.3, 0.26));
+    const bit = mesh(CONE, ev ? tc : 0xc8ccd4, 0, -1.05 * s, 0, 0.22, 0.85 * s, 0.22, em);
+    bit.rotation.x = Math.PI;
+    w.add(bit);
+  } else if (id === 'flame') {
+    // the molotov: a green bottle with a burning rag
+    w.add(mesh(CYL, ev ? 0x8a2a1a : 0x2f8a45, 0, -0.35, 0, 0.22, 0.42, 0.22, ev ? em : 0x0a2a10));
+    w.add(mesh(CYL, 0x2f8a45, 0, -0.62, 0, 0.09, 0.18, 0.09));
+    w.add(mesh(SPH, 0xffa020, 0, -0.78, 0, 0.12, 0.16, 0.12, 0x904000));
+  } else if (id === 'brick') {
+    w.add(mesh(BOX, ev ? 0x8a929c : 0xb04a32, 0, -0.35, 0, 0.42 * s, 0.24 * s, 0.26 * s, em));
+  } else if (id === 'ball') {
+    w.add(mesh(SPH, ev ? tc : 0xe8e8ec, 0, -0.38, 0, 0.32 * s, 0.32 * s, 0.32 * s, em));
   } else if (id === 'hammer') {
     w.add(mesh(CYL, 0x6b4a2a, 0, -0.55, 0, 0.08, 1.2, 0.08));
     w.add(mesh(BOX, tc, 0, -1.15, 0, 0.6 * s, 0.4 * s, 0.4 * s, em));

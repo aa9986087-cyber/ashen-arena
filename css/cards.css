@@ -309,3 +309,179 @@
   box-shadow: 0 0 10px rgba(80, 230, 120, 0.6);
   z-index: 2;
 }
+
+/* the evolution scene */
+#evoFx {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+  text-align: center;
+  background: radial-gradient(circle at 50% 45%, rgba(120, 40, 160, 0.55), rgba(4, 2, 10, 0.75) 70%);
+  opacity: 0;
+}
+#evoFx.on {
+  animation: efBox 3.2s ease-out forwards;
+}
+@keyframes efBox {
+  0% {
+    opacity: 0;
+  }
+  8%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+#evoFx .efRays {
+  position: absolute;
+  width: 140vmax;
+  height: 140vmax;
+  background: repeating-conic-gradient(rgba(255, 200, 255, 0.16) 0 6deg, transparent 6deg 18deg);
+  mask: radial-gradient(circle, #000 10%, transparent 55%);
+  -webkit-mask: radial-gradient(circle, #000 10%, transparent 55%);
+  animation: efSpin 6s linear infinite;
+  opacity: 0;
+}
+#evoFx.on .efRays {
+  animation:
+    efSpin 6s linear infinite,
+    efRaysIn 3.2s ease-out forwards;
+}
+@keyframes efSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes efRaysIn {
+  0%,
+  30% {
+    opacity: 0;
+  }
+  40%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+#evoFx .efIcons {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 84px;
+  line-height: 1;
+}
+#evoFx .efIcons i {
+  font-style: normal;
+  filter: drop-shadow(0 0 18px rgba(255, 180, 255, 0.9));
+}
+#evoFx .efFrom {
+  animation: efFrom 3.2s ease-in forwards;
+}
+@keyframes efFrom {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  10% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  15%,
+  21%,
+  27% {
+    transform: translateX(-5px) rotate(-6deg);
+  }
+  18%,
+  24%,
+  30% {
+    transform: translateX(5px) rotate(6deg);
+    filter: drop-shadow(0 0 30px #fff) brightness(2);
+  }
+  36% {
+    transform: scale(1.3);
+    opacity: 1;
+    filter: brightness(4);
+  }
+  42%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.25;
+  }
+}
+#evoFx .efArrow {
+  font-size: 40px;
+  color: #ffd27a;
+  opacity: 0;
+  animation: efPop 3.2s ease-out forwards;
+  animation-delay: 0.1s;
+}
+#evoFx .efTo {
+  opacity: 0;
+  animation: efTo 3.2s cubic-bezier(0.2, 1.4, 0.3, 1) forwards;
+}
+@keyframes efTo {
+  0%,
+  36% {
+    transform: scale(0.2) rotate(-40deg);
+    opacity: 0;
+  }
+  48% {
+    transform: scale(1.5) rotate(8deg);
+    opacity: 1;
+  }
+  58%,
+  100% {
+    transform: scale(1.25) rotate(0);
+    opacity: 1;
+  }
+}
+@keyframes efPop {
+  0%,
+  34% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  46%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+#evoFx small,
+#evoFx h3,
+#evoFx p {
+  position: relative;
+  opacity: 0;
+  animation: efPop 3.2s ease-out forwards;
+}
+#evoFx small {
+  color: #f2b6ff;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+#evoFx h3 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 40px;
+  background: linear-gradient(180deg, #fff, #f2b6ff 50%, #b04aff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 0 #2a0640);
+}
+#evoFx p {
+  max-width: min(520px, 90vw);
+  color: #f3e8ff;
+  font-weight: 700;
+}

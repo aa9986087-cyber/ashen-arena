@@ -314,7 +314,7 @@ function update(dt) {
     fire(w, ang);
     // double strike: sometimes the weapon fires again right away
     if (G.ups.mirror && Math.random() < 0.2 * G.ups.mirror) fire(w, ang + rand(-0.15, 0.15));
-    w.cd = d.cd * (1 - 0.05 * (w.lvl - 1));
+    w.cd = d.cd * (1 - 0.05 * (w.lvl - 1)) * (w.evo && w.id === 'rifle' ? 0.14 : 1);
   }
   const tgt = manual ? null : nearest(p.x, p.z, 14);
   let fa = p.face;
@@ -571,6 +571,37 @@ function update(dt) {
     s.x += s.vx * dt;
     s.z += s.vz * dt;
     if (s.kind === 3 && Math.random() < 0.6) parts(s.x, 1, s.z, 1, 1, 0.6, 0.2, 1, 0.2, 0.3);
+    // thrown in an arc: it touches nothing on the way, and lands at the end of its flight
+    if (s.lob) {
+      if (s.life <= 0 && !s.ghost) lobLand(s);
+      if (s.life <= 0) s.life = -1;
+      continue;
+    }
+    // the bouncing ball: off the arena's edge, and it may hit the same enemy again after a moment
+    if (s.ball) {
+      const r = Math.hypot(s.x, s.z);
+      if (r > ARENA - 0.5) {
+        const nx = s.x / r,
+          nz = s.z / r,
+          dot = s.vx * nx + s.vz * nz;
+        s.vx -= 2 * dot * nx;
+        s.vz -= 2 * dot * nz;
+        s.x = nx * (ARENA - 0.6);
+        s.z = nz * (ARENA - 0.6);
+      }
+      if ((s.hitT = (s.hitT || 0) + dt) > 0.4) {
+        s.hitT = 0;
+        s.hits.length = 0;
+        // drifting away from everything: curve back toward the nearest enemy
+        const nx = nearest(s.x, s.z, 12);
+        if (nx) {
+          const a = Math.atan2(nx.z - s.z, nx.x - s.x),
+            v = Math.hypot(s.vx, s.vz);
+          s.vx = s.vx * 0.4 + Math.cos(a) * v * 0.6;
+          s.vz = s.vz * 0.4 + Math.sin(a) * v * 0.6;
+        }
+      }
+    }
     for (const e of s.ghost ? [] : G.enemies) {
       if (e.dead || s.hits.includes(e)) continue;
       const dx = e.x - s.x,
@@ -581,8 +612,23 @@ function update(dt) {
           s.life = 0;
           break;
         }
-        hit(e, s.dmg, { kb: 2, ang: s.a, crit: s.crit });
+        hit(e, s.dmg, { kb: s.ball ? 4 : 2, ang: s.a, crit: s.crit });
         if (s.aoe) explode(s.x, s.z, s.aoe, s.dmg * 0.5, true);
+        if (s.ball) {
+          // bounce on to the nearest other enemy (or back off this one): it rattles around the crowd
+          const nx = nearest(s.x, s.z, 9, [e]) || e,
+            a =
+              nx === e
+                ? Math.atan2(s.z - e.z, s.x - e.x) + rand(-0.6, 0.6)
+                : Math.atan2(nx.z - s.z, nx.x - s.x) + rand(-0.15, 0.15),
+            v = Math.hypot(s.vx, s.vz);
+          s.vx = Math.cos(a) * v;
+          s.vz = Math.sin(a) * v;
+          s.a = a;
+          if (s.fx === 'shock' && Math.random() < 0.5) boltStrike(2, s.dmg * 0.6, e.x, e.z);
+          s.hits.push(e);
+          break;
+        }
         if (s.fx === 'burn' && !e.dead) e.burn = 3;
         else if (s.fx === 'chain') boltStrike(4, s.dmg * 0.6, e.x, e.z);
         else if (s.fx === 'split')
@@ -625,6 +671,19 @@ function update(dt) {
     }
   }
   G.shots = G.shots.filter(s => s.life > 0);
+  // fires on the ground (molotov): burn whoever stands in them, about three times a second
+  for (const q of G.pools) {
+    q.l += dt;
+    if ((q.tick -= dt) <= 0) {
+      q.tick = 0.33;
+      eachInRadius(q.x, q.z, q.r, e => {
+        hit(e, q.dmg, { quiet: 1, burn: 1, noCrit: 1 });
+        if (!e.dead) e.burn = Math.max(e.burn || 0, 1.5);
+      });
+    }
+    vfxFirePool(q, dt);
+  }
+  G.pools = G.pools.filter(q => q.l < q.d);
   const eslow = G.tslowT > 0 ? 0.5 : 1;
   for (const s of G.eshots) {
     s.life -= dt;

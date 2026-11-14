@@ -86,9 +86,9 @@ function rollCards(n, minR, skip) {
         const c = { k: 'pact', id, r: 1, w: RW[1] * 0.75 };
         if (!has(c)) pool.push(c);
       }
-  if (G.weapons.length < 3 && minR <= 1)
+  if (G.weapons.length < 4 && minR <= 1)
     for (const id in WEP)
-      if ((S.weps[id] || id === CHARS[S.char].wep) && !G.weapons.find(w => w.id === id)) {
+      if (!G.weapons.find(w => w.id === id)) {
         const c = { k: 'wnew', id, r: 1, w: RW[1] * 0.8 };
         if (!has(c)) pool.push(c);
       }
@@ -202,16 +202,31 @@ function cardInfo(c) {
       d: nl === 3 ? 'يتطور شكل السلاح: ' + d.evo[0] : nl === 5 ? 'الشكل الأسطوري: ' + d.evo[1] : 'ضرر +30% وهجوم أسرع',
       pips: [w.lvl, 5],
       lv: '',
-      syn: nl === 5 && EVO[c.id] ? 'يتطور كامل مع ' + UP[EVO[c.id].up].i + ' ' + UP[EVO[c.id].up].n : '',
+      // the way to its evolution, on every card of it
+      syn: 'يتطور مع ' + UP[EVO[c.id].up].i + ' ' + UP[EVO[c.id].up].n + ' ← ' + EVO[c.id].i + ' ' + EVO[c.id].n,
     };
   }
   if (c.k === 'evo') {
     const v = EVO[c.id];
-    return { i: v.i, n: v.n, d: v.d, lv: 'تطور كامل: ' + WEP[c.id].n + ' + ' + UP[v.up].n, syn: '' };
+    return {
+      i: v.i,
+      n: v.n,
+      d: v.d,
+      lv: 'تطور كامل: ' + WEP[c.id].n + ' + ' + UP[v.up].n,
+      syn: WEP[c.id].i + ' ' + WEP[c.id].n + ' ← ' + v.i + ' ' + v.n,
+    };
   }
   if (c.k === 'wnew') {
     const d = WEP[c.id];
-    return { i: d.i, n: d.n, d: 'سلاح إضافي يهاجم تلقائياً مع أسلحتك', isNew: true, pips: [0, 5], lv: '', syn: '' };
+    return {
+      i: d.i,
+      n: d.n,
+      d: d.d + ' (يهاجم وحده مع أسلحتك)',
+      isNew: true,
+      pips: [0, 5],
+      lv: '',
+      syn: 'يتطور مع ' + UP[EVO[c.id].up].i + ' ' + UP[EVO[c.id].up].n + ' ← ' + EVO[c.id].i + ' ' + EVO[c.id].n,
+    };
   }
   if (c.k === 'pact') {
     const q = PACT[c.id];
@@ -301,6 +316,7 @@ function chooseCard(i) {
     w.evo = 1;
     S.stats.evos = (S.stats.evos || 0) + 1;
     if (w === G.weapons[0]) buildWeapon();
+    evoFx(c.id);
   } else if (c.k === 'wnew') G.weapons.push({ id: c.id, lvl: 1, cd: 0.2 });
   else if (c.k === 'pact') {
     const r0 = p.hp / p.maxHp;
@@ -310,7 +326,9 @@ function chooseCard(i) {
   } else if (c.k === 'heal') heal(p.maxHp * 0.4);
   else if (c.k === 'pot') G.pots = Math.min(POT_MAX, (G.pots || 0) + 1);
   else G.coins += 40;
-  if (c.r === 3) {
+  if (c.r === 3 && c.k === 'evo')
+    S.stats.legend++; // its own scene (evoFx) instead of the banner
+  else if (c.r === 3) {
     S.stats.legend++;
     cine(cardInfo(c).n || UP[c.id].n);
     AU.play('legend');
@@ -341,6 +359,30 @@ function chooseCard(i) {
   G.p.inv = Math.max(G.p.inv, 0.7);
   if (!COOP.on) G.resumeT = RESUME_T;
   saveRun();
+}
+/** The evolution scene: the weapon shakes and glows, a flash, and its evolved form appears in rays of light,
+    with its name and what changed; the arena slows, a shockwave rolls out from the hero. */
+function evoFx(id) {
+  const box = $('evoFx'),
+    v = EVO[id],
+    p = G.p;
+  box.querySelector('.efFrom').textContent = WEP[id].i;
+  box.querySelector('.efTo').textContent = v.i;
+  box.querySelector('h3').textContent = WEP[id].n + ' ← ' + v.n;
+  box.querySelector('p').textContent = v.d;
+  box.hidden = false;
+  box.classList.remove('on');
+  void box.offsetWidth;
+  box.classList.add('on');
+  clearTimeout(evoFx.t);
+  evoFx.t = setTimeout(() => (box.hidden = true), 3200);
+  G.slow = Math.max(G.slow || 0, 1.2);
+  AU.play('legend');
+  shake(0.9);
+  ring(p.x, p.z, 0.5, 14, 0.9, [1.7, 0.6, 1.9]);
+  vfxP({ t: VT.flare, x: p.x, y: 1.4, z: p.z, life: 0.6, s: 3, s1: 12, r: 2, g: 1.2, b: 2, rot: 0 });
+  vfxP({ t: VT.ring, x: p.x, y: 0.6, z: p.z, life: 0.8, s: 2, s1: 20, r: 1.6, g: 0.7, b: 1.9 });
+  vfxSparks(p.x, 1.2, p.z, 40, [1.8, 0.8, 2], 12, 0.35, 1);
 }
 function cine(t) {
   const e = $('cine');
