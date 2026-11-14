@@ -643,12 +643,26 @@ function coopHostPicks(dt) {
   const peers = [...COOP.peers.values()].filter(q => !q.dead && q.x !== undefined);
   for (const q of G.picks) {
     if (q.got) continue;
-    if (!q.to && !q.mag)
-      for (const t of peers)
-        if ((t.x - q.x) ** 2 + (t.z - q.z) ** 2 < (t.mg || 2.5) ** 2) {
-          q.to = t.id;
-          break;
+    if (!q.to && !q.mag) {
+      // the nearest player whose magnet reaches it takes it (the host too): not the first one in the list, or
+      // with everyone together the gems always went to the same teammate and the last to join got none
+      const P = G.p;
+      let best = null,
+        bd =
+          !P.dead && (P.x - q.x) ** 2 + (P.z - q.z) ** 2 < P.magnet * P.magnet
+            ? (P.x - q.x) ** 2 + (P.z - q.z) ** 2
+            : 1e9;
+      const host = bd < 1e9;
+      for (const t of peers) {
+        const d2 = (t.x - q.x) ** 2 + (t.z - q.z) ** 2;
+        if (d2 < (t.mg || 2.5) ** 2 && d2 < bd) {
+          bd = d2;
+          best = t;
         }
+      }
+      if (best) q.to = best.id;
+      else if (host) q.mag = true; // the host's own loop flies it to him
+    }
     if (!q.to) continue;
     const t = COOP.peers.get(q.to);
     if (!t || t.dead) {
@@ -735,9 +749,10 @@ function coopTakeGifts(gv) {
   COOP.lastGv = gv; // (kept, so whoever takes over as host carries the same totals on)
   const tot = gv[COOP.me];
   if (!tot) return;
+  // only what's new: a late snapshot (older totals) gives nothing and doesn't lower the mark
   const had = COOP.taken,
-    d = tot.map((v, i) => v - (had[i] || 0));
-  COOP.taken = tot.slice();
+    d = tot.map((v, i) => Math.max(0, v - (had[i] || 0)));
+  COOP.taken = tot.map((v, i) => Math.max(v, had[i] || 0));
   const p = G.p;
   if (d[0] > 0.01) {
     if (!p.dead) addXp(d[0]);
