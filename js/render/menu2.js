@@ -124,20 +124,36 @@ function menu2Grin(b) {
           blending: THREE.AdditiveBlending,
           fog: false,
         }),
-      F = new THREE.Group(),
-      w = H * 0.065; // half the grin's width
-    F.position.set(cx + M2_FACE.x * H, bb.min.y + M2_FACE.y * H, bb.max.z * M2_FACE.z);
-    // eyes: a hot core in a wide glow
+      F = new THREE.Group();
+    // the model's own eyes: its whites (the pale grey) in the upper half, split into the two eyes
+    const P = g.attributes.position,
+      C = g.attributes.color,
+      white = [];
+    for (let i = 0; i < P.count; i++)
+      if (
+        P.getY(i) > bb.min.y + H * 0.55 &&
+        C &&
+        Math.abs(C.getX(i) - 0.56) < 0.02 &&
+        Math.abs(C.getZ(i) - 0.63) < 0.03
+      )
+        white.push([P.getX(i), P.getY(i), P.getZ(i)]);
+    let spots = [];
+    if (white.length > 10) {
+      const xs = white.map(q => q[0]).sort((m, n) => m - n),
+        mid = (xs[0] + xs[xs.length - 1]) / 2,
+        cen = a =>
+          a.reduce((t, q) => [t[0] + q[0] / a.length, t[1] + q[1] / a.length, Math.max(t[2], q[2])], [0, 0, -9]);
+      spots = [cen(white.filter(q => q[0] < mid)), cen(white.filter(q => q[0] >= mid))];
+    } else spots = [-1, 1].map(sd => [cx + sd * H * 0.04, bb.min.y + H * 0.8, bb.max.z]);
     const eyes = [];
-    for (const s of [-1, 1]) {
-      const core = new THREE.Mesh(new THREE.SphereGeometry(H * 0.011, 10, 8), add(0xfff2c0, 1)),
-        halo = new THREE.Mesh(new THREE.SphereGeometry(H * 0.022, 10, 8), add(0xff2a10, 0.35));
-      core.position.set(s * w * 0.62, H * 0.07, 0);
+    for (const [x, y, z] of spots) {
+      const core = new THREE.Mesh(new THREE.SphereGeometry(H * 0.02, 10, 8), add(0xfff2c0, 1)),
+        halo = new THREE.Mesh(new THREE.SphereGeometry(H * 0.045, 10, 8), add(0xff2a10, 0.35));
+      core.position.set(x, y, z + H * 0.01);
       halo.position.copy(core.position);
       F.add(core, halo);
       eyes.push(halo);
     }
-
     b.add(F);
     M2.face = { F, eyes, laugh: 3 };
   }
@@ -155,5 +171,3 @@ function menu2Grin(b) {
     e.scale.setScalar(1 + k * 0.6);
   }
 }
-/** Where the face sits on the model, as fractions of its height (x across, y up from the feet, z of the front). */
-const M2_FACE = { x: 0, y: 0.78, z: 1 };
