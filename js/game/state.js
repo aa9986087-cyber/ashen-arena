@@ -32,7 +32,8 @@ function newRun() {
     slow: 0,
     superT: 0,
     specCd: 0,
-    potCd: 0, // the healing potion's cooldown
+    potCd: 0, // the short gap between two potions
+    pots: 0, // healing potions carried (none at the start)
     buffT: 0,
     buff: {},
     rerolls: (S.tree.U2 ? 2 : 0) + (S.tree.U4 ? 1 : 0),

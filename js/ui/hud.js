@@ -75,6 +75,11 @@ function drawHud() {
   cooldown($('bDash'), p.dashCd / p.dashMax);
   cooldown($('bSpec'), G.specCd / specCdMax());
   cooldown($('bPot'), G.potCd / POT_CD);
+  if (hud.pots !== G.pots) {
+    hud.pots = G.pots;
+    $('bPot').hidden = !G.pots;
+    $('potN').textContent = G.pots;
+  }
 }
 /** Show a button's cooldown (1 = just used, 0 = ready) and flash it when it comes back. */
 function cooldown(btn, k) {

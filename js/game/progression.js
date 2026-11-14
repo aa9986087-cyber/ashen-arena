@@ -26,6 +26,7 @@ function bossDown(e) {
   for (let i = 0; i < (S.tree.W4 ? 24 : 12); i++) drop(e.x + rand(-3, 3), e.z + rand(-3, 3), 1, 4 + G.stage * 2);
   drop(e.x, e.z, 0, e.xp);
   drop(e.x, e.z + 1, 2, 40);
+  drop(e.x + 1, e.z, 3, 1); // a boss always leaves a healing potion
   for (const q of G.picks) q.mag = true;
   G.bossesRun++;
   G.bossDone = true; // the stage's boss is beaten: no other until the next stage

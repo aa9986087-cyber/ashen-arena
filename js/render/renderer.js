@@ -324,7 +324,11 @@ function render(dt, now) {
         s = q.v >= 10 ? 0.62 : q.v >= 3 ? 0.48 : 0.36;
       put(IG, q.x, bob, q.z, q.t * 2, s, s * 1.3, s, c[0], c[1], c[2]);
     } else if (q.k === 1) put(ICoin, q.x, bob, q.z, q.t * 3, 0.5, 0.5, 0.5, 1.3, 1, 0.2, Math.PI / 2);
-    else put(IG, q.x, bob + 0.2, q.z, q.t * 2, 0.7, 0.7, 0.7, 1.4, 0.2, 0.3);
+    else if (q.k === 3) {
+      // a healing potion: a tall glowing pink-red bottle with a pale cap
+      put(IG, q.x, bob + 0.35, q.z, q.t * 2.5, 0.62, 1.05, 0.62, 1.7, 0.25, 0.7);
+      put(IG, q.x, bob + 1.05, q.z, -q.t * 2.5, 0.26, 0.3, 0.26, 1.5, 1.4, 1.3);
+    } else put(IG, q.x, bob + 0.2, q.z, q.t * 2, 0.7, 0.7, 0.7, 1.4, 0.2, 0.3);
   }
   flush(IG);
   flush(ICoin);

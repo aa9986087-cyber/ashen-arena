@@ -39,6 +39,11 @@ function rollCards(n, minR, skip) {
         const c = { k: 'wnew', id, r: 1, w: RW[1] * 0.8 };
         if (!has(c)) pool.push(c);
       }
+  // a healing potion to carry (while there's room for one)
+  if (minR <= 1 && (G.pots || 0) < POT_MAX) {
+    const c = { k: 'pot', r: 1, w: 70 };
+    if (!has(c)) pool.push(c);
+  }
   const out = [];
   while (out.length < n && pool.length) {
     let tot = 0;
@@ -151,6 +156,14 @@ function cardInfo(c) {
     return { i: q.i, n: q.n, d: '✅ ' + q.pro + '\n❌ ' + q.con, lv: 'صفقة: مرة وحدة', syn: '' };
   }
   if (c.k === 'heal') return { i: '🍖', n: 'وليمة', d: 'تستعيد 40% من صحتك', lv: '', syn: '' };
+  if (c.k === 'pot')
+    return {
+      i: '⚗️',
+      n: 'جرعة شفاء',
+      d: 'تحتفظ فيها وتشربها بزر الجرعة وقت ما تبي: تعيد 35% من صحتك',
+      lv: 'جرعك ' + (G.pots || 0) + ' ← ' + ((G.pots || 0) + 1) + ' (أقصى ' + POT_MAX + ')',
+      syn: '',
+    };
   return { i: '💰', n: 'كنز', d: '+40 عملة', lv: '', syn: '' };
 }
 let curCards = [];
@@ -223,6 +236,7 @@ function chooseCard(i) {
     recalc();
     p.hp = Math.max(1, Math.min(p.maxHp, r0 * p.maxHp));
   } else if (c.k === 'heal') heal(p.maxHp * 0.4);
+  else if (c.k === 'pot') G.pots = Math.min(POT_MAX, (G.pots || 0) + 1);
   else G.coins += 40;
   if (c.r === 3) {
     S.stats.legend++;

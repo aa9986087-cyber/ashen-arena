@@ -152,6 +152,8 @@ function kill(e) {
   if (Math.random() < (e.elite ? 1 : 0.13))
     drop(e.x + rand(-0.5, 0.5), e.z + rand(-0.5, 0.5), 1, e.mini ? 15 : e.elite ? 6 : 1 + (Math.random() < 0.3));
   if (Math.random() < (e.elite ? 0.35 : 0.012)) drop(e.x, e.z + 0.6, 2, 20);
+  // a healing potion: sometimes from an elite, always from a mini-boss, rarely from anyone
+  if (Math.random() < (e.mini ? 1 : e.elite ? 0.15 : 0.003)) drop(e.x - 0.6, e.z, 3, 1);
   const gold = 0.06 * (G.ups.goldrush || 0) + (G.ups.midas ? 0.1 : 0);
   if (gold && Math.random() < gold) drop(e.x + rand(-0.6, 0.6), e.z + rand(-0.6, 0.6), 1, 1 + (Math.random() < 0.4));
   if (!mine) return;
@@ -633,13 +635,30 @@ function levelUpFx() {
   }
 }
 
-/* The healing potion (the button that used to be "attack": attacks are automatic). */
-const POT_CD = 40;
+/* Healing potions: you don't start with any. You get them from a level card or a bottle dropped on the map
+   (elites sometimes, bosses always), carry up to POT_MAX, and drink one with the button whenever you like. */
+const POT_MAX = 3,
+  POT_CD = 1.5; // a short gap between two drinks
+function addPot(x, z) {
+  const p = G.p;
+  if (G.pots >= POT_MAX) {
+    // a full bag: the bottle heals on the spot instead
+    heal(p.maxHp * 0.15);
+    text(p.x, p.z, 'الجرع مليانة: شفاء', '#6dff8a');
+    AU.play('heart');
+    return;
+  }
+  G.pots++;
+  AU.play('gem');
+  text(p.x, p.z, '+1 جرعة ⚗️', '#ff7ab8', true);
+  pop($('bPot'));
+}
 function potion() {
   const p = G.p;
-  if (G.state !== 'play' || p.dead || G.cardsOpen) return;
-  if (G.potCd > 0) return toast('الجرعة تنشحن… ' + Math.ceil(G.potCd) + ' ث');
+  if (G.state !== 'play' || p.dead || G.cardsOpen || G.potCd > 0) return;
+  if (!(G.pots > 0)) return toast('ما معك جرع. تلقاها بالبطاقات أو يطيحها الأعداء الأقوياء');
   if (p.hp >= p.maxHp) return toast('صحتك كاملة');
+  G.pots--;
   G.potCd = POT_CD;
   const v = Math.round(p.maxHp * 0.35);
   heal(v);

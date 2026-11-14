@@ -35,6 +35,7 @@ function saveRun() {
         weapons: G.weapons.map(w => ({ id: w.id, lvl: w.lvl, evo: w.evo ? 1 : 0 })),
         specCd: G.specCd,
         potCd: G.potCd,
+        pots: G.pots,
         hp: p.hp,
         shield: p.shield,
         legCount: p.legCount,
@@ -97,6 +98,7 @@ function resumeRun() {
     pacts: o.pacts || {},
     specCd: +o.specCd || 0,
     potCd: +o.potCd || 0,
+    pots: clamp(o.pots | 0, 0, POT_MAX),
   });
   G.need = xpNeed(G.lvl);
   G.weapons = o.weapons
@@ -146,8 +148,8 @@ function startRun() {
   banner(
     STAGES[0].n,
     IN.touch
-      ? 'اسحب بإصبعك في أي مكان للحركة\nالأسلحة تهاجم وحدها، والأزرار: مراوغة، ضربة خاصة، جرعة شفاء'
-      : 'الأسهم للحركة، المسافة للمراوغة، حرف Q للضربة الخاصة، حرف R للجرعة\nالأسلحة تهاجم وحدها، واضغط الفأرة للتصويب اليدوي',
+      ? 'اسحب بإصبعك في أي مكان للحركة\nالأسلحة تهاجم وحدها، وجرع الشفاء تلقاها بالبطاقات أو يطيحها الأعداء الأقوياء'
+      : 'الأسهم للحركة، المسافة للمراوغة، حرف Q للضربة الخاصة، حرف R تشرب جرعة (إذا معك)\nالأسلحة تهاجم وحدها، واضغط الفأرة للتصويب اليدوي',
     4.5
   );
   for (let i = 0; i < 6; i++) spawnAround('grunt', false, rand(13, 18));

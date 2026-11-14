@@ -678,3 +678,23 @@ body.mouse .act.big {
   border-color: #ffcf40;
   color: #ffe9a0;
 }
+
+/* the potion button: only there while you carry some, with how many */
+.act[hidden] {
+  display: none;
+}
+#potN {
+  position: absolute;
+  top: 2px;
+  inset-inline-end: 4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 10px;
+  background: #e0285a;
+  color: #fff;
+  font-size: 12px;
+  line-height: 20px;
+  font-weight: 800;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5);
+}

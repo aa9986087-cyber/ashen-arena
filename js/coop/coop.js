@@ -728,7 +728,8 @@ function coopMirror(dt) {
             G.coins += c;
             AU.play('coin');
             text(p.x, p.z, '+' + c + ' 🪙', '#ffd23a');
-          } else {
+          } else if (kind === 3) addPot();
+          else {
             heal(v);
             AU.play('heart');
             text(p.x, p.z, '+' + Math.round(v), '#6dff8a', true);

@@ -687,7 +687,8 @@ function update(dt) {
         G.coins += v;
         AU.play('coin');
         text(p.x, p.z, '+' + v + ' 🪙', '#ffd23a');
-      } else {
+      } else if (q.k === 3) addPot();
+      else {
         heal(q.v);
         AU.play('heart');
         text(p.x, p.z, '+' + q.v, '#6dff8a', true);
