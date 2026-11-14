@@ -1,46 +1,71 @@
 'use strict';
 /* Level-up / boss reward cards, and the HUD loadout chips. */
-/* ---------- build paths ---------- */
-/** Levels taken along a path (its progress). */
-const pathProg = P => P.steps.reduce((a, id) => a + (G.ups[id] || 0), 0);
-const pathOpen = P => pathProg(P) > 0;
-const pathSlots = () => PATH_SLOTS + (G.lvl >= 15 ? 1 : 0);
-const pathsOpen = () => PATHS.filter(pathOpen);
-/** Masteries across all paths (every PATH_MASTERY steps in one path). */
-const pathMastery = P => Math.min(3, Math.floor(pathProg(P) / PATH_MASTERY)); // at most 3 per path (+24%)
-const pathMasteries = () => PATHS.reduce((a, P) => a + pathMastery(P), 0);
-/** Can this upgrade be offered now? (general cards always; a path step once the step before it is taken, and
-    only on a path you're walking or while you have a free slot) */
-function pathAllows(id) {
-  const q = PATH_OF[id];
-  if (!q) return true;
-  if (q.k > 0 && !(G.ups[q.P.steps[q.k - 1]] > 0)) return false;
-  return pathOpen(q.P) || pathsOpen().length < pathSlots();
+/* ---------- how cards are offered (like Survivor.io) ----------
+   Skills (the upgrades that do something: fire, lightning, blades, drones…) and stats (the plain numbers) each
+   have SLOTS: once your six skills / six stats are chosen, only those get offered, so a run builds into one
+   character. Most offers upgrade what you already have; a new card comes while there's room. And the offers
+   follow your build: long-range weapons bring projectile cards, close-range ones bring blades and area;
+   a card from the same family (fire, storm, frost…) as one you own comes more often. */
+const SKILL_SLOTS = 6,
+  STAT_SLOTS = 6;
+const isSkill = id => UP[id].r >= 1;
+const ownedUps = skill => Object.keys(G.ups).filter(id => G.ups[id] > 0 && UP[id] && isSkill(id) === skill);
+/** Upgrades that suit fighting from afar / up close. */
+const RANGED_UPS = ['multi', 'pierce', 'bounce', 'pspeed', 'size', 'magic', 'shards', 'mirror', 'bolt', 'chain'];
+const MELEE_UPS = [
+  'orbit',
+  'blades',
+  'whirl',
+  'area',
+  'kb',
+  'legend',
+  'dash',
+  'vortexdash',
+  'nova',
+  'thorns',
+  'guardian',
+];
+/** How much the build leans to range: +1 all long-range weapons, −1 all close-range. */
+function rangeLean() {
+  const W = G.weapons;
+  if (!W.length) return 0;
+  return W.reduce((a, w) => a + (WEP[w.id] && WEP[w.id].melee ? -1 : 1), 0) / W.length;
+}
+/** The weight of offering upgrade `id` now (0 = not at all). */
+function upWeight(id, RW) {
+  const u = UP[id],
+    l = G.ups[id] || 0,
+    skill = isSkill(id);
+  if (l >= u.max) return 0;
+  let w;
+  if (l > 0)
+    w = skill ? 90 : 60; // an upgrade of something you have: the usual offer
+  else if (ownedUps(skill).length >= (skill ? SKILL_SLOTS : STAT_SLOTS))
+    return 0; // no room for a new one
+  else w = RW[u.r] * (skill ? 0.9 : 0.7);
+  // the build: range or melee
+  const lean = rangeLean();
+  if (RANGED_UPS.includes(id)) w *= 1 + lean * 0.8;
+  if (MELEE_UPS.includes(id)) w *= 1 - lean * 0.8;
+  // the family: more of what you've started (fire with fire, storm with storm…)
+  const fam = PATH_OF[id];
+  if (fam && l === 0 && fam.P.steps.some(x => x !== id && G.ups[x] > 0)) w *= 2.2;
+  return Math.max(0, w);
 }
 function rollCards(n, minR, skip) {
-  // the very first choice: open your first path (three openers from three different paths)
-  if (minR === 0 && !pathsOpen().length && !skip) {
-    const opts = PATHS.slice()
-      .sort(() => Math.random() - 0.5)
-      .slice(0, n);
-    return opts.map(P => ({ k: 'up', id: P.steps[0], r: UP[P.steps[0]].r, first: 1 }));
-  }
   const luck = S.tree.U4 ? 1.5 : 1,
     RW = [60, 24 * luck, 9 * luck, (3.2 + G.lvl * 0.22) * luck],
     pool = [],
     has = k => skip && skip.some(c => c.k === k.k && c.id === k.id);
   for (const id in UP) {
-    const u = UP[id],
-      l = G.ups[id] || 0;
-    if (l < u.max && u.r >= minR && pathAllows(id)) {
-      const q = PATH_OF[id];
-      // your paths come first (their last step, the legendary, most of all); opening a new one less so;
-      // the general cards fill in
-      const w = !q ? RW[u.r] * 0.55 : pathOpen(q.P) ? (q.k === q.P.steps.length - 1 ? 300 : 70 + RW[u.r]) : 22;
-      const c = { k: 'up', id, r: u.r, w };
+    if (UP[id].r < minR) continue;
+    const w = upWeight(id, RW);
+    if (w > 0) {
+      const c = { k: 'up', id, r: UP[id].r, w };
       if (!has(c)) pool.push(c);
     }
   }
+
   for (const w of G.weapons)
     if (w.lvl < 5) {
       const r = w.lvl === 2 || w.lvl === 4 ? 2 : 1;
@@ -84,8 +109,8 @@ function rollCards(n, minR, skip) {
     }
     out.push(pool.splice(i, 1)[0]);
   }
-  // always at least one card that carries on one of your paths, when one can
-  const cont = c => c.k === 'up' && PATH_OF[c.id] && pathOpen(PATH_OF[c.id].P);
+  // always at least one card that grows something you already have, when one can
+  const cont = c => (c.k === 'up' && G.ups[c.id] > 0) || c.k === 'wup';
   if (out.length && !out.some(cont)) {
     const alt = pool.filter(cont);
     if (alt.length) out[out.length - 1] = alt[(Math.random() * alt.length) | 0];
@@ -156,30 +181,14 @@ function cardInfo(c) {
           ' ' +
           EVO[w.id].n +
           (w.lvl < 5 ? ' (لما يوصل المستوى 5)' : '');
-    // where it sits on a path: "Fire path · step 2 of 5" (or that it opens a new one)
-    const q = PATH_OF[c.id];
-    let pth = '';
-    if (q) {
-      const open = pathOpen(q.P),
-        last = q.k === q.P.steps.length - 1;
-      pth =
-        q.P.i +
-        ' مسار ' +
-        q.P.n +
-        ' · الخطوة ' +
-        (q.k + 1) +
-        ' من ' +
-        q.P.steps.length +
-        (last ? ' (الأسطورية)' : '') +
-        (open ? '' : ' · يفتح مسار جديد (' + (pathsOpen().length + 1) + ' من ' + pathSlots() + ')');
-    }
     return {
       i: u.i,
       n: u.n,
       d: u.d,
-      pth,
       st: upPreview(c.id),
-      lv: u.max > 1 ? 'مستواك ' + l + ' ← ' + (l + 1) + ' (من ' + u.max + ')' : 'مرة وحدة',
+      pips: [l, u.max],
+      isNew: !l,
+      lv: '',
       syn,
     };
   }
@@ -191,7 +200,8 @@ function cardInfo(c) {
       i: d.i,
       n: d.n,
       d: nl === 3 ? 'يتطور شكل السلاح: ' + d.evo[0] : nl === 5 ? 'الشكل الأسطوري: ' + d.evo[1] : 'ضرر +30% وهجوم أسرع',
-      lv: 'مستواه ' + w.lvl + ' ← ' + nl + ' (من 5)',
+      pips: [w.lvl, 5],
+      lv: '',
       syn: nl === 5 && EVO[c.id] ? 'يتطور كامل مع ' + UP[EVO[c.id].up].i + ' ' + UP[EVO[c.id].up].n : '',
     };
   }
@@ -201,7 +211,7 @@ function cardInfo(c) {
   }
   if (c.k === 'wnew') {
     const d = WEP[c.id];
-    return { i: d.i, n: d.n, d: 'سلاح إضافي يهاجم تلقائياً مع أسلحتك', lv: 'سلاح جديد', syn: '' };
+    return { i: d.i, n: d.n, d: 'سلاح إضافي يهاجم تلقائياً مع أسلحتك', isNew: true, pips: [0, 5], lv: '', syn: '' };
   }
   if (c.k === 'pact') {
     const q = PACT[c.id];
@@ -213,7 +223,8 @@ function cardInfo(c) {
       i: '⚗️',
       n: 'جرعة شفاء',
       d: 'تحتفظ فيها وتشربها بزر الجرعة وقت ما تبي: تعيد 35% من صحتك',
-      lv: 'جرعك ' + (G.pots || 0) + ' ← ' + ((G.pots || 0) + 1) + ' (أقصى ' + POT_MAX + ')',
+      pips: [G.pots || 0, POT_MAX],
+      lv: '',
       syn: '',
     };
   return { i: '💰', n: 'كنز', d: '+40 عملة', lv: '', syn: '' };
@@ -226,18 +237,8 @@ function openCards(mode) {
   G.cardMode = mode;
   const n = mode === 'boss' ? 3 : S.tree.U1 ? 4 : 3;
   curCards = rollCards(n, mode === 'boss' ? 2 : 0);
-  const first = curCards.some(c => c.first);
-  $('cardTitle').textContent = mode === 'boss' ? 'غنيمة الزعيم' : first ? 'اختر مسارك' : 'ارتفع مستواك!';
-  $('cardSub').textContent =
-    mode === 'boss'
-      ? 'اختر مكافأة نادرة'
-      : first
-        ? 'كل مسار طريق قوة تبني عليه: تقدر تمشي ' +
-          pathSlots() +
-          ' مسارات، وكل ' +
-          PATH_MASTERY +
-          ' خطوات فيه إتقان (+8% ضرر)'
-        : 'المستوى ' + G.lvl + '. اختر تطويراً واحداً';
+  $('cardTitle').textContent = mode === 'boss' ? 'غنيمة الزعيم' : 'ارتفع مستواك!';
+  $('cardSub').textContent = mode === 'boss' ? 'اختر مكافأة نادرة' : 'المستوى ' + G.lvl + '. اختر تطويراً واحداً';
   if (mode === 'level') {
     G.pending--;
     AU.play('level');
@@ -255,17 +256,24 @@ function drawCards() {
     if (c.k !== 'pact') b.style.setProperty('--rc', 'var(--r' + c.r + ')');
     b.style.animationDelay = i * 0.07 + 's';
     b.innerHTML =
-      '<span class="ic"></span><span class="body"><span class="rar"></span><h3></h3><span class="pth"></span><p></p><span class="st"></span><span class="syn"></span><span class="lv"></span></span>';
+      '<span class="ic"></span><span class="body"><span class="rar"></span><h3></h3><p></p><span class="st"></span><span class="syn"></span><span class="lv"></span></span>';
     b.querySelector('.ic').textContent = f.i;
     b.querySelector('.rar').textContent = c.k === 'pact' ? 'صفقة بثمن' : RAR[c.r];
     b.querySelector('h3').textContent = f.n;
     b.querySelector('p').textContent = f.d;
-    b.querySelector('.pth').textContent = f.pth || '';
-    b.querySelector('.pth').hidden = !f.pth;
+    // its level as a bar of points (like the shop): the ones you have lit, the one this card adds glowing
+    if (f.pips) {
+      const [have, max] = f.pips,
+        bar = el('span', 'cpips');
+      for (let k = 0; k < max; k++) bar.appendChild(el('i', k < have ? 'on' : k === have ? 'next' : ''));
+      b.querySelector('.lv').replaceWith(bar);
+    }
+    if (f.isNew) b.appendChild(el('span', 'cNew', 'جديد'));
     b.querySelector('.st').textContent = f.st || '';
     b.querySelector('.st').hidden = !f.st;
     b.querySelector('.syn').textContent = f.syn;
-    b.querySelector('.lv').textContent = f.lv;
+    const lv = b.querySelector('.lv');
+    if (lv) lv.textContent = f.lv; // (the level line is the points bar when the card has one)
     b.onclick = () => chooseCard(i);
     row.appendChild(b);
   });
@@ -279,13 +287,7 @@ function chooseCard(i) {
   if (!c || (G.state !== 'cards' && !G.cardsOpen)) return;
   const p = G.p;
   if (c.k === 'up') {
-    const m0 = pathMasteries();
     G.ups[c.id] = (G.ups[c.id] || 0) + 1;
-    const q = PATH_OF[c.id];
-    if (q && pathMasteries() > m0) {
-      banner('إتقان مسار ' + q.P.n, 'ضررك +8%، كمّل المسار للبطاقة الأسطورية', 2.4);
-      AU.play('legend');
-    }
     if (c.id === 'revive') G.revives++;
     recalc();
     if (c.id === 'hp') heal(18);
@@ -378,24 +380,13 @@ function drawStats() {
   ])
     main.appendChild(el('span', '', k + ' ' + v));
   box.appendChild(main);
-  // your paths: how far along each one, and the masteries
-  const open = pathsOpen();
-  if (open.length) {
-    const pl = el('div', 'psPaths');
-    for (const P of open) {
-      const pr = Math.min(pathProg(P), 99),
-        k = P.steps.filter(id => G.ups[id]).length;
-      pl.appendChild(
-        el(
-          'span',
-          '',
-          P.i + ' مسار ' + P.n + ' ' + k + '/' + P.steps.length + (pathMastery(P) ? ' · إتقان ' + pathMastery(P) : '')
-        )
-      );
-    }
-    pl.appendChild(el('small', '', 'المسارات ' + open.length + ' من ' + pathSlots()));
-    box.appendChild(pl);
-  }
+  // the slots: skills and stats chosen so far
+  const sl = el('div', 'psPaths');
+  sl.append(
+    el('span', '', '✨ المهارات ' + ownedUps(true).length + ' من ' + SKILL_SLOTS),
+    el('span', '', '📊 القدرات ' + ownedUps(false).length + ' من ' + STAT_SLOTS)
+  );
+  box.appendChild(sl);
   const list = el('div', 'psList');
   for (const w of G.weapons)
     list.appendChild(

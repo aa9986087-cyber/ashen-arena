@@ -136,11 +136,7 @@ function recalc() {
   p.maxHp = ch.hp + (pm.hp || 0) * 10 + (S.tree.D1 ? 20 : 0) + L('hp') * 18;
   // permanent bonuses (shop + skill tree) add up with each other, so each shows exactly what it says;
   // the run's cards multiply on top
-  p.dmgMul =
-    ch.dmg *
-    (1 + 0.06 * (pm.dmg || 0) + (S.tree.A1 ? 0.1 : 0)) *
-    (1 + 0.12 * L('dmg')) *
-    (1 + 0.08 * (typeof pathMasteries === 'function' && G.ups ? pathMasteries() : 0)); // path masteries
+  p.dmgMul = ch.dmg * (1 + 0.06 * (pm.dmg || 0) + (S.tree.A1 ? 0.1 : 0)) * (1 + 0.12 * L('dmg'));
   p.aspd = 1 + 0.1 * L('aspd');
   p.crit = 0.05 + ch.crit + 0.07 * L('crit') + (S.tree.A2 ? 0.1 : 0);
   p.area = 1 + 0.1 * L('area');

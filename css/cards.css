@@ -254,7 +254,6 @@
     gap: 4px;
   }
   .card .st,
-  .card .pth,
   .card .lv,
   .card .syn {
     font-size: 11px;
@@ -266,14 +265,47 @@
     margin-top: 8px;
   }
 }
-/* where the card sits on a build path */
-.card .pth {
-  font-size: 12px;
-  font-weight: 800;
-  color: #ffd27a;
-  background: rgba(255, 200, 80, 0.1);
-  border: 1px solid rgba(255, 200, 80, 0.25);
-  border-radius: 8px;
-  padding: 2px 8px;
+/* the card's level: a bar of points like the shop's (lit = yours, glowing = what this card adds) */
+.card .cpips {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  direction: ltr;
   align-self: stretch;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 8px;
+}
+.card .cpips i {
+  flex: 0 1 22px;
+  height: 8px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.card .cpips i.on {
+  background: linear-gradient(180deg, #ffe2a0, var(--gold2));
+  box-shadow: 0 0 6px rgba(246, 196, 90, 0.6);
+}
+.card .cpips i.next {
+  background: linear-gradient(180deg, #b6ff9a, #4fdc6a);
+  box-shadow: 0 0 10px rgba(80, 230, 120, 0.9);
+  animation: pipNext 0.9s ease-in-out infinite;
+}
+@keyframes pipNext {
+  50% {
+    opacity: 0.45;
+  }
+}
+/* a card you don't have yet */
+.card .cNew {
+  position: absolute;
+  top: 10px;
+  inset-inline-start: 10px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #10240f;
+  background: linear-gradient(180deg, #b6ff9a, #4fdc6a);
+  box-shadow: 0 0 10px rgba(80, 230, 120, 0.6);
+  z-index: 2;
 }

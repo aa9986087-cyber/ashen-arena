@@ -120,9 +120,8 @@ const UP = {
   thunderlord: { n: 'سيد الرعد', i: '🎆', r: 3, max: 1, d: 'كل البرق والصواعق ضررها مضاعف وتقفز أبعد' },
   midas: { n: 'لمسة ميداس', i: '🏺', r: 3, max: 1, d: 'العملات تعطيك خبرة، والأعداء يسقطون ذهباً أكثر' },
 };
-/* Build paths: an upgrade belongs to at most one path. A path's steps open in order (a step needs one level of
-   the step before it), you can walk only PATH_SLOTS paths at once (one more from level 15), and every
-   PATH_MASTERY steps in a path is a mastery: +8% damage. Upgrades in no path are the general cards (stats). */
+/* Families of upgrades that belong together (fire, storm, frost…): owning one makes the others of its family come
+   up more often in the level-up cards (js/game/cards.js). An upgrade is in at most one family. */
 const PATHS = [
   { id: 'fire', n: 'النار', i: '🔥', steps: ['fire', 'firering', 'corpse', 'meteor', 'phoenix'] },
   { id: 'storm', n: 'العاصفة', i: '⚡', steps: ['bolt', 'shock', 'chain', 'aura', 'skystrike', 'thunderlord'] },
@@ -136,8 +135,6 @@ const PATHS = [
 ];
 const PATH_OF = {};
 for (const P of PATHS) P.steps.forEach((id, k) => (PATH_OF[id] = { P, k }));
-const PATH_SLOTS = 3,
-  PATH_MASTERY = 3;
 const PACT = {
   heavy: {
     n: 'السلاح الثقيل',
