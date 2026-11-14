@@ -231,9 +231,6 @@ function updCount(dt) {
     G.countT -= dt;
     if (G.countT <= 0) G.state = 'play';
     else n = Math.ceil(G.countT);
-  } else if (G.state === 'play' && G.cardFreeze > 0 && !G.cardsOpen) {
-    n = Math.ceil(G.cardFreeze);
-    sub = 'استعد';
   } else if (G.state === 'play' && G.calmT > 0) {
     n = Math.ceil(G.calmT);
     sub = 'الجنود قادمون';

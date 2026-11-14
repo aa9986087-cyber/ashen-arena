@@ -196,6 +196,7 @@ function drawCards() {
   rr.hidden = !(G.rerolls > 0 && G.cardMode === 'level');
   rr.textContent = '🎲 بدّل البطاقات (' + G.rerolls + ')';
 }
+const RESUME_T = 0.8;
 function chooseCard(i) {
   const c = curCards[i];
   if (!c || (G.state !== 'cards' && !G.cardsOpen)) return;
@@ -248,13 +249,11 @@ function chooseCard(i) {
   }
   show('cards', false);
   G.cardsOpen = false;
-  G.p.inv = Math.max(G.p.inv, 0.6);
-  // 3 s to get ready before the fight resumes. Solo: the whole game waits. Co-op: only you are held
-  // (and shielded); your teammates' game keeps running.
-  if (COOP.on) {
-    G.state = 'play';
-    G.cardFreeze = 3;
-  } else countIn(3);
+  // straight back into the fight: a moment of slow motion that eases up to full speed (solo; co-op's world
+  // never stopped), and a short shield so nothing lands on you while you find your bearings
+  G.state = 'play';
+  G.p.inv = Math.max(G.p.inv, 1.2);
+  if (!COOP.on) G.resumeT = RESUME_T;
   saveRun();
 }
 function cine(t) {

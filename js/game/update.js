@@ -232,10 +232,8 @@ function update(dt) {
     mx = IN.jx;
     mz = IN.jz;
   }
-  if (G.cardFreeze > 0) G.cardFreeze -= dt;
-  if (COOP.on && (G.cardsOpen || p.dead || G.cardFreeze > 0)) {
-    // co-op: the world doesn't pause for your cards or the count after them (you're shielded meanwhile),
-    // and the fallen only watch
+  if (COOP.on && (G.cardsOpen || p.dead)) {
+    // co-op: the world doesn't pause for your cards (you're shielded meanwhile), and the fallen only watch
     mx = mz = 0;
     if (!p.dead) p.inv = Math.max(p.inv, 0.3);
   }

@@ -773,3 +773,101 @@ textarea.txt {
   color: var(--gold);
   font-size: 13px;
 }
+
+/* shop: the hero card with every starting stat */
+#shopHero {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 14px;
+  align-items: start;
+  margin: 6px 0 14px;
+  padding: 12px;
+  border-radius: 18px;
+  background: radial-gradient(ellipse at 85% 0%, rgba(246, 196, 90, 0.14), transparent 60%), rgba(14, 14, 28, 0.78);
+  border: 1px solid var(--goldline);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
+}
+.shPic img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1.5px solid rgba(246, 196, 90, 0.5);
+  background: radial-gradient(circle at 50% 40%, #2a2f55, #0c0c18);
+}
+.shName b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 26px;
+  color: var(--gold);
+}
+.shName small {
+  color: #d9d0b8;
+  font-size: 13px;
+}
+.shStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 5px 10px;
+  margin-top: 10px;
+}
+.shSt {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 2px 7px;
+  padding: 5px 9px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 13px;
+}
+.shSt i {
+  font-style: normal;
+}
+.shSt span {
+  color: #d9d0b8;
+}
+.shSt b {
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.shSt em {
+  grid-column: 2 / -1;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+  color: #7cf08a;
+}
+.shExtra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+.shExtra span {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e8dcc0;
+}
+.shExtra span.tr {
+  color: #ffe2a0;
+  border-color: rgba(246, 196, 90, 0.35);
+}
+@media (max-width: 640px) {
+  #shopHero {
+    grid-template-columns: 1fr;
+  }
+  .shPic img {
+    width: 150px;
+    margin: 0 auto;
+  }
+  .shStats {
+    grid-template-columns: 1fr 1fr;
+  }
+}

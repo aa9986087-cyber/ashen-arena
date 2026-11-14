@@ -17,7 +17,14 @@ function frame(now) {
     return;
   }
   if (COOP.on) coopFrame(dt); // co-op: the network, the host's world mirrored, teammates
-  if (G.state === 'play') update(dt * (G.slow > 0 ? 0.35 : 1) * (G.slowmo ? 0.3 : 1));
+  // after the cards the game picks up from slow motion to full speed over RESUME_T real seconds
+  let ease = 1;
+  if (G.resumeT > 0 && G.state === 'play') {
+    G.resumeT -= Math.min(raw, 0.1);
+    const k = 1 - Math.max(0, G.resumeT) / RESUME_T;
+    ease = 0.2 + 0.8 * k * k;
+  }
+  if (G.state === 'play') update(dt * ease * (G.slow > 0 ? 0.35 : 1) * (G.slowmo ? 0.3 : 1));
   updCount(Math.min(raw, 0.25)); // real seconds, even on a slow device
   perfTick(raw * 1000);
   AU.music();

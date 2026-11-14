@@ -149,7 +149,74 @@ function drawChars() {
     });
   }
 }
+/** The hero's numbers as a run starts (shop, skill tree and hero all counted). noPerm: without the shop's part. */
+function heroStartStats(noPerm) {
+  const keepG = G,
+    keepPerm = S.perm;
+  try {
+    if (noPerm) S.perm = {};
+    G = { p: { hp: 0, x: 0, z: 0 }, ups: {}, pacts: {}, allies: [] };
+    recalc();
+    return G.p;
+  } finally {
+    G = keepG;
+    S.perm = keepPerm;
+  }
+}
+/** The shop's hero card: the current hero's look and every stat he starts a run with
+    (the green part is what the shop's upgrades add). */
+function drawShopHero() {
+  const box = $('shopHero'),
+    ch = CHARS[S.char],
+    sp = heroSpecial(),
+    p = heroStartStats(),
+    b = heroStartStats(true),
+    pct = v => Math.round(v * 100) + '%';
+  box.innerHTML = '';
+  const pic = el('div', 'shPic'),
+    img = new Image();
+  img.src = heroPortrait(S.char) || '';
+  img.alt = ch.n;
+  pic.appendChild(img);
+  const info = el('div', 'shInfo'),
+    name = el('div', 'shName');
+  name.append(el('b', '', ch.i + ' ' + ch.n), el('small', '', ch.d));
+  info.appendChild(name);
+  const grid = el('div', 'shStats');
+  const row = (ic, label, v, base, fmt) => {
+    const r = el('div', 'shSt');
+    r.append(el('i', '', ic), el('span', '', label), el('b', '', fmt(v)));
+    const add = v - base;
+    if (Math.abs(add) > 1e-6) r.appendChild(el('em', '', (add > 0 ? '+' : '') + fmt(add) + ' من المتجر'));
+    grid.appendChild(r);
+  };
+  const n0 = v => String(Math.round(v)),
+    n1 = v => v.toFixed(1);
+  row('❤️', 'الصحة', p.maxHp, b.maxHp, n0);
+  row('⚔️', 'قوة الضرر', p.dmgMul, b.dmgMul, pct);
+  row('⚡', 'سرعة الهجوم', p.aspd, b.aspd, pct);
+  row('🎯', 'فرصة الحرجة', p.crit, b.crit, pct);
+  row('💢', 'ضرر الحرجة', p.critMul, b.critMul, v => '×' + v.toFixed(1));
+  row('👟', 'سرعة الحركة', p.speed, b.speed, n1);
+  row('🧱', 'تقليل الضرر', 1 - p.taken * (1 - p.armor), 1 - b.taken * (1 - b.armor), pct);
+  row('💚', 'تجدد الصحة', p.regen, b.regen, v => v.toFixed(1) + '/ث');
+  row('🧲', 'مدى الجذب', p.magnet, b.magnet, v => v.toFixed(1) + 'م');
+  row('📘', 'الخبرة', p.xpMul, b.xpMul, pct);
+  row('🪙', 'العملات', p.goldMul, b.goldMul, pct);
+  row('💨', 'تجهيز المراوغة', p.dashMax, b.dashMax, v => v.toFixed(1) + 'ث');
+  info.appendChild(grid);
+  // the special, the starting weapon, and what the skill tree adds
+  const extra = el('div', 'shExtra');
+  extra.append(
+    el('span', '', sp.i + ' ' + sp.n + ' · كل ' + Math.round(sp.cd * (S.tree.S1 ? 0.85 : 1)) + 'ث'),
+    el('span', '', WEP[ch.wep].i + ' ' + WEP[ch.wep].n + (S.tree.A5 ? ' (مستوى 2)' : ''))
+  );
+  for (const br of TREE) for (const n of br.nodes) if (S.tree[n.id]) extra.appendChild(el('span', 'tr', '✨ ' + n.n));
+  info.appendChild(extra);
+  box.append(pic, info);
+}
 function drawShop() {
+  drawShopHero();
   const g = $('permGrid');
   g.innerHTML = '';
   for (const id in PERM) {

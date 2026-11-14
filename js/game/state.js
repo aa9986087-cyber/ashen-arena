@@ -85,7 +85,7 @@ function newRun() {
     droneA: 0,
     mines: [],
     calmT: 0,
-    cardFreeze: 0,
+    resumeT: 0, // after the cards: the slow-motion ease back to full speed
     countT: 0,
     turrets: [],
     shockN: 0,
