@@ -75,7 +75,7 @@ function setupBloom() {
 /** Size the bloom buffers with the canvas (called from resize). */
 function resizeBloom() {
   if (!composer) return;
-  composer.setPixelRatio(Math.min(DPR, 1.5));
+  composer.setPixelRatio(G && G.state === 'menu' ? DPR : Math.min(DPR, 1.5));
   composer.setSize(W, H);
 }
 /** Draw the 3D scene, with bloom when it is on. */

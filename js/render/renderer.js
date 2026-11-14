@@ -7,7 +7,9 @@ function resize() {
   H = rot ? innerWidth : innerHeight;
   document.documentElement.style.setProperty('--sw', innerWidth + 'px');
   document.documentElement.style.setProperty('--sh', innerHeight + 'px');
-  DPR = Math.min(devicePixelRatio || 1, S.set.qual ? 2 : 1.25) * RS;
+  // the menu is a light scene: draw it at the phone's full sharpness; in play keep the cap (speed and heat)
+  const menu = typeof G !== 'undefined' && G && G.state === 'menu';
+  DPR = Math.min(devicePixelRatio || 1, menu ? 3 : S.set.qual ? 2 : 1.25) * (menu ? 1 : RS);
   renderer.setPixelRatio(DPR);
   renderer.setSize(W, H, false);
   camera.aspect = W / H;
@@ -63,9 +65,14 @@ function poseRig(R, p, wepId, playing, now) {
 }
 let fxDrew = true,
   vigShown = -1;
+let lastMenu = null;
 function render(dt, now) {
   const p = G.p,
     playing = G.state !== 'menu';
+  if (lastMenu !== !playing) {
+    lastMenu = !playing;
+    resize(); // in or out of the menu: its sharpness differs
+  }
   // the living menu's giant and fire belong to the menu only
   if (playing && M2.boss) {
     M2.boss.visible = false;

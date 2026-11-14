@@ -19,9 +19,9 @@ function menu2Frame(dt, now) {
   // (the horned demon's real model, animated: its walk played very slowly, so it sways)
   const BA = typeof ANIM !== 'undefined' && ANIM.boss2 && (ANIM.boss2.walk || ANIM.boss2.attack);
   if (!M2.boss && BA) {
-    M2.boss = new THREE.Mesh(BA[0], new THREE.MeshLambertMaterial({ color: 0x2a1e1c, vertexColors: true }));
+    M2.boss = new THREE.Mesh(BA[0], new THREE.MeshBasicMaterial({ color: 0x060405, fog: false }));
     M2.boss.position.set(2.5, 0, -21);
-    M2.boss.scale.setScalar(3.9);
+    M2.boss.scale.setScalar(3.3);
     scene.add(M2.boss);
     M2.light = new THREE.PointLight(0xff8a3a, 0, 16, 1.4);
     scene.add(M2.light);
@@ -34,7 +34,7 @@ function menu2Frame(dt, now) {
     // smooth, continuous life instead of stepping through a few frames: it breathes, sways and leans in
     const lean = Math.max(0, Math.sin(M2.t * 0.35)) ** 3; // now and then it bends toward you
     b.rotation.set(lean * 0.18, -0.25 + Math.sin(M2.t * 0.15) * 0.08, Math.sin(M2.t * 0.5) * 0.03);
-    b.scale.set(3.9, 3.9 * (1 + Math.sin(M2.t * 1.4) * 0.015), 3.9);
+    b.scale.set(3.3, 3.3 * (1 + Math.sin(M2.t * 1.4) * 0.015), 3.3);
     b.position.y = Math.sin(M2.t * 1.4) * 0.08;
     menu2Grin(b);
     M2.rim.position.set(2.5, 10, -30);
@@ -106,8 +106,8 @@ function menu2Frame(dt, now) {
   camera.lookAt(0, pr ? 1.7 : 2.2, -4);
   return true;
 }
-/** The demon's face: burning eyes and a wide glowing grin with fangs; now and then it laughs (the grin opens
-    wider, the eyes flare, the head shakes). Built once on the giant, sized from the model's own bounds. */
+/** The giant's eyes: two embers burning in its dark shape; now and then they flare and its head shakes.
+    Built once on the giant, sized from the model's own bounds. */
 function menu2Grin(b) {
   if (!M2.face) {
     const g = b.geometry;
@@ -137,30 +137,9 @@ function menu2Grin(b) {
       F.add(core, halo);
       eyes.push(halo);
     }
-    // the grin: a curve dipping in the middle, a bright core inside a red glow
-    const curve = new THREE.QuadraticBezierCurve3(
-      new THREE.Vector3(-w, H * 0.012, 0),
-      new THREE.Vector3(0, -w * 0.95, 0),
-      new THREE.Vector3(w, H * 0.012, 0)
-    );
-    const mouth = new THREE.Group();
-    mouth.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 24, H * 0.005, 6), add(0xffd27a, 0.9)));
-    mouth.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 24, H * 0.013, 8), add(0xff3010, 0.35)));
-    // fangs along it, top and bottom
-    for (let i = 1; i < 8; i++) {
-      const k = i / 8,
-        pt = curve.getPoint(k),
-        len = H * (i === 2 || i === 6 ? 0.03 : 0.018);
-      for (const up of [1, -1]) {
-        const t = new THREE.Mesh(new THREE.ConeGeometry(H * 0.006, len, 4), add(0xfff0d0, 0.95));
-        t.position.set(pt.x, pt.y + (up > 0 ? -len * 0.4 : len * 0.4), 0.01);
-        if (up > 0) t.rotation.z = Math.PI; // the top row hangs down
-        mouth.add(t);
-      }
-    }
-    F.add(mouth);
+
     b.add(F);
-    M2.face = { F, mouth, eyes, laugh: 3 };
+    M2.face = { F, eyes, laugh: 3 };
   }
   // the laugh: every few seconds, for about a second and a half
   const fc = M2.face;
@@ -170,7 +149,6 @@ function menu2Grin(b) {
     k = Math.sin(Math.min(1, -fc.laugh / 1.5) * Math.PI);
     if (fc.laugh < -1.5) fc.laugh = rand(4, 7);
   }
-  fc.mouth.scale.set(1 + k * 0.35, 1 + k * 0.9 + Math.sin(M2.t * 30) * 0.08 * k, 1);
   fc.F.rotation.z = Math.sin(M2.t * 24) * 0.04 * k; // the head shakes with it
   for (const e of fc.eyes) {
     e.material.opacity = 0.3 + 0.15 * Math.sin(M2.t * 3) + 0.4 * k;
