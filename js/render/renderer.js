@@ -66,6 +66,11 @@ let fxDrew = true,
 function render(dt, now) {
   const p = G.p,
     playing = G.state !== 'menu';
+  // the living menu's giant and fire belong to the menu only
+  if (playing && M2.boss) {
+    M2.boss.visible = false;
+    M2.light.intensity = M2.rim.intensity = 0;
+  }
   // camera
   if (playing) {
     const portrait = W < H,
@@ -74,6 +79,8 @@ function render(dt, now) {
       sk = G.shake;
     camera.position.set(p.x + rand(-sk, sk), ch + rand(-sk, sk) * 0.5, p.z + cd + rand(-sk, sk));
     camera.lookAt(p.x, 0, p.z - 1);
+  } else if (typeof menu2Frame === 'function' && menu2Frame(dt, now)) {
+    // the living menu (#menu2) placed the camera
   } else {
     // menu: slow orbit around the hero; on a portrait phone come closer so the hero fills the free middle
     const a = now * 0.00012,
@@ -394,7 +401,7 @@ function render(dt, now) {
       m.material.opacity = Math.min(1, (1 - k) * 1.6);
     }
   });
-  vfxUpdate(G.state === 'play' || G.state === 'watch' ? dt : 0);
+  vfxUpdate(G.state === 'play' || G.state === 'watch' || (G.state === 'menu' && M2.on) ? dt : 0);
   drawScene();
   // 2D overlay
   fx.setTransform(DPR, 0, 0, DPR, 0, 0);
