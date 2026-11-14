@@ -86,6 +86,8 @@ const VFX = {
   glow: vfxLayer(2200, VFX_FS_GLOW, THREE.AdditiveBlending, 4),
   smoke: vfxLayer(900, VFX_FS_SMOKE, THREE.NormalBlending, 3),
   tglow: vfxLayer(700, VFX_FS_TADD, THREE.AdditiveBlending, 5, true),
+  // projectiles: refilled every frame from the shots in flight (vfxShots)
+  proj: vfxLayer(1800, VFX_FS_TADD, THREE.AdditiveBlending, 6, true),
   tsmoke: vfxLayer(400, VFX_FS_TALPHA, THREE.NormalBlending, 3, true),
   emitters: [],
   bolts: [],
@@ -314,6 +316,7 @@ function vfxUpdate(dt) {
     VFX.smoke.p.material.uniforms.scale.value =
     VFX.tglow.p.material.uniforms.scale.value =
     VFX.tsmoke.p.material.uniforms.scale.value =
+    VFX.proj.p.material.uniforms.scale.value =
       H * DPR * 0.9;
   for (const em of VFX.emitters) {
     em.l += dt;
@@ -897,4 +900,105 @@ function vfxKill(x, z, big) {
 function vfxMuzzle(x, z, c) {
   vfxP({ t: VT.star, x, y: 1.3, z, life: 0.08, s: 1.6, s1: 0.8, r: c[0] * 1.8, g: c[1] * 1.8, b: c[2] * 1.8 });
   vfxP({ t: VT.soft, x, y: 1.3, z, life: 0.1, s: 1.2, s1: 0.4, r: c[0], g: c[1], b: c[2], a: 0.8 });
+}
+
+/* =================== projectiles as light =================== */
+/** Fill the projectile layer from the shots in flight: yours (by kind) and the enemies'. Each is a few textured
+    sprites: a streak along its flight (turned to its direction on screen), a glowing head, a halo. */
+const VSHOT = { n: 0 };
+function vshot(x, y, z, t, s, c, a, rot) {
+  const L = VFX.proj;
+  if (VSHOT.n >= L.n) return;
+  const i = VSHOT.n++,
+    g = L.g.attributes;
+  g.position.array.set([x, y, z], i * 3);
+  g.rgba.array.set([c[0], c[1], c[2], a], i * 4);
+  g.size.array[i] = s;
+  g.tr.array[i * 2] = t;
+  g.tr.array[i * 2 + 1] = rot || 0;
+}
+/** Screen angle of a direction (vx,vz) at (x,z), for turning a streak along it. */
+function vshotAng(x, z, vx, vz) {
+  const a = proj(x, 1.1, z),
+    b = proj(x + vx * 0.05, 1.1, z + vz * 0.05);
+  return Math.atan2(b[0] - a[0], -(b[1] - a[1])); // the streak tile runs up the sprite
+}
+function vfxShots(now) {
+  VSHOT.n = 0;
+  const t = now / 1000;
+  for (const s of G.shots) {
+    const c = s.col || [1, 0.85, 0.5],
+      hot = [Math.min(2, c[0] * 1.5 + 0.3), Math.min(2, c[1] * 1.5 + 0.3), Math.min(2, c[2] * 1.5 + 0.3)];
+    if (s.kind === 2) {
+      // spinning blades (shuriken, axes): a turning arc of light
+      vshot(s.x, 1.1, s.z, VT.twirl, s.r * 5 + 1, hot, 1, t * 18);
+      vshot(s.x, 1.1, s.z, VT.star, s.r * 3 + 0.6, c, 0.9, -t * 12);
+    } else if (s.kind === 3) {
+      // a rocket: a hot flame and a trail of smoke
+      vshot(s.x, 1.1, s.z, VT.flare, 2.2, [2, 1.3, 0.5], 1, 0);
+      vshot(
+        s.x - s.vx * 0.04,
+        1.1,
+        s.z - s.vz * 0.04,
+        VT.flame,
+        1.6,
+        [1.8, 0.8, 0.2],
+        0.9,
+        vshotAng(s.x, s.z, -s.vx, -s.vz)
+      );
+      if (Math.random() < 0.5)
+        vfxP({
+          t: VT.smoke,
+          smoke: 1,
+          x: s.x,
+          y: 1.1,
+          z: s.z,
+          vy: 0.4,
+          life: 0.7,
+          s: 0.8,
+          s1: 2,
+          r: 0.3,
+          g: 0.28,
+          b: 0.26,
+          a: 0.45,
+        });
+    } else if (s.kind === 4) {
+      // a magic orb: a pulsing ball of light with a sparkle
+      const q = s.r * 4 * (1 + 0.15 * Math.sin(s.t * 20));
+      vshot(s.x, 1.1, s.z, VT.soft, q + 0.6, [c[0] * 0.9, c[1] * 0.6, c[2] * 1.3], 1, 0);
+      vshot(s.x, 1.1, s.z, VT.star2, q * 1.3 + 0.6, hot, 0.8, t * 3);
+    } else {
+      // bullets and arrows: a streak of light along the flight and a bright head
+      const long = s.kind === 1 ? 3.4 : 2.6;
+      vshot(s.x, 1.1, s.z, VT.trace, long, hot, 1, vshotAng(s.x, s.z, s.vx, s.vz));
+      vshot(s.x, 1.1, s.z, VT.soft, 0.9, hot, 0.9, 0);
+    }
+  }
+  for (const s of G.eshots) {
+    const st = s.sty && BOSS_ULTS[s.sty - 1].shot,
+      c = st ? st.c : [1.9, 0.35, 0.25];
+    if (st && (st.form === 'thorn' || st.form === 'blade')) {
+      vshot(s.x, 1, s.z, st.form === 'blade' ? VT.arc : VT.trace, 2.2, c, 1, vshotAng(s.x, s.z, s.vx, s.vz));
+      vshot(s.x, 1, s.z, VT.soft, 0.7, c, 0.7, 0);
+    } else {
+      // an energy orb: a hot core and a slowly turning halo
+      const k = st ? st.s * 2 : 1;
+      vshot(
+        s.x,
+        1,
+        s.z,
+        VT.soft,
+        1 * k,
+        [Math.min(2, c[0] + 0.6), Math.min(2, c[1] + 0.5), Math.min(2, c[2] + 0.5)],
+        1,
+        0
+      );
+      vshot(s.x, 1, s.z, VT.ring, 1.6 * k, c, 0.75, t * 4);
+      vshot(s.x, 1, s.z, VT.star, 1.3 * k, c, 0.5, t * 2);
+    }
+  }
+  const L = VFX.proj;
+  L.g.setDrawRange(0, VSHOT.n);
+  const A = L.g.attributes;
+  A.position.needsUpdate = A.rgba.needsUpdate = A.size.needsUpdate = A.tr.needsUpdate = true;
 }

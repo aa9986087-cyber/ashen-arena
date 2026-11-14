@@ -250,33 +250,8 @@ function render(dt, now) {
   flush(IAlly);
   if (G.ups.orbit) forOrbitBlades((a, x, z) => put(IBlade, x, 1.1, z, -a, 1.2, 1.2, 1.2, 1.2, 1.3, 1.6));
   flush(IBlade);
-  // shots
-  for (const s of G.shots) {
-    const c = s.col,
-      ry = Math.atan2(s.vx, s.vz);
-    if (s.kind === 0) put(IB, s.x, 1.1, s.z, ry, 0.14, 0.14, 0.75, c[0] * 1.2, c[1] * 1.1, c[2] * 0.6);
-    else if (s.kind === 1) put(IB, s.x, 1.1, s.z, ry, 0.09, 0.09, 1.4, c[0], c[1], c[2]);
-    else if (s.kind === 2) put(IB, s.x, 1.1, s.z, s.t * 16, s.r * 1.9, 0.12, s.r * 0.8, c[0], c[1], c[2]);
-    else if (s.kind === 3) {
-      put(IB, s.x, 1.1, s.z, ry, 0.3, 0.3, 0.95, 0.6, 0.65, 0.5);
-      put(IS, s.x - s.vx * 0.03, 1.1, s.z - s.vz * 0.03, 0, 0.45, 0.45, 0.45, 1.5, 0.8, 0.2);
-    } else if (s.kind === 4) {
-      const q = s.r * 2 * (1 + 0.15 * Math.sin(s.t * 20));
-      put(IS, s.x, 1.1, s.z, 0, q, q, q, c[0] * 0.9, c[1] * 0.6, c[2] * 1.3);
-    } else put(IB, s.x, 1, s.z, ry, s.r * 2.4, 0.08, 0.5, c[0], c[1], c[2]);
-  }
-  for (const s of G.eshots) {
-    const st = s.sty && BOSS_ULTS[s.sty - 1].shot;
-    if (!st) put(IS, s.x, 1, s.z, 0, 0.6, 0.6, 0.6, 1.9, 0.35, 0.25);
-    else {
-      const c = st.c,
-        ry = Math.atan2(s.vx, s.vz);
-      if (st.form === 'orb') put(IS, s.x, 1, s.z, 0, st.s, st.s, st.s, c[0], c[1], c[2]);
-      else if (st.form === 'thorn') put(IB, s.x, 1, s.z, ry, 0.16, 0.16, 0.95, c[0], c[1], c[2]);
-      else if (st.form === 'blade') put(IB, s.x, 1, s.z, ry, 0.7, 0.07, 0.35, c[0], c[1], c[2]);
-      else put(IB, s.x, 1, s.z, ry, 0.3, 0.3, 0.6, c[0], c[1], c[2]); // shell
-    }
-  }
+  // shots, yours and the enemies', drawn as textured light (js/render/vfx.js)
+  vfxShots(now);
   forDrones((x, z) => {
     put(IB, x, 2.3 + Math.sin(now * 0.006 + x) * 0.15, z, now * 0.004, 0.55, 0.18, 0.55, 0.5, 1.3, 1.6);
     put(IS, x, 2.1, z, 0, 0.22, 0.22, 0.22, 0.6, 1.6, 2);

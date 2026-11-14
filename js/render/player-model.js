@@ -139,6 +139,72 @@ function buildRig(R, charId, wep) {
   scene.add(g);
   buildWeapon(R, wep);
 }
+/* Real weapon models in the hero's hand (CC0): swords, axes, staff, wand, dagger and crossbow from KayKit
+   Adventurers; the blasters from Kenney (Starter Kit FPS); spear and hammer are the duel's steel ones.
+   Per weapon: the model for each tier (1-2 / 3-4 / 5), its length in the hand, and which way it points in the
+   file ('y' = up from the grip, 'z+' = a barrel along +Z). The game holds a weapon along −Y. */
+const WEP_MODEL = {
+  sword: { m: ['sword', 'sword', 'sword2'], len: [1.5, 1.7, 2] },
+  axe: { m: ['axe', 'axe2', 'axe2'], len: [1.3, 1.5, 1.7] },
+  staff: { m: ['wand', 'staff', 'staff'], len: [1.2, 1.9, 2.1] },
+  shuriken: { m: ['dagger', 'dagger', 'dagger'], len: [0.9, 1, 1.1] },
+  bow: { m: ['crossbow', 'crossbow', 'crossbow'], len: [1.1, 1.2, 1.3], axis: 'z+' },
+  pistol: { m: ['blaster', 'blaster', 'blaster'], len: [0.6, 0.65, 0.7], axis: 'z+' },
+  rifle: { m: ['repeater', 'repeater', 'repeater'], len: [0.9, 0.95, 1], axis: 'z+' },
+  rocket: { m: ['repeater', 'repeater', 'repeater'], len: [1.05, 1.1, 1.15], axis: 'z+', tint: 0x6a7040 },
+  flame: { m: ['blaster', 'blaster', 'blaster'], len: [0.8, 0.85, 0.9], axis: 'z+', tint: 0xb04020 },
+  spear: { duel: 'duelSpear', len: [2.4, 2.6, 2.8] },
+  hammer: { duel: 'duelMace', len: [1.5, 1.7, 1.9] },
+};
+const WEP_MODELS = {};
+(function loadWeaponModels() {
+  if (!THREE.GLTFLoader) return;
+  const names = [...new Set(Object.values(WEP_MODEL).flatMap(d => d.m || []))],
+    L = new THREE.GLTFLoader();
+  let left = names.length;
+  for (const n of names)
+    L.load(
+      'assets/models/weapons/' + n + '.glb?v=1',
+      g => {
+        WEP_MODELS[n] = g.scene;
+        if (--left === 0) {
+          // all in: redraw the weapon in hand and the heroes' portraits
+          for (const k in PORTRAITS) delete PORTRAITS[k];
+          if (typeof G !== 'undefined' && G && PM.wp) buildWeapon();
+        }
+      },
+      undefined,
+      () => left--
+    );
+})();
+/** The weapon as a model (or null while it loads / if it has none): pointing along −Y, `len` long. */
+function weaponModel(id, t, ev, tc, em) {
+  const d = WEP_MODEL[id];
+  if (!d) return null;
+  let src;
+  if (d.duel) src = typeof window[d.duel] === 'function' ? window[d.duel]() : null;
+  else src = WEP_MODELS[d.m[t]] ? WEP_MODELS[d.m[t]].clone(true) : null;
+  if (!src) return null;
+  // its own materials, tinted by tier: steel blue at 3, gold at 5, violet when evolved
+  src.traverse(o => {
+    if (!o.isMesh) return;
+    o.castShadow = true;
+    o.material = o.material.clone();
+    if (d.tint && o.material.color) o.material.color.lerp(new THREE.Color(d.tint), 0.45);
+    // a light glow of the tier's colour (the model keeps its own look)
+    if ((t || ev) && o.material.emissive) o.material.emissive = new THREE.Color(tc).multiplyScalar(ev ? 0.3 : 0.12);
+  });
+  // point it along −Y and size it
+  const g = new THREE.Group();
+  g.add(src);
+  const box = new THREE.Box3().setFromObject(src),
+    size = box.getSize(new THREE.Vector3()),
+    along = d.axis ? size.z : size.y;
+  if (!d.axis) src.rotation.x = Math.PI;
+  else src.rotation.x = d.axis === 'z-' ? -Math.PI / 2 : Math.PI / 2;
+  g.scale.setScalar((d.len[t] * (ev ? 1.15 : 1)) / Math.max(0.01, along));
+  return g;
+}
 function buildWeapon(R = PM, wep) {
   const w = R.wp;
   while (w.children.length) w.remove(w.children[0]);
@@ -151,6 +217,11 @@ function buildWeapon(R = PM, wep) {
     tc = ev ? 0xd070ff : [0xc3cad6, 0x62d0ff, 0xffc53d][t],
     em = ev ? 0x5a1488 : [0, 0x0a3a55, 0x7a4a00][t],
     s = ev ? 1.6 : 1 + t * 0.18;
+  const model = weaponModel(id, t, ev, tc, em);
+  if (model) {
+    w.add(model);
+    return;
+  }
   if (id === 'sword') {
     w.add(mesh(BOX, tc, 0, -0.78 * s, 0, 0.15 * s, 1.45 * s, 0.05, em));
     w.add(mesh(BOX, 0x6b4a2a, 0, -0.03, 0, 0.5, 0.1, 0.12));

@@ -163,3 +163,7 @@ npm run format     # Prettier (الإعدادات في .prettierrc.json)
 ## مؤثرات القتال
 
 ضربة السيف، الشرار، الانفجارات، وفلاش الأسلحة مرسومة بنسيج حقيقي من Kenney Particle Pack (https://kenney.nl/assets/particle-pack، رخصة CC0) في `assets/vfx/` (أطلس 4×4 تقراه `js/render/vfx.js`).
+
+## نماذج الأسلحة
+
+الأسلحة اللي بيد البطل نماذج حقيقية في `assets/models/weapons/` (رخصة CC0): السيوف والفؤوس والعصا والصولجان والخنجر والقوس النشاب من KayKit Adventurers، والمسدسات من Kenney (Starter Kit FPS). الرمح والمطرقة نفس فولاذ المبارزة. الإعداد (أي نموذج لأي مستوى، وطوله، واتجاهه) في `WEP_MODEL` داخل `js/render/player-model.js`.
