@@ -619,3 +619,36 @@
   font-size: 19px;
   padding: 10px;
 }
+/* the bulletin's close button: a round, quiet button that warms up on hover */
+.nClose {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(246, 196, 90, 0.35);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+.nClose svg {
+  width: 16px;
+  height: 16px;
+  stroke: #e9dcbc;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  fill: none;
+}
+.nClose:hover {
+  background: rgba(246, 196, 90, 0.18);
+  transform: rotate(90deg);
+}
+.nClose:active {
+  transform: scale(0.92);
+}
+.nItem .nWhen {
+  font-variant-numeric: tabular-nums;
+  direction: rtl;
+}

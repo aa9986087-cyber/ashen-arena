@@ -11,7 +11,7 @@ function openNews() {
   NEWS.forEach((n, k) => {
     const card = el('article', 'nItem' + (k === 0 ? ' latest' : ''));
     const hd = el('header');
-    hd.append(el('h3', '', n.title), el('small', '', n.date));
+    hd.append(el('h3', '', n.title), el('small', 'nWhen', n.date + (n.time ? ' · ' + n.time : '')));
     if (n.tag && k === 0) hd.appendChild(el('span', 'nTag', n.tag));
     card.appendChild(hd);
     const ul = el('ul');
