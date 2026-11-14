@@ -70,9 +70,12 @@ function chatDraw() {
         m.classList.toggle('sel', CHAT.sel.has(r.id));
         chatModBar();
       };
-    m.append(profileLink(el('b', '', r.name), r.name), el('small', '', chatAgo(r.created_at)), el('p', '', r.msg));
+    const body = el('div', 'cmB');
+    body.append(profileLink(el('b', '', r.name), r.name), el('small', '', chatAgo(r.created_at)), el('p', '', r.msg));
+    m.append(avatarEl(r.name), body);
     L.appendChild(m);
   }
+  avatarFetch(CHAT.rows.map(r => r.name)); // pictures we don't have yet (the chat redraws when they come)
   if (atEnd || L.dataset.first !== '1') {
     L.scrollTop = L.scrollHeight;
     L.dataset.first = '1';

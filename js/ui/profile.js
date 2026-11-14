@@ -68,9 +68,9 @@ async function profileOpen(name) {
     const [p, d, sc] = await Promise.all([
       mine
         ? null
-        : api('/rest/v1/profiles?select=name,stats,updated_at&name=eq.' + q + '&order=updated_at.desc&limit=1').catch(
-            () => []
-          ),
+        : api(
+            '/rest/v1/profiles?select=name,stats,updated_at,avatar&name=eq.' + q + '&order=updated_at.desc&limit=1'
+          ).catch(() => []),
       api('/rest/v1/duels?select=a,b,winner&or=(a.eq.' + q + ',b.eq.' + q + ')&limit=500').catch(() => []),
       api('/rest/v1/scores?select=kills,lvl,t,bosses&name=eq.' + q + '&limit=1').catch(() => []),
     ]);
@@ -86,8 +86,25 @@ async function profileOpen(name) {
     return;
   }
   const s = (prof && prof.stats) || {};
+  // the player's own photo; else his hero's portrait
+  const photo = mine ? S.avatar : prof && prof.avatar;
+  if (photo) $('pcPic').style.backgroundImage = 'url(' + photo + ')';
+  if (prof && !mine) AVA.map.set(name, { img: photo || '', ch: s.ch, t: Date.now() });
+  if (mine) {
+    // your card: change or remove your picture
+    const row = el('div', 'pcAva');
+    const up = el('button', 'btn sm go', photo ? '📷 غيّر صورتك' : '📷 حط صورتك');
+    up.onclick = avatarPick;
+    row.appendChild(up);
+    if (photo) {
+      const rm = el('button', 'btn sm', '🗑 احذفها');
+      rm.onclick = async () => (await avatarSave(null)) && profileOpen(S.name);
+      row.appendChild(rm);
+    }
+    B.appendChild(row);
+  }
   if (s.ch && CHARS[s.ch]) {
-    const img = heroPortrait(s.ch);
+    const img = photo ? '' : heroPortrait(s.ch);
     if (img) $('pcPic').style.backgroundImage = 'url(' + img + ')';
     $('pcHero').textContent = CHARS[s.ch].i + ' ' + CHARS[s.ch].n;
   } else $('pcHero').textContent = '';
