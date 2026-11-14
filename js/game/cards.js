@@ -102,7 +102,9 @@ function cardInfo(c) {
 }
 let curCards = [];
 function openCards(mode) {
-  G.state = 'cards';
+  if (COOP.on)
+    G.cardsOpen = true; // co-op: the world keeps going for the others
+  else G.state = 'cards';
   G.cardMode = mode;
   const n = mode === 'boss' ? 3 : S.tree.U1 ? 4 : 3;
   curCards = rollCards(n, mode === 'boss' ? 2 : 0);
@@ -141,7 +143,7 @@ function drawCards() {
 }
 function chooseCard(i) {
   const c = curCards[i];
-  if (!c || G.state !== 'cards') return;
+  if (!c || (G.state !== 'cards' && !G.cardsOpen)) return;
   const p = G.p;
   if (c.k === 'up') {
     G.ups[c.id] = (G.ups[c.id] || 0) + 1;
@@ -180,7 +182,8 @@ function chooseCard(i) {
   if (c.r === 3 && c.k === 'up') $('cine').querySelector('b').textContent = UP[c.id].n;
   refreshLoadout();
   const mode = G.cardMode;
-  if (mode === 'boss' && nextStage()) {
+  if (mode === 'boss' && (!COOP.on || COOP.host) && nextStage()) {
+    G.cardsOpen = false;
     show('cards', false);
     return;
   }
@@ -190,6 +193,7 @@ function chooseCard(i) {
   }
   show('cards', false);
   G.state = 'play';
+  G.cardsOpen = false;
   G.p.inv = Math.max(G.p.inv, 0.6);
   saveRun();
 }

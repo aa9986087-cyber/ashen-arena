@@ -13,7 +13,7 @@ const EN = {
   runner: { hp: 18, spd: 10, dmg: 11, r: 0.45, xp: 3, sc: 1.05 },
   golem: { hp: 620, spd: 1.9, dmg: 34, r: 1.7, xp: 25, sc: 1.9 },
 };
-const ARENA = 58;
+let ARENA = 58; // the ring's radius (co-op plays on a bigger one, see coopArena)
 /** Display names used by the lab. */
 const MON_N = {
   grunt: 'جندي',

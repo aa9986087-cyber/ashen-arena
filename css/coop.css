@@ -1,0 +1,143 @@
+/* Co-op: the 🤝 menu button, the rooms and the in-game team panel */
+#mCoop {
+  flex: none;
+  width: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  line-height: 1;
+  border-radius: 18px;
+  border: 2px solid rgba(120, 210, 255, 0.7);
+  background: linear-gradient(180deg, #1a3a5a, #0e1c2e);
+}
+#mCoop small {
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 4px;
+  color: #bfe8ff;
+}
+#cmCreate,
+#cmStart {
+  width: 100%;
+  font-size: 19px;
+  padding: 13px;
+  margin: 6px 0;
+}
+#cmRoom {
+  margin: 8px 0 4px;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(120, 210, 255, 0.35);
+  background: rgba(10, 20, 34, 0.6);
+}
+#cmPlayers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.cmP {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(30, 40, 60, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.cmP i {
+  grid-row: 1 / span 2;
+  font-style: normal;
+  font-size: 26px;
+}
+.cmP b {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cmP small {
+  font-size: 11px;
+  color: #bcd;
+}
+.cmP.empty {
+  opacity: 0.45;
+  border-style: dashed;
+}
+#cmLeave {
+  width: 100%;
+}
+.cmRoom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: rgba(20, 26, 40, 0.85);
+}
+.cmRoom b {
+  flex: 1;
+}
+.cmRoom span {
+  color: #bcd;
+  font-weight: 800;
+}
+/* in game: one row per teammate */
+#coopTeam {
+  position: absolute;
+  top: calc(max(8px, env(safe-area-inset-top)) + 64px);
+  left: max(8px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+  direction: rtl;
+}
+.ctRow {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 6px;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: rgba(8, 12, 20, 0.62);
+  min-width: 130px;
+}
+.ctRow i {
+  grid-row: 1 / span 2;
+  font-style: normal;
+  font-size: 18px;
+}
+.ctRow b {
+  font-size: 12px;
+  color: #fff;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ctRow small {
+  font-size: 10px;
+  color: #bcd;
+}
+.ctHp {
+  grid-column: 2 / span 2;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+.ctHp em {
+  display: block;
+  height: 100%;
+  background: #5ee06a;
+}
+.ctRow.dead {
+  opacity: 0.55;
+}

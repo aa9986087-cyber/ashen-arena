@@ -26,6 +26,41 @@ const PCOL = [
   [0.4, 1, 0.5],
   [0.85, 0.45, 1],
 ];
+/** Pose a hero rig from a player state {x, z, face, moving, walk, swing}: model animation frame or limb swing. */
+function poseRig(R, p, wepId, playing, now) {
+  const g = R.g,
+    H = R.anim;
+  g.position.set(p.x, H ? 0 : Math.abs(Math.sin(p.walk)) * 0.12 * p.moving, p.z);
+  if (H) {
+    // running beats attacking; a swing plays the attack clip once; otherwise idle
+    const run = playing && p.moving && H.run,
+      atk = !run && p.swing > 0 && H.attack;
+    R.hm.geometry = run
+      ? animFrame(H.run, p.walk * 0.16)
+      : atk
+        ? animFrame(H.attack, 1 - p.swing)
+        : animFrame(H.idle || H.run, now * 0.0009);
+    const hd = R.wpHand && R.hm.geometry.userData.hand;
+    if (hd) {
+      R.wp.position.copy(hd.p);
+      R.wp.quaternion.copy(hd.q).multiply(WP_ALIGN);
+    }
+  }
+  g.rotation.y = playing ? p.face : Math.sin(now * 0.0006) * 0.4;
+  const sw = Math.sin(p.walk) * 0.9 * p.moving;
+  R.lL.rotation.x = sw;
+  R.lR.rotation.x = -sw;
+  R.aL.rotation.x = -sw * 0.7;
+  const melee = WEP[wepId] && WEP[wepId].melee,
+    idle = playing ? 0 : Math.sin(now * 0.002) * 0.08;
+  if (melee) {
+    R.aR.rotation.x = -Math.PI / 2 + idle;
+    R.aR.rotation.z = p.swing > 0 ? -1.4 + 2.8 * (1 - p.swing) : 0.5;
+  } else {
+    R.aR.rotation.x = -Math.PI / 2 - p.swing * 0.35 + idle;
+    R.aR.rotation.z = 0;
+  }
+}
 let fxDrew = true,
   vigShown = -1;
 function render(dt, now) {
@@ -55,39 +90,9 @@ function render(dt, now) {
   if (PM.g) {
     const g = PM.g,
       sup = G.superT > 0;
-    const H = PM.anim;
-    g.position.set(p.x, H ? 0 : Math.abs(Math.sin(p.walk)) * 0.12 * p.moving, p.z);
-    if (H) {
-      // running beats attacking; a swing plays the attack clip once; otherwise idle
-      const run = playing && p.moving && H.run,
-        atk = !run && p.swing > 0 && H.attack;
-      PM.hm.geometry = run
-        ? animFrame(H.run, p.walk * 0.16)
-        : atk
-          ? animFrame(H.attack, 1 - p.swing)
-          : animFrame(H.idle || H.run, now * 0.0009);
-      const hd = PM.wpHand && PM.hm.geometry.userData.hand;
-      if (hd) {
-        PM.wp.position.copy(hd.p);
-        PM.wp.quaternion.copy(hd.q).multiply(WP_ALIGN);
-      }
-    }
-    g.rotation.y = playing ? p.face : Math.sin(now * 0.0006) * 0.4;
-    g.visible = !(p.inv > 0 && p.dashT <= 0 && ((now / 60) | 0) % 2 === 0 && G.state === 'play');
-    const sw = Math.sin(p.walk) * 0.9 * p.moving;
-    PM.lL.rotation.x = sw;
-    PM.lR.rotation.x = -sw;
-    PM.aL.rotation.x = -sw * 0.7;
-    const cur = G.weapons[0],
-      melee = WEP[cur.id].melee,
-      idle = playing ? 0 : Math.sin(now * 0.002) * 0.08;
-    if (melee) {
-      PM.aR.rotation.x = -Math.PI / 2 + idle;
-      PM.aR.rotation.z = p.swing > 0 ? -1.4 + 2.8 * (1 - p.swing) : 0.5;
-    } else {
-      PM.aR.rotation.x = -Math.PI / 2 - p.swing * 0.35 + idle;
-      PM.aR.rotation.z = 0;
-    }
+    poseRig(PM, p, (G.weapons[0] || PM.lastWep || {}).id, playing, now);
+    if (COOP.on) coopRender(now); // teammates
+    g.visible = !(p.inv > 0 && p.dashT <= 0 && ((now / 60) | 0) % 2 === 0 && G.state === 'play') && !p.dead;
     const s = sup ? 1.25 : 1;
     g.scale.set(s, s, s);
     glow.intensity = sup ? 2.2 : 0;
@@ -380,7 +385,7 @@ function render(dt, now) {
   // 2D overlay
   fx.setTransform(DPR, 0, 0, DPR, 0, 0);
   // the overlay (damage numbers, elite bars, boss arrow, hurt vignette) is cleared only when it held something
-  const fxNeed = playing && (G.texts.length || G.boss || G.enemies.some(e => e.elite && !e.boss));
+  const fxNeed = playing && (COOP.on || G.texts.length || G.boss || G.enemies.some(e => e.elite && !e.boss));
   if (fxDrew || fxNeed) fx.clearRect(0, 0, W, H);
   fxDrew = !!fxNeed;
   if (playing) {
@@ -388,6 +393,7 @@ function render(dt, now) {
     fx.lineCap = 'round';
     fx.shadowBlur = 0;
     fx.textAlign = 'center';
+    if (COOP.on) coopTags(fx); // teammates' names and health
     for (const q of G.texts) {
       const a = proj(q.x, 2 + q.l * 2.4, q.z),
         k = q.l / FX_LIFE.text;

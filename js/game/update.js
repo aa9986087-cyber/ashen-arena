@@ -218,7 +218,8 @@ function forOrbitBlades(fn) {
   }
 }
 function update(dt) {
-  const p = G.p;
+  const p = G.p,
+    cc = COOP.on && !COOP.host; // a co-op client mirrors the world (coopMirror), it doesn't run it
   G.t += dt;
   // input → move
   let mx = 0,
@@ -230,6 +231,11 @@ function update(dt) {
   if (IN.joy !== null) {
     mx = IN.jx;
     mz = IN.jz;
+  }
+  if (COOP.on && (G.cardsOpen || p.dead)) {
+    // co-op: the world doesn't pause for your cards (you're shielded meanwhile), and the fallen only watch
+    mx = mz = 0;
+    if (G.cardsOpen) p.inv = Math.max(p.inv, 0.3);
   }
   const ml = Math.hypot(mx, mz);
   if (ml > 1) {
@@ -527,8 +533,10 @@ function update(dt) {
       }
     } else if (d > 0.3) a.face = Math.atan2(dx, dz);
   });
-  updWaves(dt);
-  updEnemies(dt);
+  if (!cc) {
+    updWaves(dt);
+    updEnemies(dt);
+  }
   // deferred chain explosions
   let guard = 40;
   while (G.defer.length && guard--) {
@@ -560,7 +568,7 @@ function update(dt) {
     s.x += s.vx * dt;
     s.z += s.vz * dt;
     if (s.kind === 3 && Math.random() < 0.6) parts(s.x, 1, s.z, 1, 1, 0.6, 0.2, 1, 0.2, 0.3);
-    for (const e of G.enemies) {
+    for (const e of s.ghost ? [] : G.enemies) {
       if (e.dead || s.hits.includes(e)) continue;
       const dx = e.x - s.x,
         dz = e.z - s.z,
@@ -603,7 +611,7 @@ function update(dt) {
         }
       }
     }
-    if (s.life <= 0 && s.kind === 3 && s.life > -1) {
+    if (s.life <= 0 && s.kind === 3 && s.life > -1 && !s.ghost) {
       explode(s.x, s.z, s.aoe, s.dmg);
       if (s.fx === 'cluster')
         for (let j = 0; j < 5; j++) {
@@ -621,15 +629,17 @@ function update(dt) {
     s.z += s.vz * dt * eslow;
     const dx = s.x - p.x,
       dz = s.z - p.z;
-    if (dx * dx + dz * dz < 0.75 && p.inv <= 0) {
+    if (dx * dx + dz * dz < 0.75 && p.inv <= 0 && !p.dead) {
       hurt(s.dmg);
       s.life = 0;
+      if (cc) COOP.usedES.add(s.id); // the host's copy flies on: don't let it hit us twice
     } else if (s.x * s.x + s.z * s.z > (ARENA + 8) ** 2) s.life = 0;
   }
   G.eshots = G.eshots.filter(s => s.life > 0);
   if (G.state !== 'play') return;
   // zones
   for (const z of G.zones) {
+    if (z.m) continue; // a co-op client's copy of the host's zone: the host detonates it
     z.l += dt;
     if (z.l >= z.d) {
       z.done = true;
@@ -641,7 +651,8 @@ function update(dt) {
         parts(z.x, 0.6, z.z, 14, 1, 0.4, 0.2, 9, 0.3);
         AU.play('boom');
         shake(0.3);
-        if ((z.x - p.x) ** 2 + (z.z - p.z) ** 2 < z.r * z.r) hurt(z.dmg);
+        if (!p.dead && (z.x - p.x) ** 2 + (z.z - p.z) ** 2 < z.r * z.r) hurt(z.dmg);
+        coopEvent('zb', [r1(z.x), r1(z.z), r1(z.r), Math.round(z.dmg)]); // the others check themselves
       }
     }
   }
@@ -649,7 +660,9 @@ function update(dt) {
   if (G.state !== 'play') return;
   // pickups
   const mg2 = p.magnet * p.magnet;
+  if (COOP.on && !cc) coopHostPicks(dt); // gems flying to teammates
   for (const q of G.picks) {
+    if (cc || q.to || p.dead) continue; // a client only draws the host's pickups; q.to: going to a teammate
     q.t += dt;
     const dx = p.x - q.x,
       dz = p.z - q.z,
@@ -665,6 +678,7 @@ function update(dt) {
       q.got = true;
       if (q.k === 0) {
         addXp(q.v);
+        coopXp(q.v); // shared: every teammate gets it too
         if (u.pickup) heal(0.3 * u.pickup);
         AU.play('gem');
       } else if (q.k === 1) {
@@ -741,7 +755,7 @@ function update(dt) {
     checkAch();
   }
   // boss reward → cards → next stage
-  if (G.bossReward > 0) {
+  if (G.bossReward > 0 && !G.cardsOpen) {
     G.bossReward -= dt;
     if (G.bossReward <= 0) {
       G.bossReward = 0;
@@ -749,5 +763,5 @@ function update(dt) {
       return;
     }
   }
-  if (G.pending > 0 && !(G.bossReward > 0)) openCards('level');
+  if (G.pending > 0 && !(G.bossReward > 0) && !G.cardsOpen && !p.dead) openCards('level');
 }

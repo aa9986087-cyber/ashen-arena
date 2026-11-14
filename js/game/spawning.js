@@ -12,6 +12,7 @@ function spawn(type, x, z, elite) {
       (1 + G.cycle * 1.5) *
       (1 + Math.max(0, G.lvl - 10) * 0.04) *
       (G.p.enemyMul || 1) *
+      COOP.hpMul * // co-op: tougher with every player
       (elite ? 4.5 : 1);
   const r = Math.hypot(x, z);
   if (r > ARENA + 3) {
@@ -29,7 +30,7 @@ function spawn(type, x, z, elite) {
     maxHp: d.hp * hm,
     r: d.r * (elite ? 1.3 : 1),
     spd: d.spd * (1 + Math.min(gw, 40) * 0.012),
-    dmg: d.dmg * 1.25 * (1 + gw * 0.07) * Math.pow(1.018, gw) * (G.p.enemyMul || 1) * (elite ? 1.5 : 1),
+    dmg: d.dmg * 1.25 * coopDmgF(gw) * (elite ? 1.5 : 1),
     xp: d.xp * (elite ? 6 : 1),
     scale: d.sc * (elite ? 1.35 : 1),
     elite: !!elite,
@@ -61,7 +62,7 @@ function spawnPack(type, n, x, z, r) {
   for (let j = 0; j < n; j++) spawn(type, x + rand(-r, r), z + rand(-r, r));
 }
 function spawnAround(type, elite, dist) {
-  const p = G.p,
+  const p = COOP.on ? coopAnchor() : G.p, // co-op: around one of the players, so each has a fight
     a = Math.random() * TAU,
     d = dist || rand(21, 27);
   return spawn(type, p.x + Math.cos(a) * d, p.z + Math.sin(a) * d, elite);
@@ -93,7 +94,7 @@ function spawnBoss() {
     a = Math.random() * TAU,
     si = G.abyss ? 6 + G.depth * 0.7 : G.stage;
   G.bossName = G.forceBoss != null ? bossNameOf(k) : G.abyss ? 'ظلّ ' + bossNameOf(k) : STAGES[G.stage].boss;
-  const hp = 2200 * 1.35 * Math.pow(1.55, si) * (1 + G.cycle * 3);
+  const hp = 2200 * 1.35 * Math.pow(1.55, si) * (1 + G.cycle * 3) * COOP.bossMul;
   const e = spawn('brute', p.x + Math.cos(a) * 20, p.z + Math.sin(a) * 20, false);
   Object.assign(e, {
     boss: true,
@@ -136,9 +137,9 @@ function spawnBoss() {
   banner(G.bossName, 'الزعيم وصل. اقرأ هجماته وراوغ الدوائر الحمراء.', 3);
 }
 function updWaves(dt) {
-  const p = G.p,
+  const p = COOP.on ? coopAnchor() : G.p,
     gw = gwave(),
-    cap = S.set.qual ? 170 : 100;
+    cap = Math.min(240, (S.set.qual ? 170 : 100) * COOP.cntMul);
   if (G.calmT > 0) {
     G.calmT -= dt;
     return;
@@ -161,7 +162,7 @@ function updWaves(dt) {
       }
     }
   }
-  const rate = Math.min(1 + gw * 0.24, 10) * (G.bossOn ? 0.4 : 1) * (G.abyss ? 1.25 : 1);
+  const rate = Math.min(1 + gw * 0.24, 10) * (G.bossOn ? 0.4 : 1) * (G.abyss ? 1.25 : 1) * COOP.cntMul;
   G.spawnAcc += G.noWaves ? 0 : dt * rate;
   while (G.spawnAcc >= 1) {
     G.spawnAcc -= 1;

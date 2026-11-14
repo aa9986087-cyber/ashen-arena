@@ -97,6 +97,7 @@ function hit(e, dmg, o) {
       return;
     }
   }
+  if (COOP.on && !COOP.host) coopHitOut(e, dmg, o); // our damage, worked out here: the host applies it for real
   e.hp -= dmg;
   e.flash = 0.1;
   if (o.kb && !e.boss && e.type !== 'brute' && e.type !== 'golem') {
@@ -127,17 +128,20 @@ function kill(e) {
   S.stats.kills++;
   dailyTrack('kill', 1);
   if (e.elite) dailyTrack('elite', 1);
-  const p = G.p;
-  if (p.leech && !e.boss) heal(p.leech);
+  const p = G.p,
+    mine = !COOP.remoteKill; // a teammate's kill applied by the host: none of our on-kill upgrades
+  if (COOP.on && !COOP.host) COOP.predDead.set(e.nid, performance.now()); // gone here at once; the host confirms
+  if (COOP.on && COOP.host && !e.boss) COOP.kd.push(e.nid); // the clients drop its corpse
+  if (mine && p.leech && !e.boss) heal(p.leech);
   parts(e.x, 1, e.z, e.boss ? 60 : e.elite ? 18 : 7, 1, 0.35, 0.25, e.boss ? 14 : 7, e.boss ? 0.4 : 0.22);
   AU.play(e.boss ? 'boom' : 'kill');
   if (e.boss) {
-    bossDown(e);
+    if (!COOP.on || COOP.host) bossDown(e);
     return;
   }
   // a fallen body that tips over and sinks (drawn by render, aged in update)
   if (G.corpses.length < 60) G.corpses.push({ type: e.type, x: e.x, z: e.z, face: e.face, s: e.scale, l: 0 });
-  if (e.affix === 'split') {
+  if (e.affix === 'split' && !(COOP.on && !COOP.host)) {
     const r0 = G.enemies.length;
     spawnPack(e.type, 3, e.x, e.z, 1.5);
     for (let i = r0; i < G.enemies.length; i++) G.enemies[i].scale *= 0.8;
@@ -148,6 +152,7 @@ function kill(e) {
   if (Math.random() < (e.elite ? 0.35 : 0.012)) drop(e.x, e.z + 0.6, 2, 20);
   const gold = 0.06 * (G.ups.goldrush || 0) + (G.ups.midas ? 0.1 : 0);
   if (gold && Math.random() < gold) drop(e.x + rand(-0.6, 0.6), e.z + rand(-0.6, 0.6), 1, 1 + (Math.random() < 0.4));
+  if (!mine) return;
   if (G.ups.chain && Math.random() < 0.2 * G.ups.chain) boltStrike(3, (10 + 6 * G.ups.chain) * p.dmgMul, e.x, e.z);
   if (G.ups.bloodlust) {
     G.lust = Math.min(20, G.lust + 1);
@@ -170,6 +175,7 @@ function kill(e) {
   if (e.burn > 0 && G.ups.nova) G.defer.push([e.x, e.z, 2.6 * p.area, (12 + 10 * G.ups.nova) * p.dmgMul]);
 }
 function drop(x, z, kind, v) {
+  if (COOP.on && !COOP.host) return; // pickups belong to the host's world
   if (kind === 0 && G.picks.length > 330) {
     for (const q of G.picks)
       if (q.k === 0) {
@@ -236,6 +242,7 @@ function explode(x, z, R, dmg, quiet, look) {
 }
 function shot(x, z, ang, o) {
   if (G.shots.length > 400) return;
+  if (COOP.on && !o.ghost) coopShotOut(x, z, ang, o);
   G.shots.push({
     x,
     z,
@@ -253,6 +260,7 @@ function shot(x, z, ang, o) {
     crit: o.crit || 0,
     fx: o.fx || '',
     bounce: (o.bounce || 0) + (o.kind === 3 ? 0 : G.ups.bounce || 0),
+    ghost: !!o.ghost,
     life0: o.life || o.range / o.spd,
     hits: [],
     t: 0,
@@ -260,7 +268,16 @@ function shot(x, z, ang, o) {
 }
 function eShot(x, z, ang, spd, dmg) {
   if (G.eshots.length < 300)
-    G.eshots.push({ x, z, vx: Math.cos(ang) * spd, vz: Math.sin(ang) * spd, dmg, life: 5, sty: eSrc });
+    G.eshots.push({
+      id: (G.esC = (G.esC || 0) + 1),
+      x,
+      z,
+      vx: Math.cos(ang) * spd,
+      vz: Math.sin(ang) * spd,
+      dmg,
+      life: 5,
+      sty: eSrc,
+    });
 }
 /** n enemy bullets evenly around a circle: angle_j = (j+shift)/n*TAU + off. */
 function eRing(x, z, n, spd, dmg, off = 0, shift = 0) {
@@ -523,7 +540,7 @@ function dash() {
 }
 function hurt(d) {
   const p = G.p;
-  if (p.inv > 0 || G.state !== 'play' || G.god) return;
+  if (p.inv > 0 || G.state !== 'play' || G.god || p.dead) return;
   d *= (1 - p.armor) * (p.taken || 1) * (G.superT > 0 ? 0.5 : 1) * buffMul('taken');
   p.shieldRe = 5;
   if (p.shield > 0) {
@@ -574,7 +591,8 @@ function hurt(d) {
       explode(p.x, p.z, 8, 200 * p.dmgMul);
     } else {
       p.hp = 0;
-      endRun();
+      if (COOP.on) coopDie();
+      else endRun();
     }
   }
 }

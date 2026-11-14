@@ -13,7 +13,7 @@ function zoneBarrage(cx, cz, n, spread, r, d0, dstep, dmg) {
 }
 function updEnemies(dt) {
   const hasteSrc = G.enemies.filter(q => q.affix === 'haste' && !q.dead),
-    p = G.p,
+    P0 = G.p, // the local hero (burn damage scales with him); each enemy chases its own target below
     E = G.enemies,
     fl = G.ups.fire || 0;
   for (let i = 0, n = E.length; i < n; i++) {
@@ -35,12 +35,15 @@ function updEnemies(dt) {
       e.bAcc += dt;
       if (e.bAcc >= 0.5) {
         e.bAcc = 0;
-        hit(e, 5 * Math.max(1, fl) * p.dmgMul, { burn: 1, noCrit: 1, aoe: 1, quiet: 1 });
-        text(e.x, e.z, Math.round(5 * Math.max(1, fl) * p.dmgMul), '#ff9a4a');
+        hit(e, 5 * Math.max(1, fl) * P0.dmgMul, { burn: 1, noCrit: 1, aoe: 1, quiet: 1 });
+        text(e.x, e.z, Math.round(5 * Math.max(1, fl) * P0.dmgMul), '#ff9a4a');
         parts(e.x, 1.4, e.z, 1, 1, 0.5, 0.1, 2, 0.2, 0.4);
         if (e.dead) continue;
       }
     }
+    // co-op: the nearest standing player (the host or a teammate); alone: you
+    const p = COOP.on ? coopTarget(e) : P0,
+      lead = p === P0 ? IN : p; // where the target is heading (a teammate reports his own movement)
     const dx = p.x - e.x,
       dz = p.z - e.z,
       d = Math.hypot(dx, dz) || 0.001,
@@ -52,7 +55,7 @@ function updEnemies(dt) {
     e.face = Math.atan2(dx, dz);
     if (!e.boss && d > 32) {
       e.offT = (e.offT || 0) + dt;
-      if (e.offT > 1.2) recycleEnemy(e);
+      if (e.offT > 1.2) recycleEnemy(e, p);
     } else e.offT = 0;
     if (e.boss) {
       const rage = e.hp < e.maxHp * 0.5 ? 1.45 : 1,
@@ -67,8 +70,8 @@ function updEnemies(dt) {
       if (e.a4 <= 0 && e.st === 0 && d < 32) {
         e.a4 = 2.6;
         const ld = d / 15,
-          tx = p.x + (IN.mvx || 0) * p.speed * ld,
-          tz = p.z + (IN.mvz || 0) * p.speed * ld,
+          tx = p.x + (lead.mvx || 0) * p.speed * ld,
+          tz = p.z + (lead.mvz || 0) * p.speed * ld,
           aa = Math.atan2(tz - e.z, tx - e.x);
         eFan(e.x, e.z, aa, 1, 0.13, 15, e.dmg * 0.45);
         AU.play('eshot');
@@ -316,7 +319,7 @@ function updEnemies(dt) {
           parts(e.x, 0.8, e.z, 18, 1, 0.5, 0.1, 10, 0.3);
           AU.play('boom');
           shake(0.35);
-          if (d < 3.2 + p.r) hurt(e.dmg);
+          coopBoom(e.x, e.z, 3.2 + 0.6, e.dmg); // the blast: you, and (co-op) each teammate checks himself
           if (G.state !== 'play') return;
           continue;
         }
@@ -350,7 +353,7 @@ function updEnemies(dt) {
       if (e.cd <= 0 && d < 18) {
         e.cd = 3.6 + Math.random();
         e.atkT = ATK_T;
-        zone(p.x + (IN.mvx || 0) * 2, p.z + (IN.mvz || 0) * 2, 2.6, 1, e.dmg, false);
+        zone(p.x + (lead.mvx || 0) * 2, p.z + (lead.mvz || 0) * 2, 2.6, 1, e.dmg, false);
         e.flash = 0.15;
       }
     } else if (e.type === 'golem') {
@@ -451,7 +454,8 @@ function updEnemies(dt) {
       e.x *= (ARENA + 4) / er;
       e.z *= (ARENA + 4) / er;
     }
-    if (d < e.r + p.r && e.hitCd <= 0 && !(e.boss && e.st === 3)) {
+    if (p === P0 && !P0.dead && d < e.r + p.r && e.hitCd <= 0 && !(e.boss && e.st === 3)) {
+      // (a teammate's contact damage is judged on his own device, against what he sees)
       e.hitCd = 0.5;
       e.atkT = ATK_T;
       hurt(e.dmg);
@@ -490,10 +494,10 @@ function updEnemies(dt) {
 }
 
 /** An enemy left far behind off-screen re-enters at the screen edge, ahead of or beside the player's path. */
-function recycleEnemy(e) {
-  const p = G.p,
-    mv = Math.hypot(IN.mvx, IN.mvz) > 0.1,
-    base = mv ? Math.atan2(IN.mvz, IN.mvx) : Math.random() * TAU,
+function recycleEnemy(e, p = G.p) {
+  const L = p === G.p ? IN : p,
+    mv = Math.hypot(L.mvx || 0, L.mvz || 0) > 0.1,
+    base = mv ? Math.atan2(L.mvz, L.mvx) : Math.random() * TAU,
     a = base + rand(-1.3, 1.3) * (mv ? 1 : Math.PI),
     d = rand(19, 23);
   let x = p.x + Math.cos(a) * d,

@@ -15,6 +15,7 @@ const SCREENS = [
   'lab',
   'chat',
   'duelMenu',
+  'coopMenu',
   'liveScr',
 ];
 function show(id, on) {
@@ -303,6 +304,7 @@ document.querySelectorAll('[data-go]').forEach(
 $('mPlay').onclick = startRun;
 $('mResume').onclick = resumeRun;
 $('pSave').onclick = () => {
+  if (COOP.on) return coopLeave(); // co-op can't be saved: leaving ends it for us
   saveRun();
   show('pause', false);
   toMenu();
@@ -318,6 +320,7 @@ $('pSet').onclick = () => {
   drawSet();
 };
 $('pQuit').onclick = () => {
+  if (COOP.on) return coopLeave();
   show('pause', false);
   G.state = 'play';
   endRun();

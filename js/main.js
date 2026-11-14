@@ -16,6 +16,7 @@ function frame(now) {
     perfTick(raw * 1000);
     return;
   }
+  if (COOP.on) coopFrame(dt); // co-op: the network, the host's world mirrored, teammates
   if (G.state === 'play') update(dt * (G.slow > 0 ? 0.35 : 1) * (G.slowmo ? 0.3 : 1));
   updCount(Math.min(raw, 0.25)); // real seconds, even on a slow device
   perfTick(raw * 1000);

@@ -39,6 +39,10 @@ function bossDown(e) {
 function nextStage() {
   if (G.abyss) G.depth++;
   else if (G.stage >= 5) {
+    if (COOP.on) {
+      coopEnd(true); // co-op: the last boss falls, the whole team wins together
+      return true;
+    }
     G.state = 'ending';
     showEnding();
     return true;
@@ -49,6 +53,7 @@ function nextStage() {
   G.calmT = 5; // five quiet seconds before the next stage's soldiers march in
   if (!G.abyss) setStage(G.stage);
   heal(G.p.maxHp * 0.3);
+  if (COOP.on) coopStageCleared(); // the fallen rise again
   banner(
     G.abyss ? 'العمق ' + (G.depth + 1) : STAGES[G.stage].n,
     G.abyss ? 'الظلام يشتد' : 'المرحلة ' + (G.stage + 1),

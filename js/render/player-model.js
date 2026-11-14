@@ -18,10 +18,16 @@ function mesh(g, c, x, y, z, sx, sy, sz, em) {
   return m;
 }
 function buildPlayer() {
-  if (PM.g) scene.remove(PM.g);
-  const ch = CHARS[S.char],
+  buildRig(PM, S.char);
+}
+/** Build a hero rig (body, limbs, held weapon) into R: the local hero is PM; co-op teammates get their own. */
+function buildRig(R, charId, wep) {
+  if (R.g) scene.remove(R.g);
+  if (!CHARS[charId]) charId = 'knight';
+  R.char = charId;
+  const ch = CHARS[charId],
     g = new THREE.Group(),
-    c = S.char,
+    c = charId,
     gold = 0xd0a440,
     dark = 0x1e1e26;
   g.add(mesh(BOX, ch.col, 0, 1.25, 0, 0.8, 0.9, 0.5));
@@ -100,44 +106,44 @@ function buildPlayer() {
     g.add(pv);
     return pv;
   };
-  PM.lL = limb(-0.22, 0.8, 0x34343f, 0.8, 1);
-  PM.lR = limb(0.22, 0.8, 0x34343f, 0.8, 1);
-  PM.aL = limb(-0.55, 1.65, ch.col, 0.75);
-  PM.aR = limb(0.55, 1.65, ch.col, 0.75);
+  R.lL = limb(-0.22, 0.8, 0x34343f, 0.8, 1);
+  R.lR = limb(0.22, 0.8, 0x34343f, 0.8, 1);
+  R.aL = limb(-0.55, 1.65, ch.col, 0.75);
+  R.aR = limb(0.55, 1.65, ch.col, 0.75);
   if (c === 'knight') {
-    PM.aL.add(mesh(BOX, 0xb8c0cc, -0.16, -0.45, 0.12, 0.1, 0.8, 0.62));
-    PM.aL.add(mesh(BOX, 0xa02a2a, -0.22, -0.45, 0.12, 0.04, 0.4, 0.3));
+    R.aL.add(mesh(BOX, 0xb8c0cc, -0.16, -0.45, 0.12, 0.1, 0.8, 0.62));
+    R.aL.add(mesh(BOX, 0xa02a2a, -0.22, -0.45, 0.12, 0.04, 0.4, 0.3));
   }
-  if (c === 'assassin') PM.aL.add(mesh(BOX, 0xd8dde6, 0, -0.95, 0, 0.06, 0.5, 0.04));
-  PM.wp = new THREE.Group();
-  PM.wp.position.y = -0.75;
-  PM.aR.add(PM.wp);
-  const heroGeo = HERO_GEOS[S.char] || HERO_GEOS['*'];
+  if (c === 'assassin') R.aL.add(mesh(BOX, 0xd8dde6, 0, -0.95, 0, 0.06, 0.5, 0.04));
+  R.wp = new THREE.Group();
+  R.wp.position.y = -0.75;
+  R.aR.add(R.wp);
+  const heroGeo = HERO_GEOS[charId] || HERO_GEOS['*'];
   if (heroGeo) {
     // a loaded model replaces the body; only the weapon in the right hand stays procedural
-    for (const ch of g.children) if (ch !== PM.aR) ch.visible = false;
-    for (const ch of PM.aR.children) if (ch !== PM.wp) ch.visible = false;
+    for (const ch of g.children) if (ch !== R.aR) ch.visible = false;
+    for (const ch of R.aR.children) if (ch !== R.wp) ch.visible = false;
     const hm = new THREE.Mesh(heroGeo.base, lamV);
     hm.castShadow = true;
     g.add(hm);
-    PM.hm = hm;
-    PM.anim = heroGeo.clips;
+    R.hm = hm;
+    R.anim = heroGeo.clips;
     // the weapon leaves the procedural arm and follows the model's own hand (see render)
-    PM.wpHand = !!heroGeo.base.userData.hand;
-    if (PM.wpHand) g.add(PM.wp);
+    R.wpHand = !!heroGeo.base.userData.hand;
+    if (R.wpHand) g.add(R.wp);
   } else {
-    PM.hm = PM.anim = null;
-    PM.wpHand = false;
+    R.hm = R.anim = null;
+    R.wpHand = false;
   }
-  PM.g = g;
+  R.g = g;
   scene.add(g);
-  buildWeapon();
+  buildWeapon(R, wep);
 }
-function buildWeapon() {
-  const w = PM.wp;
+function buildWeapon(R = PM, wep) {
+  const w = R.wp;
   while (w.children.length) w.remove(w.children[0]);
-  const cur = G && G.weapons && G.weapons[0],
-    id = cur ? cur.id : CHARS[S.char].wep,
+  const cur = wep || (R === PM && G && G.weapons && G.weapons[0]),
+    id = cur ? cur.id : CHARS[R.char || S.char].wep,
     L = cur ? cur.lvl : 1,
     t = wTier(L);
   // an evolved weapon glows violet and is bigger

@@ -2,6 +2,7 @@
 /* Run lifecycle: start, resume (saved run), end, pause, back to menu. */
 const RUN_KEY = 'ashen_arena_run';
 function saveRun() {
+  if (COOP.on) return; // a co-op run can't be resumed alone
   if (!G || G.lab || (G.state !== 'play' && G.state !== 'paused' && G.state !== 'cards' && G.state !== 'count')) return;
   const p = G.p,
     inCards = G.state === 'cards';
@@ -149,6 +150,7 @@ function startRun() {
 }
 function endRun() {
   if (G.state === 'over') return;
+  if (COOP.on) coopClose();
   G.state = 'over';
   clearRun();
   MUS.on = false;
@@ -240,6 +242,11 @@ function updCount(dt) {
   if (!n) c.dataset.n = '';
 }
 function pause(on) {
+  if (COOP.on) {
+    // co-op: the others keep fighting, nothing stops; the menu only offers to leave
+    show('pause', on);
+    return;
+  }
   if (on && (G.state === 'play' || G.state === 'count')) {
     G.state = 'paused';
     show('pause', true);
