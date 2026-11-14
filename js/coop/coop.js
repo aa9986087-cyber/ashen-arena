@@ -34,7 +34,8 @@ const COOP = {
   hits: [], // client: hits to send to the host
   relay: [], // host: the clients' effects and shots, passed on to the others
   zb: [], // host: detonations (zones, bombers) each player checks himself against
-  gifts: [], // host: coins / hearts picked up by a teammate
+  given: {}, // host: each player's running totals of what he picked up [xp, gold, health, potions]
+  taken: [0, 0, 0, 0], // client: the part of my totals already applied
   kd: [], // host: enemies killed since the last snapshot (clients drop a corpse)
   rvN: 0, // revivals so far (a stage cleared)
   // client
@@ -197,7 +198,9 @@ function coopStart(ch, roster, isHost) {
     hits: [],
     relay: [],
     zb: [],
-    gifts: [],
+    given: {},
+    taken: [0, 0, 0, 0],
+    lastGv: null,
     kd: [],
     rvN: 0,
     buf: [],
@@ -331,7 +334,9 @@ function coopTakeOver() {
   COOP.ens.clear();
   COOP.predDead.clear();
   COOP.usedES.clear();
-  Object.assign(COOP, { sendT: 0, ev: [], sh: [], hits: [], relay: [], zb: [], gifts: [], kd: [] });
+  // carry on the old host's totals, so nobody's count jumps
+  COOP.given = COOP.lastGv ? JSON.parse(JSON.stringify(COOP.lastGv)) : {};
+  Object.assign(COOP, { sendT: 0, ev: [], sh: [], hits: [], relay: [], zb: [], kd: [] });
   for (const q of COOP.peers.values()) {
     q.buf = [];
     q.vt = undefined;
@@ -555,7 +560,7 @@ function coopSendWorld() {
     sh: COOP.sh.splice(0),
     r: COOP.relay.splice(0),
     zb: COOP.zb.splice(0),
-    gf: COOP.gifts.splice(0),
+    gv: COOP.given,
     kd: COOP.kd.splice(0),
   };
   COOP.ch.send('w', s);
@@ -659,7 +664,10 @@ function coopHostPicks(dt) {
     q.z += (dz / d) * s * dt;
     if (d2 < 1.2) {
       q.got = true;
-      COOP.gifts.push(q.to, q.k, Math.round(q.v * 10) / 10);
+      // the player's running totals: [experience, gold, health, potions]; every snapshot carries them, so a lost
+      // message loses nothing (the next one brings the same totals)
+      const tot = (COOP.given[q.to] = COOP.given[q.to] || [0, 0, 0, 0]);
+      tot[q.k === 3 ? 3 : q.k] += q.k === 3 ? 1 : q.v;
     }
   }
 }
@@ -720,6 +728,35 @@ function coopRecvWorld(s) {
   if (B.length && s.ts <= B[B.length - 1].ts) return; // late or duplicate
   B.push(s);
   if (B.length > 12) B.shift();
+  if (s.gv) coopTakeGifts(s.gv);
+}
+/** Client: what the host handed us (gems, gold, hearts, potions) since last time, from its running totals. */
+function coopTakeGifts(gv) {
+  COOP.lastGv = gv; // (kept, so whoever takes over as host carries the same totals on)
+  const tot = gv[COOP.me];
+  if (!tot) return;
+  const had = COOP.taken,
+    d = tot.map((v, i) => v - (had[i] || 0));
+  COOP.taken = tot.slice();
+  const p = G.p;
+  if (d[0] > 0.01) {
+    if (!p.dead) addXp(d[0]);
+    if (G.ups.pickup) heal(0.3 * G.ups.pickup, true);
+    AU.play('gem');
+  }
+  if (d[1] > 0.01) {
+    const c = Math.max(1, Math.round(d[1] * p.goldMul));
+    if (G.ups.midas) addXp(c * 2);
+    G.coins += c;
+    AU.play('coin');
+    text(p.x, p.z, '+' + c + ' 🪙', '#ffd23a');
+  }
+  if (d[2] > 0.01) {
+    heal(d[2], true);
+    AU.play('heart');
+    text(p.x, p.z, '+' + Math.round(d[2]), '#6dff8a', true);
+  }
+  for (let i = 0; i < Math.round(d[3]); i++) addPot();
 }
 /** Client, each frame before update(): the host's world as of a moment ago, interpolated between snapshots. */
 function coopMirror(dt) {
@@ -751,27 +788,6 @@ function coopMirror(dt) {
         const [x, z, r, dmg] = q.zb.slice(o, o + 4);
         if (!p.dead && (p.x - x) ** 2 + (p.z - z) ** 2 < r * r) hurt(dmg);
       }
-      for (let o = 0; o < (q.gf || []).length; o += 3)
-        if (q.gf[o] === COOP.me) {
-          const kind = q.gf[o + 1],
-            v = q.gf[o + 2];
-          if (kind === 0) {
-            if (!p.dead) addXp(v);
-            if (G.ups.pickup) heal(0.3 * G.ups.pickup);
-            AU.play('gem');
-          } else if (kind === 1) {
-            const c = Math.max(1, Math.round(v * p.goldMul));
-            if (G.ups.midas) addXp(c * 2);
-            G.coins += c;
-            AU.play('coin');
-            text(p.x, p.z, '+' + c + ' 🪙', '#ffd23a');
-          } else if (kind === 3) addPot();
-          else {
-            heal(v);
-            AU.play('heart');
-            text(p.x, p.z, '+' + Math.round(v), '#6dff8a', true);
-          }
-        }
       for (const nid of q.kd || [])
         if (!COOP.predDead.has(nid)) {
           const e = COOP.ens.get(nid);
