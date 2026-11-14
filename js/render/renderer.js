@@ -404,13 +404,13 @@ function render(dt, now) {
       fx.font = q.big ? size + 'px Lalezar,Tajawal,sans-serif' : '800 ' + size + 'px Tajawal,sans-serif';
       fx.lineWidth = q.big ? 5 : 3.5;
       fx.strokeStyle = 'rgba(10,4,0,.85)';
-      fx.strokeText(q.t, a[0], a[1]);
+      cvText(fx, q.t, a[0], a[1], true);
       if (q.big) {
         fx.shadowColor = q.c;
         fx.shadowBlur = 14;
       }
       fx.fillStyle = q.c;
-      fx.fillText(q.t, a[0], a[1]);
+      cvText(fx, q.t, a[0], a[1]);
       fx.shadowBlur = 0;
     }
     fx.globalAlpha = 1;
@@ -418,7 +418,7 @@ function render(dt, now) {
     for (const e of G.enemies)
       if (e.elite && !e.boss) {
         const a = proj(e.x, 2.6 * e.scale, e.z);
-        if (e.affix) fx.fillText(AFFIX[e.affix].i, a[0], a[1] - 6);
+        if (e.affix) cvIcon(fx, AFFIX[e.affix].i, a[0], a[1] - 13, 18);
         if (e.hp < e.maxHp) {
           fx.fillStyle = 'rgba(0,0,0,.6)';
           fx.fillRect(a[0] - 20, a[1], 40, 5);
@@ -437,9 +437,7 @@ function render(dt, now) {
           cy = H / 2,
           an = Math.atan2(a[1] - cy, a[0] - cx),
           r = Math.min(W, H) * 0.42;
-        fx.fillStyle = '#ff5a40';
-        fx.font = '800 30px sans-serif';
-        fx.fillText('☠', cx + Math.cos(an) * r, cy + Math.sin(an) * r);
+        cvIcon(fx, '☠', cx + Math.cos(an) * r, cy + Math.sin(an) * r, 32);
       }
     }
     drawHud();

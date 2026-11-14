@@ -55,6 +55,52 @@ function rollCards(n, minR, skip) {
   if (!out.length) out.push({ k: 'heal', r: 0 }, { k: 'gold', r: 0 });
   return out;
 }
+/* What an upgrade changes, as a number you can read: [label, value of the hero now]. */
+const pctOf = v => Math.round(v * 100) + '%';
+const UP_STAT = {
+  hp: ['الصحة القصوى', p => p.maxHp],
+  dmg: ['قوة الضرر', p => pctOf(p.dmgMul)],
+  aspd: ['سرعة الهجوم', p => pctOf(p.aspd)],
+  crit: ['فرصة الحرجة', p => pctOf(p.crit)],
+  area: ['المدى', p => pctOf(p.area)],
+  regen: ['تجدد الصحة', p => p.regen.toFixed(1) + '/ث'],
+  armor: ['تقليل الضرر', p => pctOf(p.armor)],
+  speed: ['سرعة الحركة', p => p.speed.toFixed(1)],
+  dashlen: ['مسافة المراوغة', p => p.dashLen.toFixed(1) + 'م'],
+  magnet: ['مدى الجذب', p => p.magnet.toFixed(1) + 'م'],
+  multi: ['مقذوفات إضافية', p => '+' + p.multi],
+  shield: ['الدرع', p => p.shieldMax],
+  dash: ['تجهيز المراوغة', p => p.dashMax.toFixed(1) + 'ث'],
+  coins: ['العملات', p => pctOf(p.goldMul)],
+  xp: ['الخبرة', p => pctOf(p.xpMul)],
+  critdmg: ['ضرر الحرجة', p => '×' + p.critMul.toFixed(1)],
+  pspeed: ['سرعة المقذوف', p => pctOf(p.pspd)],
+  pierce: ['اختراق إضافي', p => '+' + p.pierceAdd],
+  size: ['حجم المقذوف', p => pctOf(p.sizeMul)],
+  cdr: ['وقت التجهيز', p => pctOf(p.cdr)],
+  kb: ['قوة الدفع', p => pctOf(p.kbMul)],
+  iframe: ['حماية بعد الضربة', p => '+' + p.iframe.toFixed(2) + 'ث'],
+  bossdmg: ['ضرر الزعماء', p => pctOf(p.bossMul)],
+  army: ['الجنود', () => (G.ups.army ? 1 + G.ups.army : 0)],
+};
+/** "Max health: 120 ← 138": the stat an upgrade changes, now and after taking it (worked out, then undone). */
+function upPreview(id) {
+  const st = UP_STAT[id];
+  if (!st) return '';
+  const p = G.p,
+    keep = Object.assign({}, p),
+    allies = G.allies.length,
+    had = id in G.ups,
+    a = st[1](p);
+  G.ups[id] = (G.ups[id] || 0) + 1;
+  recalc();
+  const b = st[1](p);
+  G.ups[id]--;
+  if (!had) delete G.ups[id];
+  Object.assign(p, keep);
+  G.allies.length = allies;
+  return st[0] + ': ' + a + ' ← ' + b;
+}
 function cardInfo(c) {
   if (c.k === 'up') {
     const u = UP[c.id],
@@ -71,7 +117,14 @@ function cardInfo(c) {
           ' ' +
           EVO[w.id].n +
           (w.lvl < 5 ? ' (لما يوصل المستوى 5)' : '');
-    return { i: u.i, n: u.n, d: u.d, lv: u.max > 1 ? (l ? 'المستوى ' + l + ' ← ' + (l + 1) : 'جديد') : '', syn };
+    return {
+      i: u.i,
+      n: u.n,
+      d: u.d,
+      st: upPreview(c.id),
+      lv: u.max > 1 ? 'مستواك ' + l + ' ← ' + (l + 1) + ' (من ' + u.max + ')' : 'مرة وحدة',
+      syn,
+    };
   }
   if (c.k === 'wup') {
     const w = G.weapons.find(x => x.id === c.id),
@@ -81,7 +134,7 @@ function cardInfo(c) {
       i: d.i,
       n: d.n,
       d: nl === 3 ? 'يتطور شكل السلاح: ' + d.evo[0] : nl === 5 ? 'الشكل الأسطوري: ' + d.evo[1] : 'ضرر +30% وهجوم أسرع',
-      lv: 'المستوى ' + w.lvl + ' ← ' + nl,
+      lv: 'مستواه ' + w.lvl + ' ← ' + nl + ' (من 5)',
       syn: nl === 5 && EVO[c.id] ? 'يتطور كامل مع ' + UP[EVO[c.id].up].i + ' ' + UP[EVO[c.id].up].n : '',
     };
   }
@@ -127,11 +180,13 @@ function drawCards() {
     if (c.k !== 'pact') b.style.setProperty('--rc', 'var(--r' + c.r + ')');
     b.style.animationDelay = i * 0.07 + 's';
     b.innerHTML =
-      '<span class="ic"></span><span class="body"><span class="rar"></span><h3></h3><p></p><span class="syn"></span><span class="lv"></span></span>';
+      '<span class="ic"></span><span class="body"><span class="rar"></span><h3></h3><p></p><span class="st"></span><span class="syn"></span><span class="lv"></span></span>';
     b.querySelector('.ic').textContent = f.i;
     b.querySelector('.rar').textContent = c.k === 'pact' ? 'صفقة بثمن' : RAR[c.r];
     b.querySelector('h3').textContent = f.n;
     b.querySelector('p').textContent = f.d;
+    b.querySelector('.st').textContent = f.st || '';
+    b.querySelector('.st').hidden = !f.st;
     b.querySelector('.syn').textContent = f.syn;
     b.querySelector('.lv').textContent = f.lv;
     b.onclick = () => chooseCard(i);
@@ -192,9 +247,14 @@ function chooseCard(i) {
     return;
   }
   show('cards', false);
-  G.state = 'play';
   G.cardsOpen = false;
   G.p.inv = Math.max(G.p.inv, 0.6);
+  // 3 s to get ready before the fight resumes. Solo: the whole game waits. Co-op: only you are held
+  // (and shielded); your teammates' game keeps running.
+  if (COOP.on) {
+    G.state = 'play';
+    G.cardFreeze = 3;
+  } else countIn(3);
   saveRun();
 }
 function cine(t) {
@@ -218,6 +278,43 @@ function refreshLoadout() {
   L.classList.toggle('wide', L.children.length > 9);
 }
 
+/** The pause screen's "your stats" panel: the hero's numbers and every upgrade with its level. */
+function drawStats() {
+  const box = $('pStats'),
+    p = G.p;
+  box.innerHTML = '';
+  box.appendChild(el('b', 'psT', 'قدراتك'));
+  const main = el('div', 'psMain');
+  for (const [k, v] of [
+    ['❤️', Math.ceil(p.hp) + ' / ' + p.maxHp],
+    ['⚔️', pctOf(p.dmgMul)],
+    ['⚡', pctOf(p.aspd)],
+    ['🎯', pctOf(p.crit)],
+    ['👟', p.speed.toFixed(1)],
+    ['🧱', pctOf(p.armor)],
+  ])
+    main.appendChild(el('span', '', k + ' ' + v));
+  box.appendChild(main);
+  const list = el('div', 'psList');
+  for (const w of G.weapons)
+    list.appendChild(
+      el(
+        'span',
+        w.evo ? 'evo' : '',
+        (w.evo ? EVO[w.id].i + ' ' + EVO[w.id].n : WEP[w.id].i + ' ' + WEP[w.id].n) +
+          (w.evo ? ' ★' : ' ' + w.lvl + '/5')
+      )
+    );
+  for (const id in G.ups)
+    if (G.ups[id]) {
+      const u = UP[id],
+        st = UP_STAT[id];
+      list.appendChild(
+        el('span', '', u.i + ' ' + u.n + ' ' + G.ups[id] + '/' + u.max + (st ? ' · ' + st[0] + ' ' + st[1](p) : ''))
+      );
+    }
+  box.appendChild(list);
+}
 $('reroll').onclick = () => {
   if (G.rerolls > 0) {
     G.rerolls--;

@@ -82,6 +82,7 @@ function newRun() {
     droneA: 0,
     mines: [],
     calmT: 0,
+    cardFreeze: 0,
     countT: 0,
     turrets: [],
     shockN: 0,

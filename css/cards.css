@@ -136,6 +136,16 @@
   color: var(--xp);
   font-weight: 800;
 }
+.card .st {
+  font-size: 13px;
+  font-weight: 800;
+  color: #8ff0a8;
+  background: rgba(80, 220, 120, 0.1);
+  border-radius: 8px;
+  padding: 3px 8px;
+  align-self: stretch;
+  font-variant-numeric: tabular-nums;
+}
 .card .lv {
   font-size: 12px;
   font-weight: 800;

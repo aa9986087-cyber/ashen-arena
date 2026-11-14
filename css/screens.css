@@ -702,3 +702,74 @@ textarea.txt {
 .tapRow:active {
   filter: brightness(1.25);
 }
+
+/* pause: your numbers and upgrades */
+#pStats {
+  width: min(560px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+#pStats .psMain {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 14px;
+  font-weight: 800;
+  font-size: 14px;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+#pStats .psList {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  max-height: 26vh;
+  overflow-y: auto;
+}
+#pStats .psList span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e8dcc0;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+#pStats .psList span.evo {
+  color: var(--gold);
+  border-color: rgba(255, 200, 80, 0.4);
+}
+/* a short (phone in landscape) screen: stats beside the buttons, and a tall page scrolls from its top */
+.center {
+  justify-content: safe center;
+}
+@media (max-height: 520px) {
+  #pause {
+    flex-flow: row wrap;
+    align-content: safe center;
+    column-gap: 18px;
+  }
+  #pause h2 {
+    width: 100%;
+    font-size: 40px;
+  }
+  #pStats {
+    width: min(380px, 50vw);
+    margin: 0;
+  }
+  #pStats .psList {
+    max-height: 52vh;
+  }
+  #pause .stack {
+    padding: 12px;
+    gap: 7px;
+  }
+}
+#pStats .psT {
+  color: var(--gold);
+  font-size: 13px;
+}

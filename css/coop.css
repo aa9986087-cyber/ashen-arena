@@ -109,7 +109,7 @@
   background: rgba(8, 12, 20, 0.62);
   min-width: 130px;
 }
-.ctRow i {
+.ctRow > i {
   grid-row: 1 / span 2;
   font-style: normal;
   font-size: 18px;
@@ -128,15 +128,10 @@
 }
 .ctHp {
   grid-column: 2 / span 2;
-  height: 5px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.15);
-  overflow: hidden;
-}
-.ctHp em {
-  display: block;
-  height: 100%;
-  background: #5ee06a;
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .ctRow.dead {
   opacity: 0.55;

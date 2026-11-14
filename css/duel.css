@@ -586,7 +586,7 @@ body.mouse #dActs {
   display: none !important;
 }
 #duel.watching #dTime::after {
-  content: '👁️ تشاهد';
+  content: 'تشاهد';
   display: block;
   font-family: var(--body);
   font-size: 11px;

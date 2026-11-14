@@ -73,7 +73,7 @@ async function scoreCard() {
   x.stroke();
   x.font = '800 54px Tajawal, sans-serif';
   x.fillStyle = '#fff1d6';
-  x.fillText(ch.i + ' ' + ch.n + ' · ' + r.n, 540, 820);
+  cvText(x, ch.i + ' ' + ch.n + ' · ' + r.n, 540, 820);
   // the big number
   x.font = '190px Lalezar, Tajawal, sans-serif';
   x.fillStyle = '#ffd9a0';

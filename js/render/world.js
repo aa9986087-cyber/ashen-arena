@@ -65,15 +65,17 @@ const outer = new THREE.Mesh(
 outer.rotation.x = -Math.PI / 2;
 outer.position.y = 0.04;
 scene.add(outer);
-(() => {
-  const P = inst(GEO.post, lamV, 44, true);
+const POSTS = inst(GEO.post, lamV, 44, true);
+POSTS.mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+/** The lamp posts around the arena's edge (moved when co-op makes the arena bigger). */
+function placePosts(R) {
   for (let i = 0; i < 44; i++) {
     const a = (i / 44) * TAU;
-    put(P, Math.cos(a) * (ARENA + 1.6), 0, Math.sin(a) * (ARENA + 1.6), -a, 1, 1, 1, 1, 1, 1);
+    put(POSTS, Math.cos(a) * (R + 1.6), 0, Math.sin(a) * (R + 1.6), -a, 1, 1, 1, 1, 1, 1);
   }
-  flush(P);
-  P.mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
-})();
+  flush(POSTS);
+}
+placePosts(ARENA);
 let decor = [];
 /** Solid footprints of each decor kind: [offsetX, offsetZ, radius] circles in the model's own space (scaled with it).
     Kinds not listed (dunes) can be walked over. */

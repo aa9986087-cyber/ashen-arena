@@ -68,6 +68,7 @@ function coopArena(R) {
   outer.geometry.dispose();
   outer.geometry = new THREE.RingGeometry(R + 2, Math.max(112, R + 60), 64);
   ground.scale.setScalar(Math.max(1, (R + 60) / 110));
+  placePosts(R);
 }
 
 /* ---------- shared helpers called from the game code ---------- */
@@ -923,23 +924,25 @@ function coopTags(fx) {
     fx.strokeStyle = 'rgba(0,0,0,0.75)';
     fx.lineWidth = 3;
     const label = (q.dead ? '💀 ' : '') + (q.n || '');
-    fx.strokeText(label, x, y - 8);
-    fx.fillText(label, x, y - 8);
+    cvText(fx, label, x, y - 8, true);
+    cvText(fx, label, x, y - 8);
     if (!q.dead && q.maxHp) {
-      const w = 46,
-        k = clamp(q.hp / q.maxHp, 0, 1);
-      fx.fillStyle = 'rgba(0,0,0,0.6)';
-      fx.fillRect(x - w / 2 - 1, y - 2, w + 2, 6);
-      fx.fillStyle = k > 0.5 ? '#5ee06a' : k > 0.25 ? '#f2c94c' : '#ff5a50';
-      fx.fillRect(x - w / 2, y - 1, w * k, 4);
+      // health as a number, coloured by how much is left
+      const s = '❤️ ' + Math.max(0, Math.ceil(q.hp)) + ' / ' + Math.round(q.maxHp);
+      fx.font = '800 12px Tajawal,sans-serif';
+      fx.fillStyle = hpCol(q.hp / q.maxHp);
+      cvText(fx, s, x, y + 8, true);
+      cvText(fx, s, x, y + 8);
+      fx.font = '800 13px Tajawal,sans-serif';
     }
   }
 }
+const hpCol = k => (k > 0.5 ? '#7cf08a' : k > 0.25 ? '#f2c94c' : '#ff6a5a');
 /** The team panel: each teammate's hero, health and level. */
 function coopHud() {
   const box = $('coopTeam'),
     sig = [...COOP.peers.values()]
-      .map(q => q.id + (q.dead ? 'x' : '') + Math.round(((q.hp || 0) / (q.maxHp || 1)) * 20) + ':' + q.lvl)
+      .map(q => q.id + (q.dead ? 'x' : '') + Math.ceil(q.hp || 0) + '/' + Math.round(q.maxHp || 0) + ':' + q.lvl)
       .join('|');
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
@@ -951,9 +954,13 @@ function coopHud() {
       el('b', '', q.n || 'لاعب'),
       el('small', '', 'م' + (q.lvl || 1))
     );
-    const bar = el('span', 'ctHp');
-    bar.appendChild(el('em')).style.width = (q.dead ? 0 : clamp((q.hp || 0) / (q.maxHp || 1), 0, 1) * 100) + '%';
-    row.appendChild(bar);
+    const hp = el(
+      'span',
+      'ctHp',
+      q.dead ? 'سقط' : '❤️ ' + Math.max(0, Math.ceil(q.hp || 0)) + ' / ' + Math.round(q.maxHp || 0)
+    );
+    hp.style.color = q.dead ? '#aaa' : hpCol((q.hp || 0) / (q.maxHp || 1));
+    row.appendChild(hp);
     box.appendChild(row);
   }
 }

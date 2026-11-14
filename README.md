@@ -153,3 +153,9 @@ npm run format     # Prettier (الإعدادات في .prettierrc.json)
 
 - ملف اللاعب: `localStorage['ashen_arena_v1']`، والجولة الجارية: `localStorage['ashen_arena_run']`.
 - لا تغيّر هذه المفاتيح، وإلا يضيع تقدم اللاعبين الحاليين.
+
+## الأيقونات
+
+كل أيقونات الواجهة SVG بدل الإيموجي (`js/data/icon-set.js`، يبنيه `tools/build-icons.py`؛ و`js/ui/icons.js` يبدّل أي إيموجي ينكتب بالصفحة بأيقونته تلقائياً):
+- game-icons.net (https://game-icons.net) by Lorc, Delapouite and contributors, licensed under CC BY 3.0.
+- Lucide (https://lucide.dev), ISC licence.
