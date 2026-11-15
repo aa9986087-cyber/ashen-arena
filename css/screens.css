@@ -1538,3 +1538,13 @@ textarea.txt {
 .rk > small {
   font-size: 13px;
 }
+.bWhy {
+  display: block;
+  margin-top: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  font-size: 12px;
+  line-height: 1.6;
+  color: #d9cfb6;
+}
