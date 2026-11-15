@@ -1302,3 +1302,55 @@ textarea.txt {
   font-size: 10px;
   line-height: 16px;
 }
+/* the private room: a gold edge, the code in large letters to read out to a friend */
+.vcRoom.priv {
+  border-color: rgba(246, 196, 90, 0.55);
+  background: linear-gradient(180deg, rgba(246, 196, 90, 0.1), transparent 70%), rgba(255, 255, 255, 0.03);
+}
+.vcRoom.priv.here {
+  border-color: #f6c45a;
+}
+.vcRoom.priv > .btn {
+  margin-top: 8px;
+}
+.vcCode {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px dashed rgba(246, 196, 90, 0.6);
+}
+.vcCode span {
+  font-size: 13px;
+  opacity: 0.75;
+}
+.vcCode b {
+  flex: 1;
+  direction: ltr;
+  text-align: center;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 24px;
+  letter-spacing: 4px;
+  color: #ffe2a0;
+}
+.vcJoinCode {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.vcJoinCode input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 16px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}

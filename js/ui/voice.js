@@ -2,7 +2,9 @@
 /* Voice rooms (like Discord): a few open rooms anyone can join from the 🎧 button. Once in a room you stay in it
    wherever you go in the game (menu, a run, co-op, a duel) until you leave; a small bar on the screen's edge shows who
    is talking. Sound goes straight between the players' devices (WebRTC, every member to every member); the Realtime
-   channel 'voice' only carries who is in which room (presence) and the set-up messages between two devices. */
+   channel 'voice' only carries who is in which room (presence) and the set-up messages between two devices.
+   A private room has a code: its own channel, named from a hash of the code, carries its members and set-up, and the
+   public channel only shows 'priv' for its members (no name, no code) — without the code there is no way in. */
 const VOICE_ROOMS = [
   { id: 'diwan', n: 'الديوانية', d: 'سوالف عامة' },
   { id: 'arena', n: 'ساحة المعارك', d: 'للمبارزة والملحمة' },
@@ -40,10 +42,33 @@ VC.volOk = (() => {
   }
 })();
 const vcName = () => S.name || 'لاعب';
-const vcRoomOf = id => VOICE_ROOMS.find(r => r.id === id);
+const vcPriv = id => !!id && id.startsWith('p:');
+const vcRoomOf = id =>
+  vcPriv(id) ? { id, n: 'غرفتك الخاصة', d: 'برمز' } : VOICE_ROOMS.find(r => r.id === id) || { id, n: '؟', d: '' };
+const VC_CODE_ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O, 1/I/L: easy to read out to a friend
+const vcCodeNorm = c =>
+  String(c || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+function vcNewCode() {
+  const a = new Uint8Array(6);
+  crypto.getRandomValues(a);
+  return [...a].map(x => VC_CODE_ABC[x % VC_CODE_ABC.length]).join('');
+}
+async function vcCodeTag(code) {
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('#ashen-vc-room:' + code));
+  return [...new Uint8Array(b)]
+    .slice(0, 12)
+    .map(x => x.toString(16).padStart(2, '0'))
+    .join('');
+}
 /** The members of a room (you among them, first, when you're in it). */
 function vcIn(room) {
-  const L = VC.list.filter(p => p.room === room);
+  const L = vcPriv(room)
+    ? VC.priv && VC.room === room
+      ? VC.priv.list.slice()
+      : []
+    : VC.list.filter(p => p.room === room);
   if (VC.room === room) L.unshift({ id: myPid(), n: vcName(), room, m: VC.mute || !VC.stream ? 1 : 0 });
   return L;
 }
@@ -69,15 +94,24 @@ function vcConnect() {
   return VC.connecting;
 }
 function vcTrack() {
-  if (VC.ch && VC.ch.track) VC.ch.track({ n: vcName(), room: VC.room, m: VC.mute || !VC.stream ? 1 : 0 });
+  const m = VC.mute || !VC.stream ? 1 : 0;
+  // the public channel never names a private room
+  if (VC.ch && VC.ch.track) VC.ch.track({ n: vcName(), room: vcPriv(VC.room) ? 'priv' : VC.room, m });
+  if (VC.priv && VC.priv.ch.track) VC.priv.ch.track({ n: vcName(), m });
 }
 function vcSend(to, d) {
-  if (VC.ch) VC.ch.send('sig', Object.assign(d, { to, from: myPid(), r: VC.room }));
+  const ch = vcPriv(VC.room) ? VC.priv && VC.priv.ch : VC.ch;
+  if (ch) ch.send('sig', Object.assign(d, { to, from: myPid(), r: VC.room }));
 }
 
 /* ---- joining and leaving */
-async function vcJoin(room) {
+async function vcJoin(room, code, made) {
   if (!S.name) return askName();
+  if (code !== undefined) {
+    code = vcCodeNorm(code);
+    if (code.length < 4) return toast('🔒 الرمز لازم يكون 4 حروف أو أرقام على الأقل');
+    room = 'p:' + (await vcCodeTag(code));
+  }
   if (VC.room === room) return;
   if (VC.room) vcLeave(true);
   AU.init();
@@ -85,6 +119,25 @@ async function vcJoin(room) {
     await vcConnect();
   } catch (e) {
     return toast('ما قدرت أتصل بغرف الصوت، تأكد من الإنترنت');
+  }
+  if (code !== undefined) {
+    // the private room's own channel: only someone with the code can name it
+    let ch;
+    try {
+      ch = await netJoin('vcp-' + room.slice(2), { id: myPid(), n: vcName(), m: VC.mute ? 1 : 0 });
+    } catch (e) {
+      return toast('ما قدرت أفتح الغرفة الخاصة، تأكد من الإنترنت');
+    }
+    const P = (VC.priv = { ch, code, list: [] });
+    try {
+      localStorage.setItem('ashen_vc_code', code);
+    } catch (e) {}
+    ch.on('sig', d => vcSignal(d).catch(e => console.warn('voice', e)));
+    ch.onPresence(list => {
+      if (VC.priv !== P) return;
+      P.list = list.filter(p => p && p.id).map(p => Object.assign({}, p, { room }));
+      vcSync();
+    });
   }
   // the microphone; without it you can still listen
   if (!VC.stream && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -100,7 +153,13 @@ async function vcJoin(room) {
   VC.room = room;
   vcTrack();
   AU.play('select');
-  toast('🎧 دخلت ' + vcRoomOf(room).n);
+  toast(code !== undefined ? '🔒 دخلت الغرفة الخاصة ' + code : '🎧 دخلت ' + vcRoomOf(room).n);
+  // a code typed in that leads to an empty room: maybe a typo (any code opens a room)
+  if (code !== undefined && !made)
+    setTimeout(() => {
+      if (VC.priv && VC.priv.code === code && !VC.priv.list.length)
+        toast('🔒 ما فيه أحد بهالغرفة. تأكد من الرمز، أو انتظر خويك يدخل');
+    }, 4000);
   vcSync();
 }
 /** Leave the room (switching: keep the microphone for the next one). */
@@ -109,6 +168,13 @@ function vcLeave(switching) {
   for (const id of [...VC.peers.keys()]) vcDrop(id);
   VC.room = null;
   VC.levels.clear();
+  if (VC.priv) {
+    const ch = VC.priv.ch;
+    VC.priv = null;
+    try {
+      ch.close();
+    } catch (e) {}
+  }
   if (!switching && VC.stream) {
     for (const t of VC.stream.getTracks()) t.stop();
     VC.stream = null;
@@ -172,7 +238,15 @@ function vcPeer(id) {
   audio.playsInline = true;
   audio.className = 'vcAudio';
   document.body.appendChild(audio);
-  P = { id, pc, audio, ice: [], muted: false, at: performance.now(), name: (VC.list.find(p => p.id === id) || {}).n };
+  P = {
+    id,
+    pc,
+    audio,
+    ice: [],
+    muted: false,
+    at: performance.now(),
+    name: (vcIn(VC.room).find(p => p.id === id) || {}).n,
+  };
   if (VC.stream) for (const t of VC.stream.getAudioTracks()) pc.addTrack(t, VC.stream);
   else pc.addTransceiver('audio', { direction: 'recvonly' });
   pc.ontrack = e => {
@@ -258,7 +332,7 @@ function vcSync() {
       if (id === myPid()) continue;
       const P = VC.peers.get(id),
         st = P && P.pc.connectionState,
-        who = VC.list.find(p => p.id === id);
+        who = vcIn(VC.room).find(p => p.id === id);
       if (P && who && P.name !== who.n) {
         P.name = who.n;
         vcOut(P);
@@ -415,6 +489,8 @@ function vcPanelDraw() {
         .join()
     ).join('|') +
     VC.room +
+    (VC.priv ? VC.priv.list.map(p => p.id + p.m + p.n).join() : '') +
+    VC.list.filter(p => p.room === 'priv').length +
     VC.mute +
     VC.deaf +
     [...VC.peers.values()].map(P => P.muted + P.pc.connectionState).join();
@@ -427,12 +503,64 @@ function vcPanelDraw() {
     : 'جارٍ الاتصال…';
   const box = $('vcRooms');
   box.innerHTML = '';
-  for (const r of VOICE_ROOMS) {
+  box.appendChild(vcPrivCard());
+  for (const r of VOICE_ROOMS) box.appendChild(vcRoomCard(r));
+  vcTalkDraw();
+}
+/** The private room: in it, its card with the code to pass on; outside, make one or enter a code. */
+function vcPrivCard() {
+  if (vcPriv(VC.room)) {
+    const card = vcRoomCard(vcRoomOf(VC.room));
+    const codeRow = el('div', 'vcCode');
+    codeRow.append(el('span', '', 'الرمز:'), el('b', '', VC.priv.code));
+    const cp = el('button', 'btn sm', '📋 انسخ');
+    cp.onclick = () => {
+      try {
+        navigator.clipboard.writeText(VC.priv.code).then(() => toast('📋 انسخ الرمز وأرسله لخويك'));
+      } catch (e) {}
+    };
+    codeRow.appendChild(cp);
+    card.insertBefore(codeRow, card.children[1]);
+    card.appendChild(el('p', 'note', 'محد يقدر يدخل إلا اللي تعطيه الرمز، والغرفة ما تطلع بالقائمة لأحد.'));
+    return card;
+  }
+  const card = el('div', 'vcRoom priv');
+  const top = el('div', 'vcRoomTop');
+  top.append(el('b', '', '🔒 غرفة خاصة'), el('small', '', 'برمز، محد يدخلها إلا اللي معه الرمز'));
+  card.appendChild(top);
+  const mk = el('button', 'btn sm go', '➕ سوّ غرفة خاصة');
+  mk.onclick = () => vcJoin(null, vcNewCode(), true);
+  const form = el('form', 'vcJoinCode'),
+    inp = document.createElement('input');
+  inp.id = 'vcCodeIn';
+  inp.placeholder = 'اكتب الرمز';
+  inp.autocomplete = 'off';
+  inp.maxLength = 12;
+  inp.dir = 'ltr';
+  try {
+    inp.value = localStorage.getItem('ashen_vc_code') || '';
+  } catch (e) {}
+  inp.addEventListener('keydown', e => e.stopPropagation()); // typing must not move the hero
+  const go = el('button', 'btn sm', '🔑 ادخل');
+  go.type = 'submit';
+  form.onsubmit = e => {
+    e.preventDefault();
+    vcJoin(null, inp.value);
+  };
+  form.append(inp, go);
+  card.append(mk, form);
+  const hidden = VC.list.filter(p => p.room === 'priv').length;
+  if (hidden) card.appendChild(el('p', 'note', hidden + ' لاعب الحين بغرف خاصة'));
+  return card;
+}
+/** One room's card: its members (with volume and mute for each) and, when you're in it, your controls. */
+function vcRoomCard(r) {
+  {
     const ppl = vcIn(r.id),
       here = VC.room === r.id,
-      card = el('div', 'vcRoom' + (here ? ' here' : ''));
+      card = el('div', 'vcRoom' + (here ? ' here' : '') + (vcPriv(r.id) ? ' priv' : ''));
     const top = el('div', 'vcRoomTop');
-    top.append(el('b', '', '🎧 ' + r.n), el('small', '', r.d + ' · ' + ppl.length));
+    top.append(el('b', '', (vcPriv(r.id) ? '🔒 ' : '🎧 ') + r.n), el('small', '', r.d + ' · ' + ppl.length));
     if (!here) {
       const go = el('button', 'btn sm go', VC.room ? 'انتقل لها' : 'ادخل');
       go.onclick = () => vcJoin(r.id);
@@ -487,9 +615,8 @@ function vcPanelDraw() {
       );
       card.appendChild(vr);
     }
-    box.appendChild(card);
+    return card;
   }
-  vcTalkDraw();
 }
 /** The rooms panel: over whatever is on screen (a solo run pauses behind it). */
 function vcOpen() {
