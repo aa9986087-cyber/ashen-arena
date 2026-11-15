@@ -74,7 +74,10 @@ function avatarOf(name) {
   const a = AVA.map.get(name);
   if (a && a.img) return a.img;
   const ch = name === S.name ? S.char : a && a.ch;
-  return ch && CHARS[ch] ? heroPortrait(ch) || '' : '';
+  // a hero portrait is drawn with the game's renderer (it rebuilds the hero for a moment): only on the menu;
+  // during a run or a duel only one already drawn is used
+  if (!ch || !CHARS[ch]) return '';
+  return (G.state === 'menu' ? heroPortrait(ch) : PORTRAITS[ch]) || '';
 }
 /** The round picture beside a chat message. */
 function avatarEl(name) {

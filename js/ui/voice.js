@@ -21,7 +21,24 @@ const VC = {
   peers: new Map(), // id -> {pc, audio, ice: [], muted, level, at}
   levels: new Map(), // id -> how loud right now (0..1)
   sig: '',
+  vol: 1, // how loud the others are (all of them), 0..1
+  pvol: {}, // how loud each one is (by name), 0..1
+  ac: null, // an audio graph, for volume where <audio>.volume is ignored (iPhone)
 };
+try {
+  VC.vol = +(localStorage.getItem('ashen_vc_vol') || 1);
+  VC.pvol = JSON.parse(localStorage.getItem('ashen_vc_pvol') || '{}') || {};
+} catch (e) {}
+// iPhone ignores <audio>.volume: there the sound goes through a gain node instead (only once someone is turned down)
+VC.volOk = (() => {
+  try {
+    const a = document.createElement('audio');
+    a.volume = 0.5;
+    return Math.abs(a.volume - 0.5) < 0.01;
+  } catch (e) {
+    return false;
+  }
+})();
 const vcName = () => S.name || 'لاعب';
 const vcRoomOf = id => VOICE_ROOMS.find(r => r.id === id);
 /** The members of a room (you among them, first, when you're in it). */
@@ -109,8 +126,40 @@ function vcSetMute(on) {
 }
 function vcSetDeaf(on) {
   VC.deaf = on;
-  for (const P of VC.peers.values()) P.audio.muted = on || P.muted;
+  for (const P of VC.peers.values()) vcOut(P);
   vcDraw();
+}
+/** Play one member at the volume set for him (everyone's level × his own; 0 when muted or deafened). */
+function vcOut(P) {
+  const v = VC.deaf || P.muted ? 0 : clamp(VC.vol * (VC.pvol[P.name] ?? 1), 0, 1);
+  if (!P.gain && !VC.volOk && v > 0 && v < 0.99 && P.stream) vcGainPath(P);
+  if (P.gain) {
+    P.gain.gain.value = v;
+    P.audio.muted = true;
+  } else {
+    P.audio.muted = v === 0;
+    if (VC.volOk) P.audio.volume = v;
+  }
+}
+function vcGainPath(P) {
+  try {
+    if (!VC.ac) VC.ac = new (window.AudioContext || window.webkitAudioContext)();
+    if (VC.ac.state === 'suspended') VC.ac.resume();
+    P.src = VC.ac.createMediaStreamSource(P.stream);
+    P.gain = VC.ac.createGain();
+    P.src.connect(P.gain).connect(VC.ac.destination);
+  } catch (e) {
+    P.gain = null;
+  }
+}
+function vcSetVol(v, name) {
+  if (name === undefined) VC.vol = v;
+  else VC.pvol[name] = v;
+  try {
+    localStorage.setItem('ashen_vc_vol', VC.vol);
+    localStorage.setItem('ashen_vc_pvol', JSON.stringify(VC.pvol));
+  } catch (e) {}
+  for (const P of VC.peers.values()) if (name === undefined || P.name === name) vcOut(P);
 }
 
 /* ---- one link per member */
@@ -123,16 +172,25 @@ function vcPeer(id) {
   audio.playsInline = true;
   audio.className = 'vcAudio';
   document.body.appendChild(audio);
-  P = { id, pc, audio, ice: [], muted: false, at: performance.now() };
+  P = { id, pc, audio, ice: [], muted: false, at: performance.now(), name: (VC.list.find(p => p.id === id) || {}).n };
   if (VC.stream) for (const t of VC.stream.getAudioTracks()) pc.addTrack(t, VC.stream);
   else pc.addTransceiver('audio', { direction: 'recvonly' });
   pc.ontrack = e => {
-    audio.srcObject = e.streams[0] || new MediaStream([e.track]);
-    audio.muted = VC.deaf || P.muted;
+    P.stream = e.streams[0] || new MediaStream([e.track]);
+    audio.srcObject = P.stream;
+    vcOut(P);
     audio.play().catch(() => vcNeedTap());
   };
   pc.onicecandidate = e => e.candidate && vcSend(id, { t: 'ice', c: e.candidate.toJSON() });
-  pc.onconnectionstatechange = () => vcDraw();
+  // a link that drops for a moment usually comes back by itself: only one that stays down is rebuilt (vcSync)
+  pc.onconnectionstatechange = () => {
+    const st = pc.connectionState;
+    if (st === 'connected') {
+      P.ok = true;
+      P.badAt = 0;
+    } else if ((st === 'disconnected' || st === 'failed') && !P.badAt) P.badAt = performance.now();
+    vcDraw();
+  };
   VC.peers.set(id, P);
   return P;
 }
@@ -145,6 +203,10 @@ function vcDrop(id) {
   } catch (e) {}
   P.audio.srcObject = null;
   P.audio.remove();
+  try {
+    if (P.src) P.src.disconnect();
+    if (P.gain) P.gain.disconnect();
+  } catch (e) {}
   VC.levels.delete(id);
 }
 /** The member with the smaller id calls; the other answers (so two calls never cross). */
@@ -196,11 +258,22 @@ function vcSync() {
       if (id === myPid()) continue;
       const P = VC.peers.get(id),
         st = P && P.pc.connectionState,
-        stuck = P && st !== 'connected' && performance.now() - P.at > 9000;
+        who = VC.list.find(p => p.id === id);
+      if (P && who && P.name !== who.n) {
+        P.name = who.n;
+        vcOut(P);
+      }
+      const now = performance.now(),
+        // never got through (no answer to our call in 4 s, or no sound in 10 s), or down for 10 s (a short drop is left to come back on its own)
+        stuck =
+          P &&
+          st !== 'connected' &&
+          ((!P.ok && now - P.at > (P.pc.signalingState === 'have-local-offer' ? 4000 : 10000)) ||
+            (P.badAt && now - P.badAt > 10000));
       if (myPid() < id && (!P || stuck || st === 'failed')) {
         if (P) vcDrop(id);
         vcCall(id).catch(e => console.warn('voice call', e));
-      } else if (P && stuck && st === 'failed') vcDrop(id); // the caller will ring again
+      } else if (P && stuck) vcDrop(id); // the caller will ring again
     }
   }
   vcDraw();
@@ -249,7 +322,7 @@ async function vcLevels() {
   VC.levels.set(myPid(), loud(me));
   vcTalkDraw();
 }
-setInterval(vcLevels, 250);
+setInterval(() => !document.hidden && vcLevels(), 300);
 
 /* ---- the screens: the bar on the edge (while in a room) and the rooms panel */
 function vcChip(p) {
@@ -280,19 +353,59 @@ function vcDraw() {
       rb.innerHTML = icon('🎧');
       rb.appendChild(el('b', '', mine.length));
       rb.title = vcRoomOf(VC.room).n;
-      const L = $('vcBarList');
-      L.innerHTML = '';
-      for (const p of mine.slice(0, 4)) L.appendChild(vcChip(p));
-      if (mine.length > 4) L.appendChild(el('i', 'vcChip more', '+' + (mine.length - 4)));
       $('vcBarMic').textContent = VC.mute || !VC.stream ? '🎤' : '🎙️';
       $('vcBarMic').classList.toggle('off', VC.mute || !VC.stream);
     }
   }
   if (!$('voice').hidden) vcPanelDraw();
 }
+/** Who is talking: a green ring on their pictures, and beside the bar a strip with them (only while they talk). */
 function vcTalkDraw() {
   for (const c of document.querySelectorAll('.vcChip[data-id]'))
     c.classList.toggle('talk', !!VC.levels.get(c.dataset.id));
+  const bar = $('vcBar');
+  if (bar.hidden) return;
+  const now = performance.now();
+  // keep a speaker shown a moment after he stops, so the strip doesn't flicker between words
+  VC.lastTalk = VC.lastTalk || new Map();
+  for (const [id, v] of VC.levels) if (v) VC.lastTalk.set(id, now);
+  const talking = vcIn(VC.room).filter(p => now - (VC.lastTalk.get(p.id) || -1e9) < 700),
+    sig = talking.map(p => p.id).join();
+  bar.classList.toggle('live', talking.length > 0);
+  if (VC.talkSig === sig) return;
+  VC.talkSig = sig;
+  const T = $('vcTalk');
+  T.innerHTML = '';
+  for (const p of talking.slice(0, 2)) {
+    const r = el('span', 'vcT');
+    const c = vcChip(p);
+    c.classList.add('talk');
+    r.append(c, el('b', '', p.n));
+    T.appendChild(r);
+  }
+  if (talking.length > 2) T.appendChild(el('span', 'vcT more', '+' + (talking.length - 2)));
+  T.classList.toggle('on', talking.length > 0);
+}
+/** A volume slider (0–100%), with the number beside it. */
+function vcSlider(v, on, label) {
+  const w = el('label', 'vcVol'),
+    r = document.createElement('input'),
+    n = el('small', '', Math.round(v * 100) + '%');
+  r.type = 'range';
+  r.min = 0;
+  r.max = 100;
+  r.step = 5;
+  r.value = Math.round(v * 100);
+  r.setAttribute('aria-label', label);
+  r.oninput = () => {
+    n.textContent = r.value + '%';
+    on(r.value / 100);
+  };
+  // a slider being dragged must not be rebuilt under the finger
+  r.onpointerdown = () => (VC.dragging = true);
+  r.onpointerup = r.onchange = () => (VC.dragging = false);
+  w.append(r, n);
+  return w;
 }
 function vcPanelDraw() {
   const sig =
@@ -305,7 +418,7 @@ function vcPanelDraw() {
     VC.mute +
     VC.deaf +
     [...VC.peers.values()].map(P => P.muted + P.pc.connectionState).join();
-  if (VC.panelSig === sig) return;
+  if (VC.panelSig === sig || VC.dragging) return;
   VC.panelSig = sig;
   $('vcStatus').textContent = VC.ch
     ? VC.room
@@ -335,13 +448,15 @@ function vcPanelDraw() {
         if (here && p.id !== myPid()) {
           if (P && P.pc.connectionState !== 'connected')
             row.appendChild(el('small', 'vcWait', P.pc.connectionState === 'failed' ? 'ما وصل الصوت' : 'يتصل…'));
+          // how loud he is for you (saved by his name), and mute him
+          row.appendChild(vcSlider(VC.pvol[p.n] ?? 1, v => vcSetVol(v, p.n), 'صوت ' + p.n));
           const mu = el('button', 'iconBtn sm' + (P && P.muted ? ' on' : ''), P && P.muted ? '🔇' : '🔊');
           mu.setAttribute('aria-label', 'اكتم صوته عندك');
           mu.onclick = () => {
             const Q = VC.peers.get(p.id);
             if (!Q) return;
             Q.muted = !Q.muted;
-            Q.audio.muted = Q.muted || VC.deaf;
+            vcOut(Q);
             vcDraw();
           };
           row.appendChild(mu);
@@ -364,6 +479,13 @@ function vcPanelDraw() {
       out.onclick = () => vcLeave();
       ctl.append(mic, deaf, out);
       card.appendChild(ctl);
+      // everyone's volume at once
+      const vr = el('div', 'vcVolAll');
+      vr.append(
+        el('span', '', '🔊 صوت المتكلمين'),
+        vcSlider(VC.vol, v => vcSetVol(v), 'صوت المتكلمين')
+      );
+      card.appendChild(vr);
     }
     box.appendChild(card);
   }

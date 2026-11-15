@@ -1167,56 +1167,124 @@ textarea.txt {
   width: 11px;
   height: 11px;
 }
-/* the bar: on the screen's edge, in the middle (clear of the stick, the buttons and the top bars) */
+/* the bar: two small buttons on the left edge, half-way down (clear of the co-op team list, the duel's buttons and the
+   ability buttons); beside them, only while someone talks, a strip with who it is */
 #vcBar {
   position: fixed;
   z-index: 55;
-  left: max(6px, env(safe-area-inset-left));
-  top: calc(max(10px, env(safe-area-inset-top)) + 64px);
+  left: max(8px, env(safe-area-inset-left));
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 6px;
-  padding: 6px 5px;
-  border-radius: 22px;
-  background: rgba(10, 9, 20, 0.62);
-  border: 1px solid rgba(159, 216, 255, 0.35);
-  backdrop-filter: blur(4px);
+  padding: 5px;
+  border-radius: 24px;
+  background: rgba(10, 9, 20, 0.55);
+  border: 1px solid rgba(159, 216, 255, 0.28);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 #vcBar[hidden] {
   display: none;
 }
+#vcBar.live {
+  border-color: rgba(124, 240, 138, 0.8);
+  box-shadow:
+    0 0 0 1px rgba(124, 240, 138, 0.4),
+    0 0 16px -4px #7cf08a;
+}
 #vcBarRoom,
 #vcBarMic {
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   border: 0;
   display: grid;
   place-items: center;
-  background: rgba(159, 216, 255, 0.18);
+  background: rgba(159, 216, 255, 0.16);
   color: #fff;
   font: inherit;
-  font-size: 18px;
+  font-size: 19px;
   line-height: 1;
   cursor: pointer;
 }
-#vcBarRoom .gi svg,
-#vcBarMic .gi svg {
-  width: 20px;
-  height: 20px;
-}
 #vcBarMic.off {
-  background: rgba(200, 53, 42, 0.55);
+  background: rgba(200, 53, 42, 0.6);
 }
-#vcBarList {
+#vcTalk {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translate(-6px, -50%);
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.18s,
+    transform 0.18s;
 }
-#vcBarList .vcChip {
-  width: 28px;
-  height: 28px;
+#vcTalk.on {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+.vcT {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 3px;
+  border-radius: 999px;
+  background: rgba(10, 9, 20, 0.72);
+  border: 1px solid rgba(124, 240, 138, 0.55);
+  white-space: nowrap;
+}
+.vcT .vcChip {
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+}
+.vcT b {
+  font-size: 13px;
+  color: #e9ffe9;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vcT.more {
+  padding: 3px 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+/* volume sliders in the rooms panel */
+.vcVol {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.vcVol input {
+  width: 90px;
+  accent-color: #7cf08a;
+}
+.vcVol small {
+  min-width: 34px;
+  font-size: 11px;
+  opacity: 0.75;
+}
+.vcVolAll {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+.vcVolAll .vcVol input {
+  width: 140px;
 }
 #vcBarRoom {
   position: relative;
