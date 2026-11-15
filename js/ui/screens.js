@@ -34,7 +34,7 @@ function go(id) {
   }
   $(cur).classList.add('leaving');
   pop($('wipe'), 'run');
-  AU.play('nav');
+  AU.play(id === 'menu' ? 'back' : 'open');
   setTimeout(() => {
     if (tok === goTok) goNow(id);
   }, 185);
@@ -102,7 +102,7 @@ function buy(cost, fn) {
   }
   S.coins -= cost;
   fn();
-  AU.play('coin');
+  AU.play('ok');
   save();
   checkAch();
   wallet();

@@ -79,8 +79,42 @@ const AU = {
     s.start(t, Math.random() * 0.5);
     s.stop(t + d + 0.03);
   },
+  /** The menu sounds (Kenney's Interface Sounds, CC0): recorded clips, loaded once the audio starts. */
+  uiLoad() {
+    if (this.ui) return;
+    this.ui = {};
+    for (const n of ['click', 'open', 'back', 'ok', 'no'])
+      fetch('assets/audio/ui/' + n + '.mp3?v=1')
+        .then(r => r.arrayBuffer())
+        .then(b => new Promise((ok, no) => this.ctx.decodeAudioData(b, ok, no)))
+        .then(buf => (this.ui[n] = buf))
+        .catch(() => {});
+  },
+  /** Play a menu clip; false when it isn't loaded yet (the caller falls back to the synthesized sound). */
+  sample(n, v) {
+    const c = this.ctx,
+      buf = this.ui && this.ui[n];
+    if (!c || !buf) return false;
+    const s = c.createBufferSource(),
+      g = c.createGain();
+    s.buffer = buf;
+    g.gain.value = v;
+    s.connect(g);
+    g.connect(this.sg);
+    s.start();
+    // a screen opening, a purchase or a refusal right on a button's click: that sound alone, not both on top
+    if (n === 'click') this.lastClick = { s, t: c.currentTime };
+    else if (this.lastClick && c.currentTime - this.lastClick.t < 0.12) {
+      try {
+        this.lastClick.s.stop();
+      } catch (e) {}
+      this.lastClick = null;
+    }
+    return true;
+  },
   play(n) {
     if (!this.ctx) return;
+    this.uiLoad();
     const now = performance.now();
     if (now - (this.last[n] || 0) < (GAP[n] || 50)) return;
     this.last[n] = now;
@@ -384,9 +418,14 @@ const SFX = {
     });
   },
   select: a => {
+    if (a.sample('click', 0.5)) return;
     a.noise(0.05, 0.06, 3000, 0, null, 'bandpass');
     a.tone(660, 0.08, 'sine', 0.03);
   },
+  // the menu: a screen opens / back to the main menu / a purchase / not allowed
+  open: a => a.sample('open', 0.5) || SFX.nav(a),
+  back: a => a.sample('back', 0.5) || SFX.nav(a),
+  ok: a => a.sample('ok', 0.55) || SFX.unlock(a),
   nav: a => {
     a.str(73.42, 0.85, 0.11, 0, a.sg, 560);
     a.soft(293.66, 0.6, 0.05, 0.02, a.sg);
@@ -400,7 +439,7 @@ const SFX = {
     a.str(73.42, 1.2, 0.13, 0, a.sg, 600);
     a.tone(1174.7, 0.8, 'sine', 0.02, null, 0.35);
   },
-  deny: a => a.soft(146.83, 0.2, 0.1, 0, a.sg),
+  deny: a => a.sample('no', 0.55) || a.soft(146.83, 0.2, 0.1, 0, a.sg),
   shield: a => a.tone(698.46, 0.14, 'sine', 0.1, 523.25),
   over: a => [440, 392, 349.23, 293.66].forEach((f, i) => a.vio(f, 0.7, 0.08, i * 0.3, a.sg)),
   win: a => [293.66, 440, 587.33, 880].forEach((f, i) => a.soft(f, 0.45, 0.12, i * 0.12, a.sg)),

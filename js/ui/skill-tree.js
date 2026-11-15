@@ -132,7 +132,7 @@ function treeInfo(br) {
     }
     S.sp -= n.c;
     S.tree[n.id] = 1;
-    AU.play('unlock');
+    AU.play('ok');
     save();
     newRun();
     treeSel = treeNext(br);
