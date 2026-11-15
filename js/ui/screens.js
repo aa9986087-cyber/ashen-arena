@@ -55,7 +55,7 @@ function goNow(id) {
   if (id === 'tree') drawTree();
   if (id === 'ach') drawAch();
   if (id === 'settings') drawSet();
-  if (id === 'board') {
+  if (id === 'board' && $('boardContent') && !$('boardContent').hidden) {
     drawBoard();
     loadOnline();
   }

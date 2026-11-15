@@ -36,7 +36,7 @@ const AU = {
       this.next = this.ctx.currentTime + 0.1;
       this.step = 0;
       this.vol();
-    } catch (e) {
+    } catch {
       this.ctx = null;
     }
   },
@@ -107,7 +107,7 @@ const AU = {
     else if (this.lastClick && c.currentTime - this.lastClick.t < 0.12) {
       try {
         this.lastClick.s.stop();
-      } catch (e) {}
+      } catch {}
       this.lastClick = null;
     }
     return true;
@@ -390,10 +390,6 @@ const SFX = {
     a.noise(0.12, 0.14, 500);
   },
   dash: a => a.noise(0.22, 0.13, 900, 0, null, 'bandpass'),
-  bolt: a => {
-    a.noise(0.14, 0.15, 3000, 0, null, 'highpass');
-    a.tone(880, 0.12, 'triangle', 0.05, 220);
-  },
   nova: a => {
     a.tone(220, 0.35, 'sine', 0.18, 70);
     a.noise(0.25, 0.1, 900);
@@ -444,6 +440,7 @@ const SFX = {
   over: a => [440, 392, 349.23, 293.66].forEach((f, i) => a.vio(f, 0.7, 0.08, i * 0.3, a.sg)),
   win: a => [293.66, 440, 587.33, 880].forEach((f, i) => a.soft(f, 0.45, 0.12, i * 0.12, a.sg)),
 };
+SFX.bolt = SFX.whip;
 // the new weapons borrow the closest sound
 SFX.brick = SFX.hammer;
 SFX.laser = SFX.whip;

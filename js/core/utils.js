@@ -19,4 +19,13 @@ const rotate = (x, z, a) => {
     s = Math.sin(a);
   return [x * c - z * s, x * s + z * c];
 };
+/** Clamp a point to a circle centred at the origin. Mutates and returns {x,z}. */
+function clampToCircle(o, radius) {
+  const r = Math.hypot(o.x, o.z);
+  if (r > radius) {
+    o.x *= radius / r;
+    o.z *= radius / r;
+  }
+  return o;
+}
 const fmtT = t => ((t / 60) | 0) + ':' + String((t % 60) | 0).padStart(2, '0');

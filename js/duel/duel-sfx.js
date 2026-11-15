@@ -6,7 +6,7 @@
    - a blade in flesh: a bright cut that sweeps down, a wet squelch, a body thud (and bone crunch for heavy blows);
    - air: noise through a band that rises and falls, with the blade's faint whistle;
    - the arena: everything is sent through a short stone-hall reverb. */
-const DSFX = { buf: {}, ready: false, building: null, rev: null, sr: 32000 };
+const DSFX = { buf: {}, building: null, rev: null, sr: 32000 };
 const sfxRnd = (a, b) => a + Math.random() * (b - a);
 function sfxNoise(n) {
   const a = new Float32Array(n);
@@ -297,7 +297,6 @@ function sfxBuild() {
         await new Promise(r => setTimeout(r, 0));
       }
     }
-    DSFX.ready = true;
   })();
   return DSFX.building;
 }

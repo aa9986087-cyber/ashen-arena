@@ -28,11 +28,7 @@ function spawn(type, x, z, elite) {
       (G.p.enemyMul || 1) *
       COOP.hpMul * // co-op: tougher with every player
       (elite ? 3 : 1); // a strong one: three times the health (its trait adds a little)
-  const r = Math.hypot(x, z);
-  if (r > ARENA + 3) {
-    x *= (ARENA + 3) / r;
-    z *= (ARENA + 3) / r;
-  }
+  ({ x, z } = clampToCircle({ x, z }, ARENA + 3));
   const e = {
     nid: (G.nidC = (G.nidC || 0) + 1), // stable id: lets a live viewer follow each enemy between snapshots
     type,

@@ -2,7 +2,7 @@
 /* Profile pictures: a player picks a photo from his device; it is cropped to a square, shrunk to a small JPEG and
    stored with his profile (save_avatar RPC, checked against his device key). The chat shows each sender's picture
    (or his hero's portrait, or the first letter of his name, when he has none). */
-const AVA = { map: new Map(), at: 0, busy: false, want: new Set() };
+const AVA = { map: new Map(), busy: false, want: new Set() };
 const AVA_SIZE = 160;
 /** Crop the file to its centre square, scale it down and encode it (kept under the server's limit). */
 function avatarEncode(file) {

@@ -161,23 +161,26 @@ const WEP_MODELS = {};
   const names = [...new Set(Object.values(WEP_MODEL).flatMap(d => d.m || []))],
     L = new THREE.GLTFLoader();
   let left = names.length;
+  const done = () => {
+    if (--left === 0) {
+      // all settled: redraw the weapon in hand and the heroes' portraits
+      for (const k in PORTRAITS) delete PORTRAITS[k];
+      if (typeof G !== 'undefined' && G && PM.wp) buildWeapon();
+    }
+  };
   for (const n of names)
     L.load(
       'assets/models/weapons/' + n + '.glb?v=1',
       g => {
         WEP_MODELS[n] = g.scene;
-        if (--left === 0) {
-          // all in: redraw the weapon in hand and the heroes' portraits
-          for (const k in PORTRAITS) delete PORTRAITS[k];
-          if (typeof G !== 'undefined' && G && PM.wp) buildWeapon();
-        }
+        done();
       },
       undefined,
-      () => left--
+      done
     );
 })();
 /** The weapon as a model (or null while it loads / if it has none): pointing along −Y, `len` long. */
-function weaponModel(id, t, ev, tc, em) {
+function weaponModel(id, t, ev, tc) {
   const d = WEP_MODEL[id];
   if (!d) return null;
   let src;
@@ -216,7 +219,7 @@ function buildWeapon(R = PM, wep) {
     tc = ev ? 0xd070ff : [0xc3cad6, 0x62d0ff, 0xffc53d][t],
     em = ev ? 0x5a1488 : [0, 0x0a3a55, 0x7a4a00][t],
     s = ev ? 1.6 : 1 + t * 0.18;
-  const model = weaponModel(id, t, ev, tc, em);
+  const model = weaponModel(id, t, ev, tc);
   if (model) {
     w.add(model);
     return;

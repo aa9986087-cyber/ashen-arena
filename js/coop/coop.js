@@ -20,7 +20,6 @@ const COOP = {
   on: false,
   host: false,
   ch: null,
-  room: '',
   me: '',
   peers: new Map(), // id → teammate {id, n, ch, w, x, z, face, moving, walk, swing, hp, maxHp, dead, …}
   hpMul: 1,
@@ -48,7 +47,6 @@ const COOP = {
 };
 const COOP_DELAY = 0.16; // client playback delay behind the newest snapshot (s)
 const COOP_TICK = 0.1; // snapshot / state rate (s)
-const coopClient = () => COOP.on && !COOP.host;
 /** Difficulty for n players: enemy health, numbers, damage and boss health all rise; the total
     (health × numbers) is about ×2.5 for two, ×4.5 for three and ×7 for four — a stronger team, a harder fight. */
 function coopScale(n) {
@@ -205,12 +203,12 @@ function coopStart(ch, roster, isHost) {
     rvN: 0,
     buf: [],
     vt: null,
+    evTs: 0,
     lastRx: performance.now(),
   });
   COOP.ens.clear();
   COOP.predDead.clear();
   COOP.usedES.clear();
-  COOP.n = roster.length;
   coopScale(roster.length);
   coopArena(Math.round(58 * 1.35));
   ch.on('w', s => COOP.host || coopRecvWorld(s))
@@ -618,7 +616,6 @@ function coopApplyHit(e, dmg, kx, kz, fl) {
     const a = Math.min(e.ward, dmg);
     e.ward -= a;
     dmg -= a;
-    e.wardT = 4;
   }
   e.hp -= dmg;
   e.flash = 0.1;
@@ -970,11 +967,9 @@ function coopMirror(dt) {
     q.t += dt;
   }
   // teammates
-  const seen = new Set();
   const pa = new Map((sa.pl || []).map(r => [r[0], r]));
   for (const r of sb.pl || []) {
     if (r[0] === COOP.me) continue;
-    seen.add(r[0]);
     let q = COOP.peers.get(r[0]);
     if (!q) COOP.peers.set(r[0], (q = { id: r[0], walk: 0, buf: [] }));
     const a = pa.get(r[0]) || r;
@@ -993,7 +988,7 @@ function coopMirror(dt) {
 /** Client: the host's shared progress (stage, bosses, experience, revivals, the clock). */
 function coopShared(g, bn) {
   if (!g) return;
-  const [t, stage, ab, depth, wave, bosses, kills, , rvN] = g;
+  const [t, stage, ab, depth, wave, bosses, , , rvN] = g;
   G.t = t;
   G.wave = wave;
   // kept in step so a client can take over as host (coopTakeOver)

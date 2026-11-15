@@ -38,7 +38,7 @@
         // bones in parent-before-child order
         const order = [];
         T.traverse(o => o.isBone && order.push(o));
-        const shared = order.filter(b => sb[b.name]);
+        order.filter(b => sb[b.name]);
         const restT = {},
           restS = {},
           restTLocal = {};
@@ -70,8 +70,8 @@
         // hips height ratio for root motion
         const hipT = tb['Hips'].getWorldPosition(new THREE.Vector3()),
           hipS = sb['Hips'].getWorldPosition(new THREE.Vector3());
-        const hipRestTLocal = tb['Hips'].position.clone(),
-          ratio = hipT.y / hipS.y;
+        tb['Hips'].position.clone();
+        const ratio = hipT.y / hipS.y;
         const mixer = new THREE.AnimationMixer(Sx),
           out = [];
         for (const [role, name] of Object.entries(CLIPS)) {
@@ -150,7 +150,7 @@
         const box = new THREE.Box3().setFromObject(T),
           k = 2 / (box.max.y - box.min.y);
         for (let i = 0; i < poses.length; i++) {
-          const inst = THREE.SkeletonUtils ? null : null;
+          THREE.SkeletonUtils;
           const g = await load('modular_men_Swat.glb'); // a fresh copy per pose
           const tb2 = {};
           g.scene.traverse(o => o.isBone && !tb2[o.name] && (tb2[o.name] = o));
@@ -188,7 +188,7 @@
         return c.toDataURL('image/jpeg', 0.88);
       };
       window.exportGlb = async (slotRot, slotPos) => {
-        const { T, clips, slot } = await retarget();
+        const { T, clips } = await retarget();
         return new Promise(ok =>
           new THREE.GLTFExporter().parse(
             T,

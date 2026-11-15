@@ -30,6 +30,7 @@ function saveRun() {
         bossesRun: G.bossesRun,
         rerolls: G.rerolls,
         revives: G.revives,
+        phoenixUsed: G.phoenixUsed,
         ups: G.ups,
         pacts: G.pacts,
         weapons: G.weapons.map(w => ({ id: w.id, lvl: w.lvl, evo: w.evo ? 1 : 0 })),
@@ -41,18 +42,18 @@ function saveRun() {
         legCount: p.legCount,
       })
     );
-  } catch (e) {}
+  } catch {}
 }
 function clearRun() {
   try {
     localStorage.removeItem(RUN_KEY);
-  } catch (e) {}
+  } catch {}
 }
 function loadRun() {
   try {
     const o = JSON.parse(localStorage.getItem(RUN_KEY));
     return o && o.v === 1 && CHARS[o.char] && STAGES[o.stage] && Array.isArray(o.weapons) ? o : null;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -94,6 +95,7 @@ function resumeRun() {
     bossesRun: o.bossesRun | 0,
     rerolls: o.rerolls | 0,
     revives: o.revives | 0,
+    phoenixUsed: o.phoenixUsed | 0,
     ups: o.ups || {},
     pacts: o.pacts || {},
     specCd: +o.specCd || 0,

@@ -31,7 +31,7 @@ function unpackCode(prefix, txt, n, salt) {
     if (p.length !== n + 1) return null;
     const f = p.slice(0, n);
     return sig(f.join('|') + salt) === p[n] ? f : null;
-  } catch (err) {
+  } catch {
     return null;
   }
 }

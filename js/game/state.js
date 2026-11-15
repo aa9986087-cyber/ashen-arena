@@ -113,7 +113,6 @@ function newRun() {
       dx: 0,
       dz: 1,
       face: 0,
-      aim: 0,
       swing: 0,
       walk: 0,
       moving: 0,

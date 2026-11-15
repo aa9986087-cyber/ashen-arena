@@ -20,21 +20,15 @@ function readBackup(txt) {
   }
 }
 let restoreArm = null;
-$('bkCopy').onclick = () => {
+$('bkCopy').onclick = async () => {
   const t = backupCode(),
     box = $('bkIn');
-  const shown = () => {
+  if (await copyToClipboard(t)) {
+    toast('نُسخ كود تقدمك، احفظه في مكان آمن');
+  } else {
     box.value = t;
     box.focus();
     box.select();
-  };
-  try {
-    navigator.clipboard.writeText(t).then(
-      () => toast('نُسخ كود تقدمك، احفظه في مكان آمن'),
-      () => (shown(), toast('انسخ الكود من الخانة'))
-    );
-  } catch (e) {
-    shown();
     toast('انسخ الكود من الخانة');
   }
 };

@@ -42,7 +42,7 @@ go('menu');
 warmGPU();
 try {
   loadModels();
-} catch (e) {}
+} catch {}
 if (!S.name) askName();
 if (S._mig) {
   delete S._mig;

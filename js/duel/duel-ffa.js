@@ -437,7 +437,6 @@ function ffaTagDraw(f) {
   f.tag.t.needsUpdate = true;
 }
 function ffaTags() {
-  const fp = DUEL.view === 'fp';
   for (const f of DUEL.ffa.all) {
     if (!f.tag) continue;
     const s = f.tag.s,

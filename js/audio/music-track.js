@@ -20,7 +20,7 @@ const CM = {
       this.el.pause();
       try {
         if (this.el.src.startsWith('blob:')) URL.revokeObjectURL(this.el.src);
-      } catch (e) {}
+      } catch {}
     }
     this.el.src = typeof src === 'string' ? src : URL.createObjectURL(src);
     this.on = true;

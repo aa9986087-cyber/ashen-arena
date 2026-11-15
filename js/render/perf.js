@@ -4,9 +4,11 @@
 /** Draw everything the game can show once, off-screen, so shaders compile and every model / animation frame
     is uploaded to the GPU now — not the first time an archer attacks or a boss walks in (that was the stutter). */
 function warmGPU() {
+  let tmp, rt, priorTarget, targetSaved = false;
+  const shown = [], counts = [];
   try {
-    const tmp = new THREE.Group(),
-      geos = new Set(),
+    tmp = new THREE.Group();
+    const geos = new Set(),
       add = g => g && g.isBufferGeometry && geos.add(g);
     for (const k in ANIM) for (const c in ANIM[k]) ANIM[k][c].forEach(add);
     for (const h in HERO_GEOS) {
@@ -27,8 +29,6 @@ function warmGPU() {
     bm.castShadow = true;
     tmp.add(bm);
     // hidden pools and empty instanced meshes take part for this one draw
-    const shown = [],
-      counts = [];
     scene.traverse(o => {
       if (!o.visible) {
         shown.push(o);
@@ -40,16 +40,23 @@ function warmGPU() {
       }
     });
     scene.add(tmp);
-    const rt = new THREE.WebGLRenderTarget(64, 64);
+    rt = new THREE.WebGLRenderTarget(64, 64);
+    priorTarget = renderer.getRenderTarget();
+    targetSaved = true;
     renderer.setRenderTarget(rt);
     renderer.render(scene, camera);
-    renderer.setRenderTarget(null);
-    rt.dispose();
-    scene.remove(tmp);
-    for (const o of shown) o.visible = false;
-    for (const o of counts) o.count = 0;
   } catch (e) {
     console.warn('warmGPU', e);
+  } finally {
+    // Warm-up is optional: one failed cleanup must not prevent the others or stop the game.
+    const clean = fn => {
+      try { fn(); } catch (e) { console.warn('warmGPU', e); }
+    };
+    clean(() => { for (const o of shown) o.visible = false; });
+    clean(() => { for (const o of counts) o.count = 0; });
+    clean(() => { if (tmp) scene.remove(tmp); });
+    clean(() => { if (targetSaved) renderer.setRenderTarget(priorTarget); });
+    clean(() => { if (rt) rt.dispose(); });
   }
 }
 

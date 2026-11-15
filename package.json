@@ -3,9 +3,26 @@
   "version": "1.0.0",
   "private": true,
   "description": "ساحة الرماد — a browser 3D arena survival game (three.js, no build step).",
+  "packageManager": "npm@10.9.9",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
-    "start": "npx --yes http-server -c-1 -p 8080 .",
+    "start": "node tools/test-server.mjs --port 8080",
+    "test": "npm run test:fast",
+    "test:fast": "node --test tests/*.test.mjs tests/unit/*.test.mjs",
+    "test:fixtures": "node tests/helpers/cdn-fixtures.mjs",
+    "test:smoke": "playwright test",
+    "analyze": "node tools/analyze-project.mjs",
+    "check": "npm test && npm run analyze && npm run test:fixtures && npm run test:smoke",
+    "package:game": "node tools/package-game.mjs",
     "format": "npx --yes prettier@3 --write \"js/**/*.js\" \"css/**/*.css\" index.html",
     "format:check": "npx --yes prettier@3 --check \"js/**/*.js\" \"css/**/*.css\" index.html"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "acorn": "8.19.0",
+    "acorn-walk": "8.3.5",
+    "eslint-scope": "9.1.2"
   }
 }

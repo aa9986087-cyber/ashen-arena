@@ -98,7 +98,6 @@ function hit(e, dmg, o) {
     const a = Math.min(e.ward, dmg);
     e.ward -= a;
     dmg -= a;
-    e.wardT = 4;
     if (dmg <= 0) {
       e.flash = 0.1;
       return;
@@ -334,7 +333,6 @@ function fire(w, ang) {
     ev = w.evo && EVO[w.id],
     dmg = d.dmg * (1 + 0.22 * (L - 1)) * p.dmgMul * (ev ? 1.5 : 1),
     col = ev ? EVOC : TIERC[t];
-  p.aim = ang;
   p.swing = 1;
   AU.play(w.id);
   if (d.melee) {
@@ -647,8 +645,9 @@ function dash() {
     mx = Math.sin(p.face);
     mz = Math.cos(p.face);
   }
-  p.dx = mx;
-  p.dz = mz;
+  const ml = Math.hypot(mx, mz);
+  p.dx = mx / ml;
+  p.dz = mz / ml;
   p.dashT = 0.18;
   p.dashCd = p.dashMax;
   p.inv = Math.max(p.inv, 0.3);

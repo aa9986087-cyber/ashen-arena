@@ -164,7 +164,6 @@ class Duelist {
         }
       }
       if (o.isBone && o.name === 'hand_r' && !this.hand) this.hand = o;
-      if (o.isBone && o.name === 'Head' && !this.headBone) this.headBone = o;
     });
     // the kick bends these bones by hand; idle clips may not animate them, so their rest pose is kept to restore
     const kb = {};

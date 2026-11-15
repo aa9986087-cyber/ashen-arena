@@ -24,6 +24,7 @@ function updEnemies(dt) {
     if (e.hitCd > 0) e.hitCd -= dt;
     if (e.oCd > 0) e.oCd -= dt;
     if (e.atkT > 0) e.atkT -= dt; // attack animation timer (see ATK_T)
+    if (e.slowT > 0) e.slowT = Math.max(0, e.slowT - dt);
     if (e.frz > 0) {
       // frozen by the mage's special: no movement, attacks or contact damage
       e.frz -= dt;
@@ -419,6 +420,7 @@ function updEnemies(dt) {
     }
 
     if (G.tslowT > 0) spd *= 0.5;
+    if (e.slowT > 0) spd *= 0.5;
     // only shooters fire: an elite archer or mage gets an extra aimed bolt (the others hit harder, but don't shoot)
     if (e.elite && !e.boss && (e.type === 'archer' || e.type === 'mage')) {
       e.eCd = (e.eCd === undefined ? rand(1, 3) : e.eCd) - dt;
@@ -492,11 +494,7 @@ function recycleEnemy(e, p = G.p) {
     d = rand(20, 24);
   let x = p.x + Math.cos(a) * d,
     z = p.z + Math.sin(a) * d;
-  const r = Math.hypot(x, z);
-  if (r > ARENA + 3) {
-    x *= (ARENA + 3) / r;
-    z *= (ARENA + 3) / r;
-  }
+  ({ x, z } = clampToCircle({ x, z }, ARENA + 3));
   e.x = x;
   e.z = z;
   e.kx = e.kz = 0;

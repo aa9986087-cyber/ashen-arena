@@ -86,7 +86,7 @@ function render(dt, now) {
       sk = G.shake;
     camera.position.set(p.x + rand(-sk, sk), ch + rand(-sk, sk) * 0.5, p.z + cd + rand(-sk, sk));
     camera.lookAt(p.x, 0, p.z - 1);
-  } else if (typeof menu2Frame === 'function' && menu2Frame(dt, now)) {
+  } else if (typeof menu2Frame === 'function' && menu2Frame(dt)) {
     // the living menu (#menu2) placed the camera
   } else {
     // menu: slow orbit around the hero; on a portrait phone come closer so the hero fills the free middle

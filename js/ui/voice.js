@@ -43,7 +43,6 @@ const VC = {
   deaf: false,
   peers: new Map(), // id -> {pc, audio, ice: [], muted, level, at}
   levels: new Map(), // id -> how loud right now (0..1)
-  sig: '',
   vol: 1, // how loud the others are (all of them), 0..1
   pvol: {}, // how loud each one is (by name), 0..1
   ac: null, // an audio graph, for volume where <audio>.volume is ignored (iPhone)
@@ -326,7 +325,6 @@ function vcPeer(id) {
   audio.className = 'vcAudio';
   document.body.appendChild(audio);
   P = {
-    id,
     pc,
     audio,
     ice: [],
@@ -743,6 +741,7 @@ function vcPanelDraw() {
         .map(p => p.id + p.m + p.n)
         .join()
     ).join('|') +
+    !!VC.ch +
     VC.room +
     (VC.priv ? VC.priv.list.map(p => p.id + p.m + p.n).join() : '') +
     VC.list.filter(p => p.room === 'priv').length +
@@ -774,10 +773,9 @@ function vcPrivCard() {
     const codeRow = el('div', 'vcCode');
     codeRow.append(el('span', '', 'الرمز:'), el('b', '', VC.priv.code));
     const cp = el('button', 'btn sm', '📋 انسخ');
-    cp.onclick = () => {
-      try {
-        navigator.clipboard.writeText(VC.priv.code).then(() => toast('📋 انسخ الرمز وأرسله لخويك'));
-      } catch (e) {}
+    cp.onclick = async () => {
+      const copied = await copyToClipboard(VC.priv.code);
+      toast(copied ? '📋 انسخ الرمز وأرسله لخويك' : 'تعذر النسخ. اكتب رمز الغرفة الظاهر وأرسله لخويك');
     };
     codeRow.appendChild(cp);
     card.insertBefore(codeRow, card.children[1]);

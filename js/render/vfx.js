@@ -35,17 +35,14 @@ const VFX_ATLAS = new THREE.TextureLoader().load('assets/vfx/fx-atlas.png');
 /** Atlas tiles: a crescent slash, a thin arc, a crackle, a bolt, a flare, two stars, two smokes, a soft ball,
     a muzzle burst, a streak, a flame, a swirl, a glowing ring, a burst. */
 const VT = {
-  slash: 0,
   arc: 1,
   crackle: 2,
-  bolt: 3,
   flare: 4,
   star: 5,
   star2: 6,
   smoke: 7,
   smoke2: 8,
   soft: 9,
-  muzzle: 10,
   trace: 11,
   flame: 12,
   twirl: 13,

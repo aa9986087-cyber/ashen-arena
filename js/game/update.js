@@ -242,8 +242,8 @@ function update(dt) {
     mx /= ml;
     mz /= ml;
   }
-  IN.mvx = ml > 0.01 ? (mx / Math.max(ml, 0.01)) * Math.min(ml, 1) : 0;
-  IN.mvz = ml > 0.01 ? (mz / Math.max(ml, 0.01)) * Math.min(ml, 1) : 0;
+  IN.mvx = ml > 0.01 ? mx : 0;
+  IN.mvz = ml > 0.01 ? mz : 0;
   const focus = IN.atk || IN.md,
     sup = G.superT > 0;
   const warp = G.warpT > 0,

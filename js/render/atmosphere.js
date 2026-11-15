@@ -68,7 +68,7 @@ function setupBloom() {
     composer.addPass(new THREE.RenderPass(scene, camera));
     bloom = new THREE.UnrealBloomPass(new THREE.Vector2(W, H), 0.6, 0.5, 0.93);
     composer.addPass(bloom);
-  } catch (e) {
+  } catch {
     composer = null;
   }
 }

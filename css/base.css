@@ -1,13 +1,10 @@
 /* Design tokens, reset, typography. */
 :root {
   --night: #141829;
-  --night2: #1e2440;
-  --panel: rgba(20, 24, 41, 0.92);
   --parch: #f1e7d0;
   --dim: #a9a48f;
   --ember: #f2a23a;
   --ember2: #e2632b;
-  --blood: #d8443c;
   --xp: #3fd0c0;
   --shield: #6fb7ff;
   --pact: #e0304a;

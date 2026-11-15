@@ -35,9 +35,9 @@ try {
     S.stats = Object.assign(defSave().stats, o.stats || {});
     S.set = Object.assign(defSave().set, o.set || {});
   }
-} catch (e) {}
+} catch {}
 function save() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(S));
-  } catch (e) {}
+  } catch {}
 }

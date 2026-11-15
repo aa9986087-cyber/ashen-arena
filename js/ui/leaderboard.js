@@ -38,25 +38,9 @@ const shareText = e =>
   fmtT(e.t) +
   '\nانسخ الرسالة كاملة والصقها في قائمة الصدارة داخل اللعبة:\n' +
   mkCode(e);
-function copyText(t) {
-  const ok = () => toast('نُسخت النتيجة، الصقها لخوياك'),
-    bad = () => toast('ما انتسخت تلقائياً. افتح الصدارة وانسخ النص بيدك');
-  const fb = () => {
-    try {
-      const a = $('myCode');
-      a.value = t;
-      a.focus();
-      a.select();
-      document.execCommand('copy') ? ok() : bad();
-    } catch (err) {
-      bad();
-    }
-  };
-  try {
-    navigator.clipboard.writeText(t).then(ok, fb);
-  } catch (err) {
-    fb();
-  }
+async function copyText(t) {
+  const copied = await copyToClipboard(t);
+  toast(copied ? 'نُسخت النتيجة، الصقها لخوياك' : 'تعذر النسخ. جرّب زر مشاركة النتيجة أو متصفحًا آخر');
 }
 const ONLINE = {
   url: 'https://bvxfzcndquirqmpyhtpj.supabase.co',

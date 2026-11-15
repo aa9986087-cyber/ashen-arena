@@ -9,7 +9,7 @@ addEventListener('hashchange', () => {
   M2.on = !/menu1/.test(location.hash);
   document.body.classList.toggle('m2', M2.on);
 });
-function menu2Frame(dt, now) {
+function menu2Frame(dt) {
   const inMenu = G.state === 'menu';
   if (M2.boss) M2.boss.visible = M2.on && inMenu;
   if (M2.light && !(M2.on && inMenu)) M2.light.intensity = M2.rim.intensity = 0;

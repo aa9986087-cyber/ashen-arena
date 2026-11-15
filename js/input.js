@@ -99,18 +99,13 @@ function pUp(e) {
 addEventListener('pointerup', pUp);
 addEventListener('pointercancel', pUp);
 glC.addEventListener('contextmenu', e => e.preventDefault());
-const hold = (id, down, up) => {
+const hold = (id, down) => {
   const b = $(id);
   b.addEventListener('pointerdown', e => {
     e.preventDefault();
     AU.init();
     down();
   });
-  if (up) {
-    b.addEventListener('pointerup', up);
-    b.addEventListener('pointercancel', up);
-    b.addEventListener('pointerleave', up);
-  }
 };
 hold('bDash', dash);
 hold('bSpec', special);

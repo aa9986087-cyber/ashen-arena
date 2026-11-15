@@ -260,7 +260,6 @@ const SHOP_SALE = 0.7;
 const salePrice = v => Math.round((v * SHOP_SALE) / 10) * 10;
 const permCostOld = l => 150 + l * 130;
 const permCost = l => salePrice(permCostOld(l));
-const wepCost = id => salePrice(WEP[id].cost);
 /** Skill tree: five branches, each unlocked bottom-up; c = skill-point cost. Effects are read where noted. */
 const TREE = [
   {

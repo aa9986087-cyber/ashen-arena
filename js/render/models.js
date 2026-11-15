@@ -51,7 +51,7 @@ function texSampler(tex) {
         i = (py * w + px) * 4;
       return [d[i] / 255, d[i + 1] / 255, d[i + 2] / 255];
     };
-  } catch (e) {
+  } catch {
     return null;
   }
 }
