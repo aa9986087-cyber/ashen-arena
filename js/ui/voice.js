@@ -283,18 +283,21 @@ function vcOut(P) {
 /** The audio graph for the meter and the volume: the game's own (already started by a tap). A browser keeps an
     audio graph made outside a tap stopped, so any tap restarts it if it is. */
 function vcAC() {
-  if (!VC.ac) {
-    AU.init();
-    VC.ac = AU.ctx || new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (VC.ac.state !== 'running') VC.ac.resume().catch(() => {});
-  return VC.ac;
+  try {
+    if (!VC.ac) {
+      AU.init();
+      const C = window.AudioContext || window.webkitAudioContext;
+      VC.ac = AU.ctx || (C ? new C() : null);
+    }
+    if (VC.ac && VC.ac.state !== 'running') VC.ac.resume().catch(() => {});
+  } catch (e) {}
+  return VC.ac; // null where the browser has no audio graph: the meter stays still, the rest works
 }
 for (const ev of ['pointerdown', 'touchend', 'keydown'])
   addEventListener(ev, () => VC.ac && VC.ac.state !== 'running' && VC.ac.resume().catch(() => {}), true);
 function vcGainPath(P) {
   try {
-    vcAC();
+    if (!vcAC()) throw new Error('no audio graph');
     P.src = VC.ac.createMediaStreamSource(P.stream);
     P.gain = VC.ac.createGain();
     P.src.connect(P.gain).connect(VC.ac.destination);
@@ -537,7 +540,7 @@ function vcMeterSetup() {
   VC.test = VC.stream.clone();
   VC.anFor = VC.stream;
   try {
-    vcAC();
+    if (!vcAC()) throw new Error('no audio graph');
     VC.anSrc = VC.ac.createMediaStreamSource(VC.test);
     VC.an = VC.ac.createAnalyser();
     VC.an.fftSize = 512;
@@ -688,20 +691,28 @@ function vcTalkDraw() {
   VC.lastTalk = VC.lastTalk || new Map();
   for (const [id, v] of VC.levels) if (v) VC.lastTalk.set(id, now);
   const talking = vcIn(VC.room).filter(p => now - (VC.lastTalk.get(p.id) || -1e9) < 700),
-    sig = talking.map(p => p.id).join();
+    last = talking.slice().sort((a, b) => (VC.lastTalk.get(b.id) || 0) - (VC.lastTalk.get(a.id) || 0))[0],
+    sig =
+      talking
+        .map(p => p.id)
+        .sort()
+        .join() +
+      '|' +
+      (last ? last.id : '');
   bar.classList.toggle('live', talking.length > 0);
   if (VC.talkSig === sig) return;
   VC.talkSig = sig;
   const T = $('vcTalk');
   T.innerHTML = '';
-  for (const p of talking.slice(0, 2)) {
-    const r = el('span', 'vcT');
-    const c = vcChip(p);
+  // one face (whoever spoke last), the others as a number on it: the bar stays short
+  if (last) {
+    const r = el('span', 'vcT'),
+      c = vcChip(last);
     c.classList.add('talk');
-    r.append(c, el('b', '', p.n));
+    if (talking.length > 1) c.appendChild(el('em', 'vcMore', '+' + (talking.length - 1)));
+    r.append(c, el('b', '', last.n));
     T.appendChild(r);
   }
-  if (talking.length > 2) T.appendChild(el('span', 'vcT more', '+' + (talking.length - 2)));
   T.classList.toggle('on', talking.length > 0);
 }
 /** A volume slider (0–100%), with the number beside it. */
