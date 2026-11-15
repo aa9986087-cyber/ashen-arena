@@ -11,7 +11,9 @@ function readCode(txt) {
   return e.n && isFinite(e.k + e.l + e.t + e.b) ? e : null;
 }
 /** The ranking: how far you got (bosses beaten) first, then kills, then the faster time. */
-const rankCmp = (a, b) => (b.b || 0) - (a.b || 0) || b.k - a.k || a.t - b.t;
+/** The order: more bosses (all runs together), then more kills, then fewer runs (the same with less play). */
+const rankCmp = (a, b) =>
+  (b.b || 0) - (a.b || 0) || (b.k || 0) - (a.k || 0) || (a.r || 0) - (b.r || 0) || (a.t || 0) - (b.t || 0);
 function addScore(e) {
   const B = S.board,
     i = B.findIndex(x => x.n === e.n);
@@ -74,12 +76,31 @@ async function api(path, opt) {
   const t = await r.text(); // RPCs that return void answer with an empty body
   return t ? JSON.parse(t) : null;
 }
+/** A leaderboard row from a profile's numbers. */
+function profileRow(n, s) {
+  return { n, b: s.b | 0, k: s.k | 0, l: s.lvl | 0, r: s.r | 0, t: s.t | 0 };
+}
 async function loadOnline() {
   try {
-    const rows = await api(
-      '/rest/v1/scores?select=name,kills,lvl,t,bosses&order=bosses.desc,kills.desc,t.asc&limit=300'
-    );
-    onlineRows = rows.map(r => ({ n: String(r.name), k: +r.kills, l: +r.lvl, t: +r.t, b: +r.bosses }));
+    // the same numbers as each player's card: his newest profile (all his runs added up)
+    const rows = await api('/rest/v1/profiles?select=name,stats,updated_at&order=updated_at.desc&limit=2000'),
+      seen = new Set(),
+      L = [];
+    for (const r of rows || []) {
+      const n = String(r.name || '').trim(),
+        s = r.stats || {};
+      if (!n || seen.has(n)) continue;
+      seen.add(n);
+      if (!(s.r > 0) && !(s.b > 0) && !(s.k > 0)) continue; // never played a run
+      L.push(profileRow(n, s));
+    }
+    // ours straight from this device (the server's copy may be a run behind)
+    if (S.name) {
+      const i = L.findIndex(e => e.n === S.name);
+      if (i >= 0) L.splice(i, 1);
+      if (S.stats.runs > 0) L.push(profileRow(S.name, profileStats()));
+    }
+    onlineRows = L.sort(rankCmp).slice(0, 300);
     onlineOK = true;
   } catch (err) {
     onlineOK = false;
@@ -123,7 +144,7 @@ function drawBoard() {
       el('b', '', e.b || 0),
       el('small', '', e.k),
       el('small', '', e.l),
-      el('small', '', fmtT(e.t))
+      el('small', '', e.r !== undefined ? e.r : '–')
     );
     L.appendChild(r);
   });

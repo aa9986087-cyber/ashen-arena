@@ -30,8 +30,11 @@ function bossDown(e) {
   for (const q of G.picks) q.mag = true;
   G.bossesRun++;
   G.bossDone = true; // the stage's boss is beaten: no other until the next stage
-  S.stats.bosses++;
-  S.stats.maxBoss = Math.max(S.stats.maxBoss, G.bossesRun);
+  if (!G.lab) {
+    // a run touched by the lab's test tools counts for nothing (the leaderboard is the total of bosses)
+    S.stats.bosses++;
+    S.stats.maxBoss = Math.max(S.stats.maxBoss, G.bossesRun);
+  }
   S.sp++;
   save();
   if (G.abyss) S.stats.abyss = (S.stats.abyss || 0) + 1;

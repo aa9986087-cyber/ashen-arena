@@ -73,6 +73,7 @@ async function profileOpen(name) {
           ).catch(() => []),
       api('/rest/v1/duels?select=a,b,winner&or=(a.eq.' + q + ',b.eq.' + q + ')&limit=500').catch(() => []),
       api('/rest/v1/scores?select=kills,lvl,t,bosses&name=eq.' + q + '&limit=1').catch(() => []),
+      onlineRows ? null : loadOnline(), // for his place on the leaderboard
     ]);
     prof = mine ? { name, stats: profileStats(), updated_at: new Date().toISOString() } : p && p[0];
     duels = d || [];
@@ -115,11 +116,14 @@ async function profileOpen(name) {
   };
   if (prof) {
     B.appendChild(el('p', 'pcReach', '🗺️ ' + profileReach(s)));
+    // the same numbers the leaderboard ranks by, and his place on it
+    const pl = onlineOK && onlineRows ? onlineRows.findIndex(e => e.n === name) : -1;
+    if (pl >= 0) row('🏆', 'ترتيبه بالصدارة', '#' + (pl + 1));
+    row('👑', 'مجموع الزعماء', s.b || 0);
+    row('💀', 'مجموع القتلات', (s.k || 0).toLocaleString('en'));
+    row('🎮', 'جولات لعبها', s.r || 0);
     row('⭐', 'أعلى مستوى', s.lvl || 0);
     row('⏱', 'أطول جولة', fmtT(s.t || 0));
-    row('👑', 'زعماء هزمهم', s.b || 0);
-    row('💀', 'أعداء قتلهم', (s.k || 0).toLocaleString('en'));
-    row('🎮', 'جولات لعبها', s.r || 0);
     row('🦸', 'أبطال مفتوحة', (s.h || 1) + ' / ' + Object.keys(CHARS).length);
     row('🏆', 'إنجازات', (s.ach || 0) + ' / ' + ACH.length);
   }
@@ -130,7 +134,7 @@ async function profileOpen(name) {
     row('⭐', 'أعلى مستوى', score.lvl);
     row('⏱', 'أطول جولة', fmtT(score.t || 0));
     row('👑', 'زعماء في جولة وحدة', score.bosses || 0);
-  } else if (score) row('📊', 'رقمه في الصدارة', score.kills + ' قتلة · مستوى ' + score.lvl);
+  }
   if (duels.length) {
     const w = duels.filter(r => r.winner === name).length;
     row('⚔️', 'المبارزات', w + ' فوز · ' + (duels.length - w) + ' خسارة');
