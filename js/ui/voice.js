@@ -172,6 +172,7 @@ function vcSend(to, d) {
 /* ---- joining and leaving */
 async function vcJoin(room, code, made) {
   if (!S.name) return askName();
+  vcAC(); // still inside the tap that asked to join: the audio graph may start now
   if (code !== undefined) {
     code = vcCodeNorm(code);
     if (code.length < 4) return toast('🔒 الرمز لازم يكون 4 حروف أو أرقام على الأقل');
@@ -279,10 +280,21 @@ function vcOut(P) {
     if (VC.volOk) P.audio.volume = v;
   }
 }
+/** The audio graph for the meter and the volume: the game's own (already started by a tap). A browser keeps an
+    audio graph made outside a tap stopped, so any tap restarts it if it is. */
+function vcAC() {
+  if (!VC.ac) {
+    AU.init();
+    VC.ac = AU.ctx || new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (VC.ac.state !== 'running') VC.ac.resume().catch(() => {});
+  return VC.ac;
+}
+for (const ev of ['pointerdown', 'touchend', 'keydown'])
+  addEventListener(ev, () => VC.ac && VC.ac.state !== 'running' && VC.ac.resume().catch(() => {}), true);
 function vcGainPath(P) {
   try {
-    if (!VC.ac) VC.ac = new (window.AudioContext || window.webkitAudioContext)();
-    if (VC.ac.state === 'suspended') VC.ac.resume();
+    vcAC();
     P.src = VC.ac.createMediaStreamSource(P.stream);
     P.gain = VC.ac.createGain();
     P.src.connect(P.gain).connect(VC.ac.destination);
@@ -525,8 +537,7 @@ function vcMeterSetup() {
   VC.test = VC.stream.clone();
   VC.anFor = VC.stream;
   try {
-    if (!VC.ac) VC.ac = new (window.AudioContext || window.webkitAudioContext)();
-    if (VC.ac.state === 'suspended') VC.ac.resume();
+    vcAC();
     VC.anSrc = VC.ac.createMediaStreamSource(VC.test);
     VC.an = VC.ac.createAnalyser();
     VC.an.fftSize = 512;
@@ -555,7 +566,8 @@ function vcMicLevel() {
 function vcMeterLoop() {
   const bar = document.getElementById('vcMeterI');
   if (!bar || $('voice').hidden) return (VC.meterOn = false);
-  bar.style.width = Math.min(100, vcMicLevel() * 420) + '%';
+  const db = 20 * Math.log10(vcMicLevel() + 1e-6); // -60 dB (silence) .. -10 dB (shouting)
+  bar.style.width = clamp((db + 60) / 50, 0, 1) * 100 + '%';
   requestAnimationFrame(vcMeterLoop);
 }
 /** The record button's text (kept, so a panel redrawn meanwhile shows the same). */
@@ -617,7 +629,10 @@ function vcTestCard(alone) {
   const rec = el('button', 'btn sm', VC.recText || '🎙️ سجّل ٣ ثواني واسمع');
   rec.id = 'vcRec';
   rec.disabled = !!VC.recording;
-  rec.onclick = () => vcRecordTest();
+  rec.onclick = () => {
+    vcAC();
+    vcRecordTest();
+  };
   box.append(el('small', '', 'تكلّم: الشريط يتحرك مع صوتك'), meter, rec);
   if (VC.mute) box.appendChild(el('small', 'vcWarn', 'مايكك مقفل: الشريط شغال للتجربة بس، وهم ما يسمعونك'));
   if (!VC.meterOn) {
@@ -956,6 +971,7 @@ function vcInvited(d) {
 /** The rooms panel: over whatever is on screen (a solo run pauses behind it). */
 function vcOpen() {
   AU.init();
+  vcAC();
   AU.play('select');
   if (!COOP.on && G.state === 'play') pause(true);
   $('voice').hidden = false;
