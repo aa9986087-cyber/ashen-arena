@@ -81,6 +81,7 @@ function vcConnect() {
     .then(ch => {
       VC.ch = ch;
       ch.on('sig', d => vcSignal(d).catch(e => console.warn('voice', e)));
+      ch.on('inv', vcInvited);
       ch.onPresence(list => {
         VC.list = list.filter(p => p && p.id);
         vcSync();
@@ -482,7 +483,7 @@ function vcSlider(v, on, label) {
   return w;
 }
 function vcPanelDraw() {
-  const sig =
+  let sig =
     VOICE_ROOMS.map(r =>
       vcIn(r.id)
         .map(p => p.id + p.m + p.n)
@@ -494,6 +495,7 @@ function vcPanelDraw() {
     VC.mute +
     VC.deaf +
     [...VC.peers.values()].map(P => P.muted + P.pc.connectionState).join();
+  sig += VC.inviting ? '|inv' + VC.list.map(p => p.id + p.n + p.room).join() + Object.keys(VC.sent || {}).join() : '';
   if (VC.panelSig === sig || VC.dragging) return;
   VC.panelSig = sig;
   $('vcStatus').textContent = VC.ch
@@ -605,8 +607,15 @@ function vcRoomCard(r) {
       mic.onclick = () => vcSetMute(!VC.mute);
       deaf.onclick = () => vcSetDeaf(!VC.deaf);
       out.onclick = () => vcLeave();
-      ctl.append(mic, deaf, out);
+      const inv = el('button', 'btn sm' + (VC.inviting ? ' on' : ''), '📨 ادعُ');
+      inv.onclick = () => {
+        VC.inviting = !VC.inviting;
+        VC.panelSig = '';
+        vcPanelDraw();
+      };
+      ctl.append(mic, deaf, inv, out);
       card.appendChild(ctl);
+      if (VC.inviting) card.appendChild(vcInviteList());
       // everyone's volume at once
       const vr = el('div', 'vcVolAll');
       vr.append(
@@ -617,6 +626,85 @@ function vcRoomCard(r) {
     }
     return card;
   }
+}
+/* ---- invites: from a room, ask a player who is in the game right now to join it */
+const VC_INV_GAP = 20000; // the same player once every 20 s at most
+/** Players in the game right now (on the voice channel) who aren't in your room. */
+function vcInviteList() {
+  const box = el('div', 'vcInvList'),
+    ppl = VC.list.filter(p => p.room !== VC.room && p.id !== myPid());
+  box.appendChild(el('b', 'vcInvT', '📨 ادعُ أحد من اللي داخلين اللعبة الحين'));
+  if (!ppl.length) box.appendChild(el('p', 'note', 'ما فيه أحد ثاني داخل اللعبة الحين.'));
+  for (const p of ppl) {
+    const row = el('div', 'vcP'),
+      where = p.room === 'priv' ? 'بغرفة خاصة' : p.room ? 'في ' + vcRoomOf(p.room).n : 'باللعبة',
+      sentAt = (VC.sent || {})[p.id],
+      sent = sentAt && Date.now() - sentAt < VC_INV_GAP,
+      b = el('button', 'btn sm' + (sent ? '' : ' go'), sent ? '✓ انرسلت' : 'ادعُ');
+    b.disabled = sent;
+    b.onclick = () => vcInvite(p);
+    const info = el('span', '');
+    info.append(document.createTextNode(p.n), el('small', '', ' · ' + where));
+    row.append(vcChip(p), info, b);
+    box.appendChild(row);
+  }
+  return box;
+}
+function vcInvite(p) {
+  if (!VC.ch || !VC.room) return;
+  VC.sent = VC.sent || {};
+  if (Date.now() - (VC.sent[p.id] || 0) < VC_INV_GAP) return;
+  VC.sent[p.id] = Date.now();
+  // a public room by its id; a private one carries its code (only the invited player's game shows it)
+  const d = { to: p.id, from: myPid(), fn: vcName(), room: vcPriv(VC.room) ? null : VC.room };
+  if (vcPriv(VC.room)) d.code = VC.priv.code;
+  VC.ch.send('inv', d);
+  AU.play('select');
+  toast('📨 انرسلت الدعوة لـ' + p.n);
+  VC.panelSig = '';
+  vcPanelDraw();
+  setTimeout(() => {
+    VC.panelSig = '';
+    if (!$('voice').hidden) vcPanelDraw();
+  }, VC_INV_GAP + 100);
+}
+/** An invite for us: a light card at the top of the screen, over whatever we're doing (nothing stops). */
+function vcInvited(d) {
+  if (!d || d.to !== myPid() || !d.fn) return;
+  if (!d.code && !vcRoomOf(d.room).d) return; // not a room we know
+  if (!d.code && VC.room === d.room) return; // already there
+  if (d.code && VC.priv && VC.priv.code === vcCodeNorm(d.code)) return;
+  const box = $('vcInv');
+  if (VC.invT) clearTimeout(VC.invT);
+  box.innerHTML = '';
+  const who = el('i', 'vcChip');
+  const src = avatarOf(d.fn);
+  if (src) who.style.backgroundImage = 'url("' + src + '")';
+  else who.textContent = [...d.fn][0];
+  const txt = el('div', 'vcInvTx');
+  txt.append(
+    el('b', '', d.fn),
+    el('span', '', d.code ? 'يدعوك لغرفته الخاصة 🔒' : 'يدعوك لـ' + vcRoomOf(d.room).n + ' 🎧')
+  );
+  const yes = el('button', 'btn sm go', 'انضم'),
+    no = el('button', 'btn sm', 'لاحقاً');
+  const close = () => {
+    box.classList.remove('on');
+    clearTimeout(VC.invT);
+    VC.invT = setTimeout(() => (box.hidden = true), 300);
+  };
+  yes.onclick = () => {
+    close();
+    if (d.code) vcJoin(null, d.code, true);
+    else vcJoin(d.room);
+  };
+  no.onclick = close;
+  box.append(who, txt, yes, no);
+  box.hidden = false;
+  requestAnimationFrame(() => box.classList.add('on'));
+  AU.init();
+  if (!AU.sample('open', 0.35)) AU.play('select');
+  VC.invT = setTimeout(close, 15000);
 }
 /** The rooms panel: over whatever is on screen (a solo run pauses behind it). */
 function vcOpen() {
