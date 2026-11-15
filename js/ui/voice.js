@@ -2,20 +2,39 @@
 /* Voice rooms (like Discord): a few open rooms anyone can join from the 🎧 button. Once in a room you stay in it
    wherever you go in the game (menu, a run, co-op, a duel) until you leave; a small bar on the screen's edge shows who
    is talking. Sound goes straight between the players' devices (WebRTC, every member to every member); the Realtime
-   channel 'voice' only carries who is in which room (presence) and the set-up messages between two devices.
+   channel 'voice' only carries who is in which room and the set-up messages between two devices.
    A private room has a code: its own channel, named from a hash of the code, carries its members and set-up, and the
-   public channel only shows 'priv' for its members (no name, no code) — without the code there is no way in. */
+   public channel only shows 'priv' for its members (no name, no code) — without the code there is no way in.
+   Who is where travels as plain messages ('vst': on a change and every 5 s), not as Realtime presence: presence
+   updates are rate-limited hard, and a refused one ("I'm in this room now") left a player invisible to his own room. */
 const VOICE_ROOMS = [
   { id: 'diwan', n: 'الديوانية', d: 'سوالف عامة' },
   { id: 'arena', n: 'ساحة المعارك', d: 'للمبارزة والملحمة' },
   { id: 'coop', n: 'غرفة التعاون', d: 'نسّقوا ضد الوحوش' },
   { id: 'night', n: 'السهرة', d: 'للسهارى' },
 ];
-const VC_ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
+// STUN finds a direct way between two devices; when a network won't allow one (some mobile carriers), the public
+// Open Relay TURN server carries the sound instead
+const VC_ICE = [
+  { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
+  {
+    urls: [
+      'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:443',
+      'turn:openrelay.metered.ca:443?transport=tcp',
+    ],
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+];
+const VC_BEAT = 5000, // say where we are this often
+  VC_GONE = 14000; // not heard from for this long: gone
 const VC = {
   ch: null,
   connecting: null,
-  list: [], // everyone on the channel (presence): {id, n, room, m}
+  list: [], // everyone heard from on the channel: {id, n, room, m}
+  seen: new Map(), // id -> {id, n, room, m, t}
+  beatT: 0,
   room: null,
   stream: null, // our microphone (null: listening only)
   mute: false,
@@ -74,18 +93,49 @@ function vcIn(room) {
 }
 
 /* ---- the channel */
+/** A player told us where he is: true when that changed something. */
+function vcHeard(map, d) {
+  if (!d || !d.id || d.id === myPid()) return false;
+  const old = map.get(d.id);
+  map.set(d.id, { id: d.id, n: d.n || 'لاعب', room: d.room || null, m: d.m ? 1 : 0, t: Date.now() });
+  return !old || old.room !== (d.room || null) || old.m !== (d.m ? 1 : 0) || old.n !== d.n;
+}
+/** Rebuild the lists from what we've heard (dropping the silent). */
+function vcLists() {
+  const now = Date.now();
+  for (const M of [VC.seen, VC.priv && VC.priv.seen])
+    if (M) for (const [id, p] of M) if (now - p.t > VC_GONE) M.delete(id);
+  VC.list = [...VC.seen.values()];
+  if (VC.priv) VC.priv.list = [...VC.priv.seen.values()].map(p => Object.assign({}, p, { room: VC.room }));
+}
+/** Listen on a channel for where the players are; `map` holds them. */
+function vcListen(ch, map, isPriv) {
+  ch.on('sig', d => vcSignal(d).catch(e => console.warn('voice', e)));
+  ch.on('vst', d => {
+    if (vcHeard(map, d)) {
+      vcLists();
+      vcSync();
+    }
+  });
+  ch.on('vbye', d => {
+    if (d && map.delete(d.id)) {
+      vcLists();
+      vcSync();
+    }
+  });
+  // a newcomer asks: everyone answers (spread out a little)
+  ch.on('vask', () => setTimeout(() => vcBeat(isPriv ? 'priv' : 'pub'), Math.random() * 600));
+}
 function vcConnect() {
   if (VC.ch) return Promise.resolve(VC.ch);
   if (VC.connecting) return VC.connecting;
-  VC.connecting = netJoin('voice', { id: myPid(), n: vcName(), room: VC.room, m: VC.mute ? 1 : 0 })
+  VC.connecting = netJoin('voice')
     .then(ch => {
       VC.ch = ch;
-      ch.on('sig', d => vcSignal(d).catch(e => console.warn('voice', e)));
+      vcListen(ch, VC.seen, false);
       ch.on('inv', vcInvited);
-      ch.onPresence(list => {
-        VC.list = list.filter(p => p && p.id);
-        vcSync();
-      });
+      ch.send('vask', {});
+      vcBeat('pub');
       return ch;
     })
     .catch(e => {
@@ -94,12 +144,22 @@ function vcConnect() {
     });
   return VC.connecting;
 }
-function vcTrack() {
-  const m = VC.mute || !VC.stream ? 1 : 0;
-  // the public channel never names a private room
-  if (VC.ch && VC.ch.track) VC.ch.track({ n: vcName(), room: vcPriv(VC.room) ? 'priv' : VC.room, m });
-  if (VC.priv && VC.priv.ch.track) VC.priv.ch.track({ n: vcName(), m });
+/** Say where we are (the public channel never names a private room). */
+function vcBeat(which) {
+  const m = VC.mute || !VC.stream ? 1 : 0,
+    me = { id: myPid(), n: vcName(), m };
+  if (VC.ch && which !== 'priv') VC.ch.send('vst', Object.assign({ room: vcPriv(VC.room) ? 'priv' : VC.room }, me));
+  if (VC.priv && which !== 'pub') VC.priv.ch.send('vst', Object.assign({ room: VC.room }, me));
+  VC.beatT = Date.now();
 }
+const vcTrack = () => vcBeat();
+setInterval(() => {
+  if (!VC.ch) return;
+  const before = VC.list.length + (VC.priv ? VC.priv.list.length : 0);
+  vcLists();
+  if (Date.now() - VC.beatT > VC_BEAT) vcBeat();
+  if (VC.list.length + (VC.priv ? VC.priv.list.length : 0) !== before) vcSync();
+}, 1000);
 function vcSend(to, d) {
   const ch = vcPriv(VC.room) ? VC.priv && VC.priv.ch : VC.ch;
   if (ch) ch.send('sig', Object.assign(d, { to, from: myPid(), r: VC.room }));
@@ -125,20 +185,16 @@ async function vcJoin(room, code, made) {
     // the private room's own channel: only someone with the code can name it
     let ch;
     try {
-      ch = await netJoin('vcp-' + room.slice(2), { id: myPid(), n: vcName(), m: VC.mute ? 1 : 0 });
+      ch = await netJoin('vcp-' + room.slice(2));
     } catch (e) {
       return toast('ما قدرت أفتح الغرفة الخاصة، تأكد من الإنترنت');
     }
-    const P = (VC.priv = { ch, code, list: [] });
+    const P = (VC.priv = { ch, code, list: [], seen: new Map() });
     try {
       localStorage.setItem('ashen_vc_code', code);
     } catch (e) {}
-    ch.on('sig', d => vcSignal(d).catch(e => console.warn('voice', e)));
-    ch.onPresence(list => {
-      if (VC.priv !== P) return;
-      P.list = list.filter(p => p && p.id).map(p => Object.assign({}, p, { room }));
-      vcSync();
-    });
+    vcListen(ch, P.seen, true);
+    ch.send('vask', {});
   }
   // the microphone; without it you can still listen
   if (!VC.stream && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -173,8 +229,9 @@ function vcLeave(switching) {
     const ch = VC.priv.ch;
     VC.priv = null;
     try {
-      ch.close();
+      ch.send('vbye', { id: myPid() });
     } catch (e) {}
+    setTimeout(() => ch.close(), 300);
   }
   if (!switching && VC.stream) {
     for (const t of VC.stream.getTracks()) t.stop();
@@ -737,6 +794,10 @@ setInterval(() => {
   }
 }, 2000);
 addEventListener('pagehide', () => {
+  try {
+    if (VC.ch) VC.ch.send('vbye', { id: myPid() });
+    if (VC.priv) VC.priv.ch.send('vbye', { id: myPid() });
+  } catch (e) {}
   for (const id of [...VC.peers.keys()]) vcDrop(id);
 });
 // connect a little after start, so the 🎧 button shows how many are talking (local test pages skip it)
