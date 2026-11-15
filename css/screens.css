@@ -1548,3 +1548,46 @@ textarea.txt {
   line-height: 1.6;
   color: #d9cfb6;
 }
+/* the microphone test */
+.vcTest {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px dashed rgba(124, 240, 138, 0.45);
+}
+.vcTest b {
+  font-size: 14px;
+  color: #e9ffe9;
+}
+.vcTest small {
+  font-size: 12px;
+  opacity: 0.75;
+}
+.vcTest .btn {
+  align-self: flex-start;
+}
+.vcWarn {
+  color: #ffb3a8;
+  opacity: 1 !important;
+}
+.vcMeter {
+  height: 10px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.vcMeter i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #7cf08a, #f6c45a 70%, #ff6b5a);
+  transition: width 0.06s linear;
+}
+.vcTestBtn {
+  margin-top: 8px;
+}

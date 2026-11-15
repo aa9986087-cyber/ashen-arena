@@ -27,6 +27,7 @@ const VC_ICE = [
     credential: 'openrelayproject',
   },
 ];
+const VC_MAX = 8; // people in one room
 const VC_BEAT = 5000, // say where we are this often
   VC_GONE = 14000; // not heard from for this long: gone
 const VC = {
@@ -34,6 +35,7 @@ const VC = {
   connecting: null,
   list: [], // everyone heard from on the channel: {id, n, room, m}
   seen: new Map(), // id -> {id, n, room, m, t}
+  left: new Map(), // id -> when he said goodbye
   beatT: 0,
   room: null,
   stream: null, // our microphone (null: listening only)
@@ -96,6 +98,7 @@ function vcIn(room) {
 /** A player told us where he is: true when that changed something. */
 function vcHeard(map, d) {
   if (!d || !d.id || d.id === myPid()) return false;
+  VC.left.delete(d.id); // heard again: back
   const old = map.get(d.id);
   map.set(d.id, { id: d.id, n: d.n || 'لاعب', room: d.room || null, m: d.m ? 1 : 0, t: Date.now() });
   return !old || old.room !== (d.room || null) || old.m !== (d.m ? 1 : 0) || old.n !== d.n;
@@ -118,6 +121,7 @@ function vcListen(ch, map, isPriv) {
     }
   });
   ch.on('vbye', d => {
+    if (d && d.id) VC.left.set(d.id, Date.now());
     if (d && map.delete(d.id)) {
       vcLists();
       vcSync();
@@ -174,6 +178,8 @@ async function vcJoin(room, code, made) {
     room = 'p:' + (await vcCodeTag(code));
   }
   if (VC.room === room) return;
+  if (!vcPriv(room) && vcIn(room).length >= VC_MAX)
+    return toast('🎧 الغرفة مليانة (' + VC_MAX + ' أشخاص). جرّب غرفة ثانية');
   if (VC.room) vcLeave(true);
   AU.init();
   try {
@@ -212,6 +218,13 @@ async function vcJoin(room, code, made) {
   AU.play('select');
   toast(code !== undefined ? '🔒 دخلت الغرفة الخاصة ' + code : '🎧 دخلت ' + vcRoomOf(room).n);
   // a code typed in that leads to an empty room: maybe a typo (any code opens a room)
+  if (code !== undefined)
+    setTimeout(() => {
+      if (VC.priv && VC.priv.code === code && VC.priv.list.length >= VC_MAX) {
+        vcLeave();
+        toast('🔒 الغرفة الخاصة مليانة (' + VC_MAX + ' أشخاص)');
+      }
+    }, 1800);
   if (code !== undefined && !made)
     setTimeout(() => {
       if (VC.priv && VC.priv.code === code && !VC.priv.list.length)
@@ -236,6 +249,7 @@ function vcLeave(switching) {
   if (!switching && VC.stream) {
     for (const t of VC.stream.getTracks()) t.stop();
     VC.stream = null;
+    vcMeterStop();
   }
   vcTrack();
   if (!switching) toast('🚪 طلعت من غرفة الصوت');
@@ -303,6 +317,9 @@ function vcPeer(id) {
     ice: [],
     muted: false,
     at: performance.now(),
+    seen: performance.now(),
+    out: [], // our candidates waiting to go (sent in batches: 8 people make 28 links, one message each would choke)
+    hold: false,
     name: (vcIn(VC.room).find(p => p.id === id) || {}).n,
   };
   if (VC.stream) for (const t of VC.stream.getAudioTracks()) pc.addTrack(t, VC.stream);
@@ -313,18 +330,52 @@ function vcPeer(id) {
     vcOut(P);
     audio.play().catch(() => vcNeedTap());
   };
-  pc.onicecandidate = e => e.candidate && vcSend(id, { t: 'ice', c: e.candidate.toJSON() });
+  pc.onicecandidate = e => {
+    if (!e.candidate || P.hold) return; // while held, the offer/answer about to go already carries them
+    P.out.push(e.candidate.toJSON());
+    if (!P.outT)
+      P.outT = setTimeout(() => {
+        P.outT = 0;
+        if (P.out.length && VC.peers.get(id) === P) vcSend(id, { t: 'ice', cs: P.out.splice(0) });
+      }, 250);
+  };
   // a link that drops for a moment usually comes back by itself: only one that stays down is rebuilt (vcSync)
   pc.onconnectionstatechange = () => {
     const st = pc.connectionState;
     if (st === 'connected') {
       P.ok = true;
       P.badAt = 0;
+      vcBitrate(P);
     } else if ((st === 'disconnected' || st === 'failed') && !P.badAt) P.badAt = performance.now();
     vcDraw();
   };
   VC.peers.set(id, P);
   return P;
+}
+/** Speech needs little: capped, so a phone can send to 7 others at once. */
+function vcBitrate(P) {
+  try {
+    for (const snd of P.pc.getSenders()) {
+      if (!snd.track || snd.track.kind !== 'audio') continue;
+      const prm = snd.getParameters();
+      if (!prm.encodings || !prm.encodings.length) prm.encodings = [{}];
+      prm.encodings[0].maxBitrate = vcIn(VC.room).length > 4 ? 28000 : 40000;
+      snd.setParameters(prm).catch(() => {});
+    }
+  } catch (e) {}
+}
+/** Wait (up to `ms`) for our network addresses, so the offer/answer carries them all in one message. */
+function vcGather(pc, ms) {
+  if (pc.iceGatheringState === 'complete') return Promise.resolve();
+  return new Promise(ok => {
+    const t = setTimeout(ok, ms);
+    pc.addEventListener('icegatheringstatechange', () => {
+      if (pc.iceGatheringState === 'complete') {
+        clearTimeout(t);
+        ok();
+      }
+    });
+  });
 }
 function vcDrop(id) {
   const P = VC.peers.get(id);
@@ -333,6 +384,7 @@ function vcDrop(id) {
   try {
     P.pc.close();
   } catch (e) {}
+  clearTimeout(P.outT);
   P.audio.srcObject = null;
   P.audio.remove();
   try {
@@ -345,8 +397,12 @@ function vcDrop(id) {
 async function vcCall(id) {
   const P = vcPeer(id);
   P.at = performance.now();
-  const o = await P.pc.createOffer();
-  await P.pc.setLocalDescription(o);
+  P.hold = true;
+  await P.pc.setLocalDescription(await P.pc.createOffer());
+  await vcGather(P.pc, 1500);
+  P.hold = false;
+  if (VC.peers.get(id) !== P) return;
+  const o = P.pc.localDescription;
   vcSend(id, { t: 'offer', s: { type: o.type, sdp: o.sdp } });
 }
 async function vcSignal(d) {
@@ -367,8 +423,12 @@ async function vcSignal(d) {
     P = P || vcPeer(id);
     await P.pc.setRemoteDescription(d.s);
     for (const c of P.ice.splice(0)) await P.pc.addIceCandidate(c).catch(() => {});
-    const a = await P.pc.createAnswer();
-    await P.pc.setLocalDescription(a);
+    P.hold = true;
+    await P.pc.setLocalDescription(await P.pc.createAnswer());
+    await vcGather(P.pc, 1500);
+    P.hold = false;
+    if (VC.peers.get(id) !== P) return;
+    const a = P.pc.localDescription;
     vcSend(id, { t: 'answer', s: { type: a.type, sdp: a.sdp } });
   } else if (d.t === 'answer') {
     const P = VC.peers.get(id);
@@ -377,15 +437,24 @@ async function vcSignal(d) {
     for (const c of P.ice.splice(0)) await P.pc.addIceCandidate(c).catch(() => {});
   } else if (d.t === 'ice') {
     const P = VC.peers.get(id) || vcPeer(id);
-    if (P.pc.remoteDescription) await P.pc.addIceCandidate(d.c).catch(() => {});
-    else P.ice.push(d.c);
+    for (const c of d.cs || [d.c]) {
+      if (!c) continue;
+      if (P.pc.remoteDescription) await P.pc.addIceCandidate(c).catch(() => {});
+      else P.ice.push(c);
+    }
   }
 }
 /** Match the links to the room's members: call the new ones, drop those who left, retry the stuck ones. */
 function vcSync() {
   if (VC.room) {
-    const here = new Set(vcIn(VC.room).map(p => p.id));
-    for (const id of [...VC.peers.keys()]) if (!here.has(id)) vcDrop(id);
+    const here = new Set(vcIn(VC.room).map(p => p.id)),
+      now0 = performance.now();
+    // someone not heard from: his link goes, unless the sound still flows (a late message isn't a goodbye) — only
+    // a real goodbye, or 45 s of silence, ends a working link
+    for (const [id, P] of [...VC.peers])
+      if (here.has(id)) P.seen = now0;
+      else if (VC.left.has(id) || P.pc.connectionState !== 'connected' || now0 - P.seen > 45000) vcDrop(id);
+    let calls = 0;
     for (const id of here) {
       if (id === myPid()) continue;
       const P = VC.peers.get(id),
@@ -400,11 +469,13 @@ function vcSync() {
         stuck =
           P &&
           st !== 'connected' &&
-          ((!P.ok && now - P.at > (P.pc.signalingState === 'have-local-offer' ? 4000 : 10000)) ||
+          ((!P.ok && now - P.at > (P.pc.signalingState === 'have-local-offer' ? 6000 : 10000)) ||
             (P.badAt && now - P.badAt > 10000));
       if (myPid() < id && (!P || stuck || st === 'failed')) {
         if (P) vcDrop(id);
-        vcCall(id).catch(e => console.warn('voice call', e));
+        // a few at a time, not all 7 in the same instant
+        vcPeer(id).at = now;
+        setTimeout(() => VC.room && vcCall(id).catch(e => console.warn('voice call', e)), calls++ * 220);
       } else if (P && stuck) vcDrop(id); // the caller will ring again
     }
   }
@@ -439,22 +510,122 @@ async function vcLevels() {
       VC.levels.set(id, P.muted || VC.deaf ? 0 : loud(lv));
     } catch (e) {}
   }
-  // ours: from any link that sends it
-  let me = 0;
-  if (VC.stream && !VC.mute)
-    for (const P of VC.peers.values()) {
-      try {
-        (await P.pc.getStats()).forEach(r => {
-          if (r.type === 'media-source' && r.kind === 'audio' && r.audioLevel !== undefined)
-            me = Math.max(me, r.audioLevel);
-        });
-        break;
-      } catch (e) {}
-    }
-  VC.levels.set(myPid(), loud(me));
+  // ours: straight from the microphone (so it shows even alone in the room)
+  VC.levels.set(myPid(), VC.stream && !VC.mute && vcMicLevel() > 0.02 ? 1 : 0);
   vcTalkDraw();
 }
-setInterval(() => !document.hidden && vcLevels(), 300);
+setInterval(() => !document.hidden && vcLevels(), 450);
+
+/* ---- the microphone test: a live meter, and record 3 s then hear yourself */
+function vcMeterSetup() {
+  if (!VC.stream || VC.anFor === VC.stream) return;
+  vcMeterStop();
+  // a copy of the microphone: it keeps listening while you're muted to the others (the recording uses it too, so
+  // it is made even where the meter can't be)
+  VC.test = VC.stream.clone();
+  VC.anFor = VC.stream;
+  try {
+    if (!VC.ac) VC.ac = new (window.AudioContext || window.webkitAudioContext)();
+    if (VC.ac.state === 'suspended') VC.ac.resume();
+    VC.anSrc = VC.ac.createMediaStreamSource(VC.test);
+    VC.an = VC.ac.createAnalyser();
+    VC.an.fftSize = 512;
+    VC.anSrc.connect(VC.an);
+    VC.anBuf = new Float32Array(VC.an.fftSize);
+  } catch (e) {
+    VC.an = null;
+  }
+}
+function vcMeterStop() {
+  try {
+    if (VC.anSrc) VC.anSrc.disconnect();
+    if (VC.test) for (const t of VC.test.getTracks()) t.stop();
+  } catch (e) {}
+  VC.an = VC.anSrc = VC.test = VC.anFor = null;
+}
+/** How loud the microphone is right now (0..1, RMS). */
+function vcMicLevel() {
+  vcMeterSetup();
+  if (!VC.an) return 0;
+  VC.an.getFloatTimeDomainData(VC.anBuf);
+  let s = 0;
+  for (const v of VC.anBuf) s += v * v;
+  return Math.sqrt(s / VC.anBuf.length);
+}
+function vcMeterLoop() {
+  const bar = document.getElementById('vcMeterI');
+  if (!bar || $('voice').hidden) return (VC.meterOn = false);
+  bar.style.width = Math.min(100, vcMicLevel() * 420) + '%';
+  requestAnimationFrame(vcMeterLoop);
+}
+/** The record button's text (kept, so a panel redrawn meanwhile shows the same). */
+function vcRecState(t) {
+  VC.recText = t;
+  const b = document.getElementById('vcRec');
+  if (b) {
+    b.textContent = t || '🎙️ سجّل ٣ ثواني واسمع';
+    b.disabled = !!VC.recording;
+  }
+}
+async function vcRecordTest() {
+  vcMeterSetup();
+  if (!VC.test || typeof MediaRecorder === 'undefined')
+    return toast('🎙️ جهازك ما يدعم التسجيل، بس شريط المايك يبين إذا صوتك واصل');
+  if (VC.recording) return;
+  VC.recording = true;
+  let rec;
+  try {
+    rec = new MediaRecorder(VC.test);
+  } catch (e) {
+    VC.recording = false;
+    return toast('🎙️ ما قدرت أسجل على جهازك');
+  }
+  const parts = [],
+    done = () => {
+      VC.recording = false;
+      vcRecState('');
+    };
+  rec.ondataavailable = e => e.data && e.data.size && parts.push(e.data);
+  rec.onstop = () => {
+    if (!parts.length) return done();
+    const url = URL.createObjectURL(new Blob(parts, { type: rec.mimeType || 'audio/webm' })),
+      a = new Audio(url);
+    vcRecState('🔊 تسمع صوتك…');
+    a.onended = a.onerror = () => {
+      URL.revokeObjectURL(url);
+      done();
+    };
+    a.play().catch(a.onended);
+  };
+  rec.start();
+  for (let i = 3; i > 0; i--) {
+    vcRecState('🔴 تكلّم… ' + i);
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  rec.stop();
+}
+function vcTestCard(alone) {
+  const box = el('div', 'vcTest');
+  box.appendChild(el('b', '', alone ? '🎙️ أنت لحالك بالغرفة: جرّب مايكك' : '🎙️ جرّب مايكك'));
+  if (!VC.stream) {
+    box.appendChild(el('p', 'note', 'المايك مو مسموح. اسمح له من إعدادات المتصفح وادخل الغرفة من جديد.'));
+    return box;
+  }
+  const meter = el('div', 'vcMeter');
+  meter.appendChild(el('i', ''));
+  meter.firstChild.id = 'vcMeterI';
+  const rec = el('button', 'btn sm', VC.recText || '🎙️ سجّل ٣ ثواني واسمع');
+  rec.id = 'vcRec';
+  rec.disabled = !!VC.recording;
+  rec.onclick = () => vcRecordTest();
+  box.append(el('small', '', 'تكلّم: الشريط يتحرك مع صوتك'), meter, rec);
+  if (VC.mute) box.appendChild(el('small', 'vcWarn', 'مايكك مقفل: الشريط شغال للتجربة بس، وهم ما يسمعونك'));
+  if (!VC.meterOn) {
+    VC.meterOn = true;
+    requestAnimationFrame(vcMeterLoop);
+  }
+  return box;
+}
 
 /* ---- the screens: the bar on the edge (while in a room) and the rooms panel */
 function vcChip(p) {
@@ -552,6 +723,7 @@ function vcPanelDraw() {
     VC.mute +
     VC.deaf +
     [...VC.peers.values()].map(P => P.muted + P.pc.connectionState).join();
+  sig += VC.testOpen ? 't' : '';
   sig += VC.inviting ? '|inv' + VC.list.map(p => p.id + p.n + p.room).join() + Object.keys(VC.sent || {}).join() : '';
   if (VC.panelSig === sig || VC.dragging) return;
   VC.panelSig = sig;
@@ -562,8 +734,11 @@ function vcPanelDraw() {
     : 'جارٍ الاتصال…';
   const box = $('vcRooms');
   box.innerHTML = '';
+  // the room you're in first (its controls and the microphone test), then a private room, then the others
+  const cur = VOICE_ROOMS.find(r => r.id === VC.room);
+  if (cur) box.appendChild(vcRoomCard(cur));
   box.appendChild(vcPrivCard());
-  for (const r of VOICE_ROOMS) box.appendChild(vcRoomCard(r));
+  for (const r of VOICE_ROOMS) if (r !== cur) box.appendChild(vcRoomCard(r));
   vcTalkDraw();
 }
 /** The private room: in it, its card with the code to pass on; outside, make one or enter a code. */
@@ -619,8 +794,13 @@ function vcRoomCard(r) {
       here = VC.room === r.id,
       card = el('div', 'vcRoom' + (here ? ' here' : '') + (vcPriv(r.id) ? ' priv' : ''));
     const top = el('div', 'vcRoomTop');
-    top.append(el('b', '', (vcPriv(r.id) ? '🔒 ' : '🎧 ') + r.n), el('small', '', r.d + ' · ' + ppl.length));
-    if (!here) {
+    const full = !here && ppl.length >= VC_MAX;
+    top.append(
+      el('b', '', (vcPriv(r.id) ? '🔒 ' : '🎧 ') + r.n),
+      el('small', '', r.d + ' · ' + ppl.length + '/' + VC_MAX + (full ? ' مليانة' : ''))
+    );
+    if (!here && full) top.appendChild(el('button', 'btn sm', 'مليانة')).disabled = true;
+    else if (!here) {
       const go = el('button', 'btn sm go', VC.room ? 'انتقل لها' : 'ادخل');
       go.onclick = () => vcJoin(r.id);
       top.appendChild(go);
@@ -672,6 +852,16 @@ function vcRoomCard(r) {
       };
       ctl.append(mic, deaf, inv, out);
       card.appendChild(ctl);
+      if (VC.testOpen || ppl.length <= 1) card.appendChild(vcTestCard(ppl.length <= 1));
+      else {
+        const t = el('button', 'btn sm vcTestBtn', '🎙️ جرّب مايكك');
+        t.onclick = () => {
+          VC.testOpen = true;
+          VC.panelSig = '';
+          vcPanelDraw();
+        };
+        card.appendChild(t);
+      }
       if (VC.inviting) card.appendChild(vcInviteList());
       // everyone's volume at once
       const vr = el('div', 'vcVolAll');
