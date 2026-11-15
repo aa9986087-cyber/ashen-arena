@@ -345,7 +345,8 @@ textarea.txt {
 }
 .rk {
   display: grid;
-  grid-template-columns: 34px 1fr auto auto auto auto;
+  /* fixed columns, so every row lines up under the headings */
+  grid-template-columns: 30px minmax(0, 1fr) 62px 66px 58px 48px;
   gap: 10px;
   align-items: center;
   background: linear-gradient(90deg, rgba(38, 45, 79, 0.95), rgba(20, 22, 40, 0.95));
@@ -1426,4 +1427,114 @@ textarea.txt {
   #vcInv {
     transition: opacity 0.2s;
   }
+}
+
+/* leaderboard: the headings over the columns, and how the order is decided */
+.rkHead {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 62px 66px 58px 48px;
+  gap: 10px;
+  padding: 0 13.5px 6px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--dim);
+}
+.rkHead i {
+  font-style: normal;
+}
+.rkHead b {
+  color: var(--ember);
+}
+.rk > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#bHow {
+  font-size: 20px;
+}
+#bHow[aria-expanded='true'] {
+  box-shadow: 0 0 0 2px var(--gold);
+}
+#bRule {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(246, 196, 90, 0.12), transparent 70%), rgba(14, 14, 28, 0.85);
+  border: 1px solid rgba(246, 196, 90, 0.45);
+  line-height: 1.55;
+}
+#bRule > b {
+  font-size: 16px;
+  color: var(--gold);
+}
+#bRule p {
+  margin: 4px 0;
+  font-size: 13px;
+  color: #e8dfc8;
+}
+#bRule ol {
+  margin: 6px 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: r;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#bRule li {
+  counter-increment: r;
+  display: grid;
+  grid-template-columns: 22px 24px 1fr;
+  align-items: start;
+  gap: 6px;
+  font-size: 13px;
+}
+#bRule li::before {
+  content: counter(r);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--gold);
+  color: #1a1626;
+  font-weight: 800;
+  font-size: 12px;
+}
+#bRule li p {
+  margin: 0;
+}
+#bRule li b {
+  color: #fff;
+  margin-inline-end: 4px;
+}
+.bNote {
+  opacity: 0.85;
+}
+@media (max-width: 480px) {
+  .rk,
+  .rkHead {
+    grid-template-columns: 24px minmax(0, 1fr) 46px 54px 0 42px;
+    gap: 6px;
+  }
+  .rk > small:nth-of-type(2),
+  .rkHead > small:nth-of-type(2) {
+    visibility: hidden;
+    overflow: hidden;
+  }
+}
+.rk > b,
+.rk > small,
+.rkHead > b,
+.rkHead > small {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.rk > b {
+  font-size: 18px;
+}
+.rk > small {
+  font-size: 13px;
 }

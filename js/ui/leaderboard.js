@@ -101,9 +101,14 @@ function drawBoard() {
   $('bName').textContent = '✏️ ' + (S.name || 'اسمك');
   const live = onlineOK && onlineRows,
     list = live ? onlineRows : S.board;
-  $('boardMode').textContent =
-    (live ? '🌐 قائمة مباشرة لكل اللاعبين' : '📱 قائمة هذا الجهاز فقط') +
-    ' · الترتيب: الزعماء اللي هزمتهم، ثم القتلى، ثم الأسرع';
+  $('boardMode').textContent = live ? '🌐 قائمة مباشرة لكل اللاعبين' : '📱 قائمة هذا الجهاز فقط';
+  // how the order is decided: open the first time, then as the player left it (ⓘ)
+  let open = true;
+  try {
+    open = localStorage.getItem('ashen_rule_seen') !== '1';
+  } catch (e) {}
+  $('bRule').hidden = !open;
+  $('bHow').setAttribute('aria-expanded', open);
   if (!live) S.board.sort(rankCmp);
   $('offBox').hidden = !!live;
   if (!list.length) L.appendChild(el('p', '', 'ما فيه نتائج للحين. العب جولة وسجّل أول رقم.'));
@@ -114,9 +119,10 @@ function drawBoard() {
     r.append(
       el('i', '', i + 1),
       profileLink(el('span', '', e.n), e.n),
-      el('b', '', '👑 ' + (e.b || 0)),
-      el('small', '', '💀 ' + e.k),
-      el('small', '', 'مستوى ' + e.l),
+      // just the numbers: the headings over the columns say what each one is
+      el('b', '', e.b || 0),
+      el('small', '', e.k),
+      el('small', '', e.l),
       el('small', '', fmtT(e.t))
     );
     L.appendChild(r);
@@ -150,6 +156,14 @@ $('nameIn').addEventListener('keydown', e => {
   if (e.key === 'Enter') $('nameOk').click();
 });
 $('bName').onclick = askName;
+$('bHow').onclick = () => {
+  const open = $('bRule').hidden;
+  $('bRule').hidden = !open;
+  $('bHow').setAttribute('aria-expanded', open);
+  try {
+    localStorage.setItem('ashen_rule_seen', open ? '0' : '1');
+  } catch (e) {}
+};
 $('bCopy').onclick = () => {
   const me = S.board.find(x => x.n === S.name);
   if (me) copyText(shareText(me));
