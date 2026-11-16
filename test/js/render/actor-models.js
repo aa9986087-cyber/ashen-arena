@@ -6,13 +6,13 @@ const ACTOR_CONFIG = {
   textureEdge: 1024,
   fade: 0.08,
   knight: {
-    file: 'assets/models/overhaul/knight.glb', height: 2.5, yaw: 0, groundOffset: 0,
+    file: 'assets/models/overhaul/knight.glb', height: 3.0, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0,
     clips: {}, handBone: null,
     // PROVISIONAL: actual provider bone axes must be calibrated, not a KayKit socket.
     weapon: { position: [0, 0, 0], rotation: [Math.PI, 0, 0], scale: 1 },
   },
   guardian: {
-    file: 'assets/models/overhaul/guardian.glb', height: null, yaw: 0, groundOffset: 0, clips: {},
+    file: 'assets/models/overhaul/guardian.glb', height: null, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0, clips: {},
   },
 };
 const ACTOR_MODELS = (() => {
@@ -265,7 +265,7 @@ const ACTOR_MODELS = (() => {
     fit.scale.setScalar(asset.fit); offset.position.set(...asset.offset); fit.rotation.y = cfg.yaw;
     const mixer = new THREE.AnimationMixer(asset.root), actions = {};
     for (const role in asset.clips) actions[role] = mixer.clipAction(asset.clips[role]);
-    const a = { key, asset, g, mixer, actions, role: null, current: null, shot: null, previous: null, clock: null, wall: null, seen: {} };
+    const a = { key, asset, g, fit, mixer, actions, role: null, current: null, shot: null, previous: null, clock: null, wall: null, seen: {} };
     mixer.addEventListener('finished', event => { if (event.action === a.current && a.shot !== 'fall') a.shot = null; });
     scene.add(g);
     change(a, 'idle'); mixer.update(0);
@@ -394,6 +394,10 @@ const ACTOR_MODELS = (() => {
     }
     a.g.position.set(p.x, ACTOR_CONFIG.knight.groundOffset, p.z); a.g.rotation.set(0, p.face || 0, 0);
     animate(a, s, move, frozen && !s.dead ? 0 : dt, 0.2, p.swing > 0 ? 1 - p.swing : 0);
+    // The provider's locomotion clips are authored side-on; turn the body back to its facing.
+    const loco = a.role === 'run' || a.role === 'walk';
+    const targetYaw = ACTOR_CONFIG.knight.yaw + (loco ? ACTOR_CONFIG.knight.locomotionYaw : 0);
+    a.fit.rotation.y += (targetYaw - a.fit.rotation.y) * Math.min(1, dt * 14);
     weaponSync(R); return true;
   }
   function destroyBoss() {
@@ -413,6 +417,9 @@ const ACTOR_MODELS = (() => {
     a.g.visible = true; a.g.position.set(e.x, (e.y || 0) + ACTOR_CONFIG.guardian.groundOffset, e.z);
     a.g.rotation.set(0, e.face || 0, 0); a.g.scale.setScalar(e.scale || 1);
     animate(a, s, moving ? (e.st === 2 ? 'run' : 'walk') : 'idle', e.frz > 0 ? 0 : dt, Math.max(0.08, e.stT || 0.5), 0);
+    const loco = a.role === 'run' || a.role === 'walk';
+    const targetYaw = ACTOR_CONFIG.guardian.yaw + (loco ? ACTOR_CONFIG.guardian.locomotionYaw : 0);
+    a.fit.rotation.y += (targetYaw - a.fit.rotation.y) * Math.min(1, dt * 14);
     // Preserve original aura/bar in renderer/HUD; only the old body is suppressed.
     if (typeof bossMesh !== 'undefined') bossMesh.visible = false;
     return true;
