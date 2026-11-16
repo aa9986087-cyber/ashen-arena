@@ -18,7 +18,7 @@ const ACTOR_CONFIG = {
     weapon: { position: [0, 0, 0], rotation: [Math.PI, 0, 0], scale: 1 },
   },
   guardian: {
-    file: 'assets/models/overhaul/guardian.glb', height: null, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0, clips: {},
+    file: 'assets/models/overhaul/guardian-lite.glb', height: null, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0, clips: {},
   },
   bossKnight: {
     file: 'assets/models/boss-knight.glb', height: null, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0, clips: {},

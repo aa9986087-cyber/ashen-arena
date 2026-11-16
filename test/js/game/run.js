@@ -127,9 +127,14 @@ function resumeRun() {
 /** Build the arena for the current G and switch from menus to the HUD. */
 function enterArena() {
   if (typeof closeNews === 'function') closeNews(); // the bulletin belongs to the menu
+  if (typeof resumeModelLoading === 'function') resumeModelLoading();
+  if (typeof loadModels === 'function') loadModels(); // enemy models warm behind the first waves
   $('bSpec').firstChild.textContent = heroSpecial().i;
   setStage(G.stage);
   buildPlayer();
+  setTimeout(() => {
+    if (typeof loadActors === 'function') loadActors().catch(e => console.warn('actors', e));
+  }, 300);
   refreshLoadout();
   goTok++;
   hideScreens();
@@ -161,6 +166,10 @@ function startRun() {
     4.5
   );
   for (let i = 0; i < 6; i++) spawnAround('grunt', false, rand(13, 18));
+  // Warm the boss-only guardian after the arena is live, never while a menu is opening.
+  if (typeof loadBossActor === 'function') {
+    setTimeout(() => loadBossActor(0).catch(e => console.warn('boss actor', e)), 2500);
+  }
 }
 function endRun() {
   if (G.state === 'over') return;
