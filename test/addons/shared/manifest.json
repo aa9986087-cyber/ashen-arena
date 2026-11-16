@@ -1,0 +1,25 @@
+{
+  "id": "shared-actor-runtime",
+  "version": "1.0.0-c0c1701",
+  "sourceRevision": "c0c1701f7c35abc8766c0fd9bdac61417bb524d5",
+  "sourcePath": "test/js/render/actor-models.js",
+  "sourceSha256": "accb3c554a8b1d053ea863ad4778faa89b1c597ca6976849f499e7347b9e8d1d",
+  "entry": "actor-runtime.js",
+  "runtimeSettings": {
+    "textureEdge": 1024,
+    "fade": 0.08
+  },
+  "supportedActorKeys": [
+    "knight",
+    "ranger",
+    "guardian"
+  ],
+  "defaultEnabled": false,
+  "registryOwnedBy": "parent release, not this folder",
+  "code": {
+    "actor-runtime.js": {
+      "sha256": "44d997c47b4a4ff31b962a5b9231c8abbb4bcf94a73c35b26390d157b261b009",
+      "bytes": 35534
+    }
+  }
+}

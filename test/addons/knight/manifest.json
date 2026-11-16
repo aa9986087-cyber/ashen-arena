@@ -1,0 +1,57 @@
+{
+  "id": "knight",
+  "actorKey": "knight",
+  "version": "1.0.0-c0c1701",
+  "sourceRevision": "c0c1701f7c35abc8766c0fd9bdac61417bb524d5",
+  "sourceEngine": "test/js/render/actor-models.js",
+  "sourceEngineSha256": "accb3c554a8b1d053ea863ad4778faa89b1c597ca6976849f499e7347b9e8d1d",
+  "entry": "config.js",
+  "runtime": "../shared/actor-runtime.js",
+  "scripts": [
+    "melee.js",
+    "config.js"
+  ],
+  "assets": {
+    "model.glb": {
+      "sha256": "9f367763d2d88ba24e6991fc21169eb0670d163edced41a30104feabc638e932",
+      "bytes": 3004464,
+      "sourcePath": "test/assets/models/overhaul/knight.glb",
+      "sourceRevision": "c0c1701f7c35abc8766c0fd9bdac61417bb524d5"
+    },
+    "portrait.jpg": {
+      "sha256": "227d97fed64e0392f214afdef5a24c80b556d5af7cbdb2f4a9bbcd6cc2ae4781",
+      "bytes": 6114,
+      "sourcePath": "test/assets/portraits/knight.jpg",
+      "sourceRevision": "c0c1701f7c35abc8766c0fd9bdac61417bb524d5"
+    }
+  },
+  "dependencies": [
+    "parent-owned ASHEN_ADDONS registry",
+    "shared actor-runtime.js",
+    "THREE r128 + GLTFLoader"
+  ],
+  "enabledBy": "ASHEN_ADDONS.enabled(id)",
+  "relativeAssetResolution": "document.currentScript.src; no source-test asset URLs",
+  "scope": "local knight body, upper-body melee, held weapon socket",
+  "code": {
+    "melee.js": {
+      "sha256": "10553bb239d937a8a774946aa9476f0107752619035cd9556bc3c81be662a2ba",
+      "bytes": 2608
+    },
+    "config.js": {
+      "sha256": "81dac2118de993081166b0c4c4f8b8ac4bcd841cdd0711407c337fb004d82205",
+      "bytes": 1299
+    }
+  },
+  "defaultEnabled": false,
+  "sourceMelee": "test/js/game/combat.js",
+  "hooks": [
+    "queueMelee",
+    "updateMelee",
+    "clearMelee"
+  ],
+  "meleeTiming": {
+    "duration": 0.1,
+    "impact": 0.04
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "id": "forest-guardian",
+  "actorKey": "guardian",
+  "version": "1.0.0-c0c1701",
+  "sourceRevision": "c0c1701f7c35abc8766c0fd9bdac61417bb524d5",
+  "sourceEngine": "test/js/render/actor-models.js",
+  "sourceEngineSha256": "accb3c554a8b1d053ea863ad4778faa89b1c597ca6976849f499e7347b9e8d1d",
+  "entry": "config.js",
+  "runtime": "../shared/actor-runtime.js",
+  "scripts": [
+    "config.js"
+  ],
+  "assets": {
+    "model.glb": {
+      "sha256": "42f0173405d09ce24999912cb8f8103d1bb02764fcfbe3426a7c06b036808cfa",
+      "bytes": 2177132,
+      "sourcePath": "test/assets/models/overhaul/guardian-lite.glb",
+      "sourceRevision": "c0c1701f7c35abc8766c0fd9bdac61417bb524d5"
+    }
+  },
+  "dependencies": [
+    "parent-owned ASHEN_ADDONS registry",
+    "shared actor-runtime.js",
+    "THREE r128 + GLTFLoader"
+  ],
+  "enabledBy": "ASHEN_ADDONS.enabled(id)",
+  "relativeAssetResolution": "document.currentScript.src; no source-test asset URLs",
+  "scope": "forest boss kind 0 body only; baseline aura/HUD/cinematic retained",
+  "code": {
+    "config.js": {
+      "sha256": "af217013ee119a6d60b9db99fe7139a71a610de9e438beb74eb0016984cd44cc",
+      "bytes": 854
+    }
+  },
+  "defaultEnabled": false
+}

@@ -1,0 +1,52 @@
+{
+  "id": "ranger",
+  "actorKey": "ranger",
+  "version": "1.0.0-c0c1701",
+  "sourceRevision": "c0c1701f7c35abc8766c0fd9bdac61417bb524d5",
+  "sourceEngine": "test/js/render/actor-models.js",
+  "sourceEngineSha256": "accb3c554a8b1d053ea863ad4778faa89b1c597ca6976849f499e7347b9e8d1d",
+  "entry": "config.js",
+  "runtime": "../shared/actor-runtime.js",
+  "scripts": [
+    "bow-weapon.js",
+    "config.js"
+  ],
+  "assets": {
+    "model.glb": {
+      "sha256": "3ec74d3dc91bff0f8a7709eace04ea89b90e1f92bfa29dc65aec565c33a9cb07",
+      "bytes": 4231932,
+      "sourcePath": "test/assets/models/hero-ranger-fantasy-emerald-bright-v2.glb",
+      "sourceRevision": "c0c1701f7c35abc8766c0fd9bdac61417bb524d5"
+    },
+    "portrait.jpg": {
+      "sha256": "d99647b9905c0773023827d281020543cc124c6b3dd2073d80244ee32ed5a0d8",
+      "bytes": 5951,
+      "sourcePath": "test/assets/portraits/ranger.jpg",
+      "sourceRevision": "c0c1701f7c35abc8766c0fd9bdac61417bb524d5"
+    }
+  },
+  "dependencies": [
+    "parent-owned ASHEN_ADDONS registry",
+    "shared actor-runtime.js",
+    "THREE r128 + GLTFLoader"
+  ],
+  "enabledBy": "ASHEN_ADDONS.enabled(id)",
+  "relativeAssetResolution": "document.currentScript.src; no source-test asset URLs",
+  "scope": "local ranger body, upper-body shot, ranger-only bow override",
+  "code": {
+    "bow-weapon.js": {
+      "sha256": "ae418f1032e6b53b25455166d02974487dbec2f12eb98f24f423a158dcf6517b",
+      "bytes": 1053
+    },
+    "config.js": {
+      "sha256": "34454ba4dd794a9bac0cc54d4bd29b8143db83d9f672c0bf39ee1e6ad244056b",
+      "bytes": 1260
+    }
+  },
+  "defaultEnabled": false,
+  "sourceBow": "test/js/render/player-model.js",
+  "hooks": [
+    "weapon"
+  ],
+  "sourcePalette": "styleRanger in test/js/render/actor-models.js"
+}
