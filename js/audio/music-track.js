@@ -30,6 +30,8 @@ const CM = {
     if (!MUSIC[key]) key = 'menu';
     this.on = true;
     if (this.cur === key) return this.kick();
+    const old = this.el.get(this.cur);
+    if (old) old.volume = Math.min(old.volume, 0.2); // never two songs at full voice
     this.cur = key;
     this.state = 'load';
     this.kick();
@@ -48,10 +50,15 @@ const CM = {
   /** Per frame: follow the game state and glide every volume toward its target. */
   tick() {
     if (!this.on) return;
-    const key = musicFor(G.state, MUS.boss);
+    let key = musicFor(G.state, MUS.boss);
+    // cards and pause: keep the theme that was already playing, so no two songs trade places mid-choice
+    if ((G.state === 'cards' || G.state === 'paused') && (this.cur === 'run' || this.cur === 'boss')) key = this.cur;
+    // a win/lose sting plays alone over the results: the bed waits, then the menu fades in
+    const stinging = this.stings.size > 0;
+    if (stinging && G.state === 'over') key = this.cur;
     if (key !== this.cur) this.set(key);
     const paused = G.state === 'paused',
-      duck = paused ? 0.35 : 1,
+      duck = (paused ? 0.35 : 1) * (G.state === 'cards' ? 0.45 : 1) * (stinging ? 0.15 : 1),
       mus = S.set.mus;
     for (const [k, a] of this.el) {
       let target = 0;
@@ -60,8 +67,9 @@ const CM = {
           (k === 'menu' ? MUSIC_VOL.menu : k === 'boss' ? MUSIC_VOL.boss : MUSIC_VOL.run + MUSIC_VOL.runPeak * MUS.i) *
           mus *
           duck;
-      a.volume = clamp(a.volume + (target - a.volume) * 0.06, 0, 1);
-      if (a.volume <= 0.002 && !a.paused && (k !== this.cur || mus <= 0)) a.pause();
+      a.volume = clamp(a.volume + (target - a.volume) * 0.12, 0, 1); // a quick, clean crossfade
+      if (k === this.cur && target > 0.01 && a.paused) this.kick(); // the slider went back up: resume
+      if (a.volume <= 0.004 && !a.paused && (k !== this.cur || mus <= 0)) a.pause();
     }
     for (const s of this.stings) {
       s.volume = clamp(s.volume + (mus * MUSIC_VOL.sting - s.volume) * 0.2, 0, 1);
@@ -76,6 +84,7 @@ const CM = {
     const p = a.play();
     if (p && p.catch) p.catch(() => {});
     a.addEventListener('ended', () => this.stings.delete(a));
+    setTimeout(() => this.stings.delete(a), 15000); // a blocked or stuck clip never silences the menu
     this.stings.add(a);
   },
   /** Warm the cache of the themes a run will need, without playing them. */

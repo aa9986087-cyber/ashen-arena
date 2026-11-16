@@ -2,6 +2,7 @@
 /* Boss defeat, stage progression, the ending/abyss choice and achievements. */
 /** Remove the boss bar/mesh and boss music state. */
 function hideBoss() {
+  if (typeof bossIntroClear === 'function') bossIntroClear();
   G.bossOn = false;
   G.boss = null;
   bossMesh.visible = false;

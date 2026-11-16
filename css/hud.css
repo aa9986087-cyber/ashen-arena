@@ -183,6 +183,9 @@
     0 0 12px rgba(0, 0, 0, 0.8);
 }
 /* boss: name between ornaments over a framed bar */
+#bossbar[hidden] {
+  display: none;
+}
 #bossbar {
   margin: 8px auto 0;
   max-width: 560px;
@@ -764,4 +767,85 @@ body.mouse .act.big {
       0 0 0 2px #ff3b4a,
       0 0 18px #ff3b4a;
   }
+}
+
+/* boss entrance: letterbox bars and the name plate over a frozen arena */
+#bossCine {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+#bossCine.on {
+  opacity: 1;
+}
+#bossCine .cineBar {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 0;
+  background: #050408;
+  transition: height 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+#bossCine .cineBar.top {
+  top: 0;
+}
+#bossCine .cineBar.bot {
+  bottom: 0;
+}
+#bossCine.on .cineBar {
+  height: 9vh;
+}
+#bossCine .cineTitle {
+  position: absolute;
+  top: 10.5%;
+  right: 0;
+  left: 0;
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(-12px) scale(0.96);
+  transition:
+    opacity 0.5s 0.35s,
+    transform 0.6s 0.35s;
+}
+#bossCine.on .cineTitle {
+  opacity: 1;
+  transform: none;
+}
+#bossCine .cineTitle span {
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.5em;
+  text-shadow: 0 0 12px rgba(246, 196, 90, 0.6);
+}
+#bossCine .cineTitle b {
+  color: #fff4dc;
+  font-family: var(--display);
+  font-size: clamp(30px, 8vw, 56px);
+  line-height: 1.1;
+  text-shadow:
+    0 0 26px rgba(255, 120, 40, 0.55),
+    0 3px 0 #3a1206;
+}
+@media (max-width: 560px) {
+  #bossCine .cineTitle {
+    top: 11%;
+  }
+}
+
+/* the entrance clears the HUD: only the letterbox, the name and the boss */
+body.cineOn #banner,
+body.cineOn #stageInfo,
+body.cineOn #loadout,
+body.cineOn #stats,
+body.cineOn #pauseBtn,
+body.cineOn #bSpec {
+  opacity: 0;
+  transition: opacity 0.3s;
 }

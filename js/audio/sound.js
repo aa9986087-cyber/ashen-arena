@@ -44,7 +44,7 @@ const AU = {
   },
   vol() {
     if (!this.ctx) return;
-    this.sg.gain.value = Math.min(1, S.set.sfx * 1.25); // the fight sits above the music bed
+    this.sg.gain.value = Math.min(1, S.set.sfx * 1.45); // the fight sits above the music bed
     this.ug.gain.value = S.set.sfx * 0.85; // button clips stay gentle
     this.mg.gain.value = S.set.mus * 0.55;
   },
@@ -298,6 +298,10 @@ const M_CH = [
   ];
 const GAP = {
   heart2: 500,
+  level: 1200, // one level-up jingle at a time, never two over each other
+  legend: 400,
+  win: 400,
+  over: 900,
   select: 70,
   hit: 55,
   kill: 60,

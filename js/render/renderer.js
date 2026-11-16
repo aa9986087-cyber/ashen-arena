@@ -79,7 +79,8 @@ function render(dt, now) {
     M2.light.intensity = M2.rim.intensity = 0;
   }
   // camera
-  if (playing) {
+  if (typeof CINE !== 'undefined' && CINE.on) bossIntroCamera();
+  else if (playing) {
     const portrait = W < H,
       ch = portrait ? 31 : 24,
       cd = portrait ? 17 : 15,

@@ -130,9 +130,11 @@ function spawnBoss() {
     a = Math.random() * TAU;
   G.bossName = G.forceBoss != null ? bossNameOf(k) : G.abyss ? 'ظلّ ' + bossNameOf(k) : STAGES[G.stage].boss;
   makeBoss(k, p.x + Math.cos(a) * 20, p.z + Math.sin(a) * 20);
-  AU.play('boss');
-  shake(0.8);
-  banner(G.bossName, 'الزعيم وصل. اقرأ هجماته وراوغ الدوائر الحمراء.', 3);
+  if (!bossIntroStart(G.boss)) {
+    AU.play('boss');
+    shake(0.8);
+    banner(G.bossName, 'الزعيم وصل. اقرأ هجماته وراوغ الدوائر الحمراء.', 3);
+  }
 }
 /** The boss of kind k at (x,z), quietly (co-op: a new host takes over the boss already fighting). */
 function makeBoss(k, x, z) {

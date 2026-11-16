@@ -218,6 +218,10 @@ function forOrbitBlades(fn) {
   }
 }
 function update(dt) {
+  if (typeof CINE !== 'undefined' && CINE.on) {
+    bossIntroUpdate(dt); // the boss entrance: every enemy, shot and timer stays exactly where it was
+    if (CINE.freeze) return;
+  }
   const p = G.p,
     cc = COOP.on && !COOP.host; // a co-op client mirrors the world (coopMirror), it doesn't run it
   G.t += dt;
