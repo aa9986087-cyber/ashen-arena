@@ -75,6 +75,7 @@ function resumeRun() {
   }
   AU.init();
   S.char = o.char;
+  if (typeof loadActor === 'function') loadActor(o.char);
   newRun();
   Object.assign(G, {
     state: 'count',

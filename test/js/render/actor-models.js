@@ -583,9 +583,11 @@ const ACTOR_MODELS = (() => {
       bossRig.mixer.update(Math.max(0, Math.min(0.1, (now - tail.last) / 1000))); tail.last = now;
     } else if (bossEntity && (typeof G === 'undefined' || !G || G.boss !== bossEntity)) destroyBoss();
   }
-  function load() {
+  function load(keys) {
     if (!THREE.GLTFLoader || (typeof IS_SANDBOX !== 'undefined' && IS_SANDBOX) ||
       (typeof location !== 'undefined' && !/^https?:$/.test(location.protocol))) return Promise.resolve([]);
+    const list = (Array.isArray(keys) ? keys : [keys]).filter(k => ACTOR_CONFIG[k]);
+    if (!list.length) return Promise.resolve([]);
     const token = generation, loader = new THREE.GLTFLoader();
     // Snapshot BEFORE old loadModels replaces GEO.boss0 asynchronously.
     const cfg = ACTOR_CONFIG.guardian;
@@ -596,7 +598,7 @@ const ACTOR_MODELS = (() => {
     if (!bossCfg.height && typeof GEO !== 'undefined' && GEO.boss2) {
       GEO.boss2.computeBoundingBox(); bossCfg.height = GEO.boss2.boundingBox.max.y - GEO.boss2.boundingBox.min.y;
     }
-    return Promise.all(['knight', 'ranger', 'guardian', 'bossKnight'].map(key => {
+    return Promise.all(list.map(key => {
       if (assets[key]) return Promise.resolve(true);
       if (pending[key]) return pending[key];
       pending[key] = new Promise(resolve => {
@@ -632,7 +634,12 @@ const ACTOR_MODELS = (() => {
   return { load, buildRig, pose, releaseRig, clearWeapon, weaponSync, notify, bossRender, bossHide, bossFrame, dispose,
     selectClips, pinClip, findHand, diagnostics: () => Object.fromEntries(Object.entries(assets).map(([k, a]) => [k, a.diagnostics])) };
 })();
-function loadActors() { return ACTOR_MODELS.load(); }
+function loadActors() {
+  const key = typeof S !== 'undefined' ? S.char : '';
+  return key === 'knight' || key === 'ranger' ? ACTOR_MODELS.load([key]) : Promise.resolve([]);
+}
+function loadActor(key) { return key === 'knight' || key === 'ranger' ? ACTOR_MODELS.load([key]) : Promise.resolve([]); }
+function loadBossActor(kind) { return kind === 2 ? ACTOR_MODELS.load(['bossKnight']) : Promise.resolve([]); }
 function buildActorRig(R, charId, wep) { return ACTOR_MODELS.buildRig(R, charId, wep); }
 function actorRigPose(R, p, wepId, playing, now) { return ACTOR_MODELS.pose(R, p, wepId, playing, now); }
 function actorReleaseRig(R) { ACTOR_MODELS.releaseRig(R); }

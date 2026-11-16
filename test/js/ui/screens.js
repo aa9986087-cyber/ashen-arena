@@ -134,6 +134,7 @@ function drawChars() {
       onClick: () => {
         if (own) {
           S.char = id;
+          if (typeof loadActor === 'function') loadActor(id);
           save();
           AU.play('select');
           newRun();
@@ -143,6 +144,7 @@ function drawChars() {
           buy(c.cost, () => {
             S.chars[id] = 1;
             S.char = id;
+            if (typeof loadActor === 'function') loadActor(id);
             newRun();
             buildPlayer();
             drawChars();
