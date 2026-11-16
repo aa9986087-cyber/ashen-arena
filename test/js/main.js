@@ -39,7 +39,7 @@ buildPlayer();
 resize();
 drawSet();
 go('menu');
-warmGPU();
+if (typeof startBootLoading === 'function') startBootLoading();
 if (typeof preloadPortraits === 'function') setTimeout(preloadPortraits, 600);
 if (!S.name) askName();
 if (S._mig) {
