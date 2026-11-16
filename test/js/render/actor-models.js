@@ -305,7 +305,7 @@ const ACTOR_MODELS = (() => {
     const swingT = entity.swingT || 0;
     const attack = boss
       ? [1, 3, 4].includes(entity.st) && (newEntity || prev.st !== entity.st || entity.stT > prev.stT + 0.02)
-      : swingT !== (prev.swingT || 0) || (entity.swing > 0 && (newEntity || entity.swing > prev.swing + 0.02 || prev.swing <= 0));
+      : swingT !== ((prev && prev.swingT) || 0) || (entity.swing > 0 && (newEntity || entity.swing > prev.swing + 0.02 || prev.swing <= 0));
     const result = {
       dead, fall: fired('fall') || (dead && (newEntity || !prev.dead)),
       hurt: fired('hurt') || (!newEntity && entity.hp < prev.hp),
