@@ -32,6 +32,104 @@
     <link rel="stylesheet" href="css/duel.css?v=202611160222&rev=local-sample-5ce2145cfb4bf30c" />
     <link rel="stylesheet" href="css/coop.css?v=202611160222&rev=local-sample-dcbd423d133065d3" />
     <link rel="stylesheet" href="css/skill-tree.css?v=202611160222&rev=local-sample-ecddc0875b015d97" />
+    <style id="load-style">
+      #loadScr {
+        position: fixed;
+        inset: 0;
+        z-index: 96;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background:
+          radial-gradient(circle at 50% 38%, rgba(246, 196, 90, 0.12), transparent 42%),
+          linear-gradient(180deg, rgba(8, 9, 16, 0.97), rgba(4, 5, 10, 0.98));
+      }
+      #loadScr::before,
+      #loadScr::after {
+        content: '';
+        position: absolute;
+        left: 10%;
+        right: 10%;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(246, 196, 90, 0.55), transparent);
+      }
+      #loadScr::before {
+        top: 18%;
+      }
+      #loadScr::after {
+        bottom: 18%;
+      }
+      .loadPanel {
+        position: relative;
+        width: min(86vw, 370px);
+        padding: 30px 24px 24px;
+        text-align: center;
+        border: 1px solid rgba(246, 196, 90, 0.38);
+        border-radius: 20px;
+        background: linear-gradient(180deg, rgba(28, 25, 34, 0.94), rgba(10, 10, 17, 0.96));
+        box-shadow:
+          0 22px 60px rgba(0, 0, 0, 0.55),
+          inset 0 1px 0 rgba(255, 231, 170, 0.14);
+      }
+      .loadMark {
+        color: var(--gold);
+        font-family: var(--display);
+        font-size: 13px;
+        letter-spacing: 0.22em;
+        direction: ltr;
+      }
+      .loadRing {
+        width: 54px;
+        height: 54px;
+        margin: 18px auto 12px;
+        border: 2px solid rgba(246, 196, 90, 0.16);
+        border-top-color: var(--gold);
+        border-right-color: rgba(246, 196, 90, 0.55);
+        border-radius: 50%;
+        animation: loadSpin 1.1s linear infinite;
+      }
+      .loadTitle {
+        margin-bottom: 16px;
+        color: var(--parch);
+        font-family: var(--display);
+        font-size: 31px;
+        line-height: 1.15;
+      }
+      .loadBar {
+        height: 7px;
+        overflow: hidden;
+        border: 1px solid rgba(246, 196, 90, 0.22);
+        border-radius: 99px;
+        background: #171720;
+      }
+      .loadBar i {
+        display: block;
+        width: 0;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--gold2), var(--gold), #fff0b0);
+        box-shadow: 0 0 14px rgba(246, 196, 90, 0.55);
+        transition: width 0.12s linear;
+      }
+      .loadStatus {
+        min-height: 20px;
+        margin-top: 12px;
+        color: var(--dim);
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .loadHint {
+        display: block;
+        margin-top: 8px;
+        color: rgba(169, 164, 143, 0.7);
+        font-size: 11px;
+      }
+      @keyframes loadSpin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
     </head>
   <body class="mouse">
     <canvas id="gl"></canvas>
@@ -41,6 +139,16 @@
     <div id="shade"></div>
     <div id="intro">
       <div class="iv"><span>VAMOS</span><i></i><small>يقدّم</small></div>
+    </div>
+    <div id="loadScr" hidden>
+      <div class="loadPanel">
+        <div class="loadMark">ASHEN ARENA</div>
+        <div class="loadRing"></div>
+        <div class="loadTitle">تجهيز الساحة</div>
+        <div class="loadBar"><i id="loadFill"></i></div>
+        <div class="loadStatus" id="loadStatus">نُحمّل الأبطال والوحوش...</div>
+        <small class="loadHint">لحظات وندخل المعركة</small>
+      </div>
     </div>
     <div id="wipe"></div>
 
@@ -634,8 +742,8 @@
 
     <!-- three.js r128 + GLTFLoader (globals: THREE, THREE.GLTFLoader) -->
 
-    <script src="releases/bundle-20261116-v17/vendor.js?v=bundle-20261116-v17"></script>
-    <script src="releases/bundle-20261116-v17/app.js?v=bundle-20261116-v17"></script>
+    <script src="releases/bundle-20261116-v18/vendor.js?v=bundle-20261116-v18"></script>
+    <script src="releases/bundle-20261116-v18/app.js?v=bundle-20261116-v18"></script>
 
 
     <!-- bloom post-processing (used on high quality) -->

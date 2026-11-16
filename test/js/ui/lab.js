@@ -184,7 +184,7 @@ function closeLab() {
 $('labBtn').onclick = openLab;
 $('labClose').onclick = closeLab;
 $('mLab').onclick = () => {
-  startRun();
+  startRun(true);
   G.lab = true;
   G.god = true;
   G.noWaves = true;

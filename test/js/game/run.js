@@ -149,7 +149,46 @@ function runPerks() {
   if (S.tree.U5) G.pending++; // a free upgrade card right away
   if (S.tree.W5) G.coins = 60;
 }
-function startRun() {
+let loadingRun = false;
+/** Warm the HTTP cache during the wait; baking stays on the normal post-entry path so the screen stays smooth. */
+function prefetchArenaAssets() {
+  if (typeof MODEL_FILES !== 'undefined' && typeof MODEL_DIR !== 'undefined')
+    for (const file in MODEL_FILES) fetch(MODEL_DIR + file + '?v=' + MODEL_VER, { cache: 'force-cache' }).catch(() => {});
+  if (typeof ACTOR_CONFIG !== 'undefined')
+    for (const key in ACTOR_CONFIG) {
+      const a = ACTOR_CONFIG[key];
+      fetch(a.file + '?v=' + a.version, { cache: 'force-cache' }).catch(() => {});
+    }
+}
+/** Give the browser a short, explicit loading window so the arena does not open half-loaded. */
+function startRun(skipLoading) {
+  if (loadingRun) return;
+  if (skipLoading === true) return beginRun();
+  loadingRun = true;
+  const overlay = $('loadScr'),
+    fill = $('loadFill'),
+    status = $('loadStatus'),
+    t0 = performance.now(),
+    wait = 5000;
+  if (overlay) overlay.hidden = false;
+  if (typeof resumeModelLoading === 'function') resumeModelLoading();
+  prefetchArenaAssets();
+  if (typeof CM !== 'undefined' && CM.prefetch) CM.prefetch(['run', 'boss']);
+  const tick = () => {
+    const k = Math.min(1, (performance.now() - t0) / wait),
+      left = Math.max(0, Math.ceil(5 - k * 5));
+    if (fill) fill.style.width = Math.round(k * 100) + '%';
+    if (status) status.textContent = left ? 'نُحمّل الأبطال والوحوش... ' + left : 'الساحة جاهزة، ندخل الآن';
+    if (k < 1) requestAnimationFrame(tick);
+  };
+  tick();
+  setTimeout(() => {
+    if (overlay) overlay.hidden = true;
+    loadingRun = false;
+    beginRun();
+  }, wait);
+}
+function beginRun() {
   AU.init();
   clearRun();
   newRun();

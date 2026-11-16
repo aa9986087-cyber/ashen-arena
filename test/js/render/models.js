@@ -210,9 +210,9 @@ function loadModels() {
   modelsStarted = true;
   if (!THREE.GLTFLoader || !/^https?:$/.test(location.protocol) || IS_SANDBOX) return;
   const L = new THREE.GLTFLoader();
-  // Menus use static thumbnails now, so gameplay models (enemies and bosses) go first.
+  // Menus use static thumbnails now: early-wave enemies first, then heroes, then the heavy boss models.
   const files = Object.keys(MODEL_FILES).sort((a, b) => {
-    const rank = f => (f.startsWith('hero-') ? 2 : f.startsWith('boss-') ? 0 : 1);
+    const rank = f => (f.startsWith('boss-') ? 2 : f.startsWith('hero-') ? 1 : 0);
     return rank(a) - rank(b);
   });
   let nextFile = 0;
@@ -279,5 +279,5 @@ function loadModels() {
       }
     );
   }
-  loadNext();
+  scheduleNext(); // let the first arena frame paint before the first bake
 }
