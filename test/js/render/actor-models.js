@@ -2,7 +2,7 @@
 /* SAMPLE only: one local knight and one forest guardian. No baked geometry/crowd changes.
    See runtime-integration.md for the small parent-owned hooks. No loading side effects. */
 const ACTOR_CONFIG = {
-  version: 3,
+  version: 4,
   textureEdge: 1024,
   fade: 0.08,
   knight: {
@@ -13,8 +13,8 @@ const ACTOR_CONFIG = {
   },
   ranger: {
     // Fantasy ranger silhouette: hooded rogue/cape, not the uncovered generic rogue.
-    file: 'assets/models/hero-ranger-fantasy-emerald-bright.glb', height: 2.5, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0,
-    clips: { idle: 'idle', run: 'run', attack: 'shoot', hurt: 'hurt', fall: 'fall' }, handBone: 'R_Hand',
+    file: 'assets/models/hero-ranger-fantasy-emerald-bright-v2.glb', height: 2.5, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0,
+    clips: { idle: 'idle', run: 'run', attack: 'shoot', hurt: 'hurt', fall: 'fall' }, handBone: null,
     weapon: { position: [0, 0, 0], rotation: [Math.PI, 0, 0], scale: 1 },
   },
   guardian: {
