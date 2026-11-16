@@ -318,7 +318,7 @@ function update(dt) {
     }
     fire(w, ang);
     // A close target makes the hero's slash visible; far shots keep the run/idle pose.
-    if (t && Math.hypot(t.x - p.x, t.z - p.z) < 3.2) { p.swing = 1; p.swingT = (p.swingT || 0) + 1; }
+    if (t && Math.hypot(t.x - p.x, t.z - p.z) < 5) { p.swing = 1; p.swingT = (p.swingT || 0) + 1; }
     // double strike: sometimes the weapon fires again right away
     if (G.ups.mirror && Math.random() < 0.2 * G.ups.mirror) fire(w, ang + rand(-0.15, 0.15));
     w.cd = d.cd * (1 - 0.05 * (w.lvl - 1)) * (w.evo && w.id === 'rifle' ? 0.14 : 1);

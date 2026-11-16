@@ -398,7 +398,7 @@ const ACTOR_MODELS = (() => {
     // run cycle, so the body only swaps to the attack clip beside a nearby enemy.
     const close = (() => {
       const es = (typeof G !== 'undefined' && G.enemies) || [];
-      for (const e of es) if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) < 3.2) return true;
+      for (const e of es) if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) < 5) return true;
       return false;
     })();
     if ((p.moving && !p.dashT) || !close) { s.attack = false; if (a.shot === 'attack') a.shot = null; }
