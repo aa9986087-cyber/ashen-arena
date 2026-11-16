@@ -9,7 +9,7 @@ const MODEL_FILES = {
   'hero-knight.glb': 'hero:knight',
   'hero-berserker.glb': 'hero:berserker',
   'hero-mage.glb': 'hero:mage',
-  'hero-ranger.glb': 'hero:ranger',
+  'hero-ranger-fantasy-emerald-bright-v2.glb': 'hero:ranger',
   'hero-assassin.glb': 'hero:assassin',
   // Quaternius SWAT with gun clips retargeted from the cyberpunk character (tools/retarget-swat.html);
   // a dark uniform: lifted colours so it reads on the dark arena and the hero card
@@ -29,7 +29,7 @@ const MODEL_FILES = {
   'boss-flame.glb': { to: 'boss5', size: 0.85 }, // wide wings
 };
 /** Bump to make browsers fetch updated model files. */
-const MODEL_VER = 8;
+const MODEL_VER = 9;
 const lin2s = v => (v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
 function texSampler(tex) {
   try {
@@ -178,7 +178,7 @@ function bakeModel(root, animations, targetH, scary, lift) {
   const clips = {},
     mixer = animations && animations.length ? new THREE.AnimationMixer(root) : null;
   for (const role in ANIM_FRAMES) {
-    const clip = mixer && animations.find(a => a.name === role);
+    const clip = mixer && animations.find(a => a.name === role || (role === 'attack' && a.name === 'shoot'));
     if (!clip) continue;
     const act = mixer.clipAction(clip).play(),
       k = ANIM_FRAMES[role];
