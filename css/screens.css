@@ -468,25 +468,30 @@ textarea.txt {
 .podMedal {
   font-size: 20px;
 }
-.podAva {
-  display: grid;
-  width: 44px;
-  height: 44px;
-  place-items: center;
+.pod .cav {
+  width: 46px;
+  height: 46px;
   border: 2px solid var(--gold);
-  border-radius: 50%;
-  background: linear-gradient(160deg, #3a4268, #171a2e);
-  color: var(--gold);
-  font-family: var(--display);
   font-size: 18px;
+  font-family: var(--display);
 }
-.pod2 .podAva {
+.pod2 .cav {
   border-color: #cfd6e4;
-  color: #cfd6e4;
 }
-.pod3 .podAva {
+.pod3 .cav {
   border-color: #d08a52;
-  color: #e0a06a;
+}
+.rkHeadRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.rk .cav {
+  width: 28px;
+  height: 28px;
+  border-width: 1.5px;
+  font-size: 12px;
 }
 .pod b {
   max-width: 100%;
@@ -551,6 +556,8 @@ textarea.txt {
   min-width: 0;
 }
 .rkName {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   font-size: 14px;
   line-height: 1.3;

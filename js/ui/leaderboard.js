@@ -141,7 +141,7 @@ function podCard(e, place) {
   p.onclick = () => profileOpen(e.n);
   p.append(
     el('span', 'podMedal', ['🥇', '🥈', '🥉'][place - 1]),
-    el('span', 'podAva', e.n.slice(0, 2)),
+    avatarEl(e.n),
     el('b', '', e.n),
     el('strong', '', e.text),
     el('small', '', e.sub)
@@ -181,11 +181,15 @@ function drawBoard() {
       r = el('div', 'rk' + (e.n === S.name ? ' me' : ''));
     r.style.setProperty('--w', pct + '%');
     r.onclick = () => profileOpen(e.n); // the whole row opens the player's card
-    const body = el('div', 'rkBody');
-    body.append(profileLink(el('span', 'rkName', e.n), e.n), el('small', '', e.sub));
+    const body = el('div', 'rkBody'),
+      head = el('div', 'rkHeadRow');
+    head.append(avatarEl(e.n), profileLink(el('span', 'rkName', e.n), e.n));
+    body.append(head, el('small', '', e.sub));
     r.append(el('i', '', i + 4), el('span', 'rkFill'), body, el('b', '', e.text));
     L.appendChild(r);
   });
+  // the players' pictures: whoever has one shows it, the rest keep their first letter
+  if (typeof avatarFetch === 'function') avatarFetch(ranked.map(e => e.n));
   $('boardMode').textContent = live
     ? '🌐 قائمة مباشرة لكل اللاعبين · تتحدث بعد كل جولة'
     : '📱 قائمة هذا الجهاز فقط · افتح الاتصال لترى قائمة كل اللاعبين';

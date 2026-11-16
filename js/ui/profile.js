@@ -164,4 +164,5 @@ function profileLink(elm, name) {
   };
   return elm;
 }
+$('mProfile').onclick = () => (S.name ? profileOpen(S.name) : askName());
 setTimeout(profileSync, 4000);

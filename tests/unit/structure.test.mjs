@@ -99,4 +99,6 @@ test('hall of ash has five boards, a throne and an accessible rules panel', asyn
   assert.ok(html.some(t => t.attrs.id === 'bHow' && t.attrs['aria-expanded'] === 'false'));
   assert.match(src, /قاعة المجد/);
   assert.match(src, /js\/ui\/board-rank\.js/);
+  assert.ok(html.some(t => t.attrs.id === 'mProfile' && t.attrs['aria-label'] === 'ملفك الشخصي'));
+  assert.match(await read('js/ui/profile.js'), /\$\('mProfile'\)\.onclick/);
 });
