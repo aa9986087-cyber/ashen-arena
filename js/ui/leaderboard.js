@@ -181,13 +181,9 @@ function drawBoard() {
       r = el('div', 'rk' + (e.n === S.name ? ' me' : ''));
     r.style.setProperty('--w', pct + '%');
     r.onclick = () => profileOpen(e.n); // the whole row opens the player's card
-    r.append(
-      el('i', '', i + 4),
-      el('span', 'rkFill'),
-      profileLink(el('span', 'rkName', ''), e.n),
-      el('b', '', e.text),
-      el('small', '', e.sub)
-    );
+    const body = el('div', 'rkBody');
+    body.append(profileLink(el('span', 'rkName', e.n), e.n), el('small', '', e.sub));
+    r.append(el('i', '', i + 4), el('span', 'rkFill'), body, el('b', '', e.text));
     L.appendChild(r);
   });
   $('boardMode').textContent = live

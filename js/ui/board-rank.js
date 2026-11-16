@@ -64,36 +64,36 @@ function boardRank(rows, id, now) {
     switch (id) {
       case 'week':
         keep = r.wk === wk && (wb > 0 || wkk > 0);
-        text = wb > 0 ? wb + ' زعيم' : wkk + ' قتلة';
-        sub = wkk + ' قتلة · ' + fmtT(r.wt | 0) + ' صمود';
+        text = wb > 0 ? '👑 ' + wb + ' زعيم' : '💀 ' + wkk + ' قتلة';
+        sub = '💀 ' + wkk + ' · ⏱ ' + fmtT(r.wt | 0);
         num = wb * 100000 + Math.min(99999, wkk);
         cmp = (a, c) => (c.wb | 0) - (a.wb | 0) || (c.wkk | 0) - (a.wkk | 0) || (a.wft | 0 || 1e9) - (c.wft | 0 || 1e9);
         break;
       case 'endure':
         keep = t > 0;
-        text = fmtT(t);
-        sub = b + ' زعيم · ' + k + ' قتلة';
+        text = '⏱ ' + fmtT(t);
+        sub = '👑 ' + b + ' · 💀 ' + k;
         num = t;
         cmp = (a, c) => (c.t | 0) - (a.t | 0) || (c.b | 0) - (a.b | 0) || (c.k | 0) - (a.k | 0);
         break;
       case 'bosses':
         keep = b > 0;
-        text = b + ' زعيم';
-        sub = k + ' قتلة · مستوى ' + (r.lvl | 0);
+        text = '👑 ' + b + ' زعيم';
+        sub = '💀 ' + k + ' · ⭐ ' + (r.lvl | 0);
         num = b;
         cmp = (a, c) => (c.b | 0) - (a.b | 0) || (c.k | 0) - (a.k | 0) || (a.t | 0) - (c.t | 0);
         break;
       case 'fast':
         keep = ft > 0;
-        text = fmtT(ft);
-        sub = b + ' زعيم إجمالاً';
+        text = '⚡ ' + fmtT(ft);
+        sub = '👑 ' + b + ' إجمالاً';
         num = ft;
         cmp = (a, c) => (a.ft | 0) - (c.ft | 0) || (c.b | 0) - (a.b | 0);
         break;
       default:
         keep = k > 0;
-        text = k + ' قتلة';
-        sub = b + ' زعيم · ' + fmtT(t) + ' صمود';
+        text = '💀 ' + k + ' قتلة';
+        sub = '👑 ' + b + ' · ⏱ ' + fmtT(t);
         num = k;
         cmp = (a, c) => (c.k | 0) - (a.k | 0) || (c.b | 0) - (a.b | 0) || (c.t | 0) - (a.t | 0);
     }

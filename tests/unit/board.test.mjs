@@ -47,9 +47,10 @@ test('boardRank orders every board by its own feat and drops empty rows', () => 
   assert.equal(names('fast'), 'D,A,B'); // nobody without a boss kill
   assert.equal(names('week'), 'A,B,D'); // C's numbers belong to last week
   const week = JSON.parse(run(`JSON.stringify(boardRank(${JSON.stringify(rows)}, 'week', new Date(2026, 10, 18)))`));
-  assert.equal(week[0].text, '3 زعيم');
-  assert.equal(week[0].sub, '40 قتلة · 6:40 صمود');
+  assert.equal(week[0].text, '👑 3 زعيم');
+  assert.equal(week[0].sub, '💀 40 · ⏱ 6:40');
   const fast = JSON.parse(run(`JSON.stringify(boardRank(${JSON.stringify(rows)}, 'fast', new Date(2026, 10, 18)))`));
-  assert.equal(fast[0].text, '1:30');
+  assert.equal(fast[0].text, '⚡ 1:30');
+  assert.equal(fast[0].sub, '👑 1 إجمالاً');
   assert.equal(run('boardMetric("nope").id'), 'week');
 });
