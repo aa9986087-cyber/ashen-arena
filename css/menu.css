@@ -278,6 +278,9 @@
   place-items: center;
   animation: introOut 0.6s 2s forwards;
 }
+#intro {
+  pointer-events: none;
+}
 #intro.done {
   display: none;
 }
