@@ -326,6 +326,34 @@ function zone(x, z, r, delay, dmg, friendly, kind) {
 function slashFx(ang, tier, R, x, z) {
   G.slashes.push({ a: ang, tier, R, l: 0, x: x === undefined ? G.p.x : x, z: z === undefined ? G.p.z : z });
 }
+const MELEE_TIMING = { duration: 0.1, impact: 0.04 };
+function queueMeleeImpact(apply) {
+  const queue = G.meleeSwings || (G.meleeSwings = []);
+  let cycle = queue[queue.length - 1];
+  if (!cycle || G.t >= cycle.start + MELEE_TIMING.impact || cycle.done) {
+    const previous = G.p.meleeVisual;
+    const start = previous ? Math.max(G.t, previous.start + MELEE_TIMING.duration) : G.t;
+    cycle = { id: (G.meleeSerial = (G.meleeSerial || 0) + 1), start, player: G.p, jobs: [] };
+    queue.push(cycle);
+  }
+  cycle.jobs.push(apply);
+  updateMeleeImpacts();
+}
+function updateMeleeImpacts() {
+  if (G.state !== 'play' || G.p.dead || choosingCards()) return;
+  const queue = G.meleeSwings;
+  if (!queue) return;
+  for (const cycle of queue) {
+    if (cycle.player !== G.p || cycle.done || G.t < cycle.start) continue;
+    G.p.meleeVisual = cycle;
+    if (G.t + 1e-8 < cycle.start + MELEE_TIMING.impact) continue;
+    cycle.done = true;
+    // One impact tests the whole existing arc, not a separate animation per enemy.
+    for (const apply of cycle.jobs) apply();
+    cycle.jobs.length = 0;
+  }
+  G.meleeSwings = queue.filter(c => !c.done && c.player === G.p);
+}
 function fire(w, ang) {
   const p = G.p,
     d = WEP[w.id],
@@ -337,59 +365,61 @@ function fire(w, ang) {
   p.swing = 1;
   p.swingT = (p.swingT || 0) + 1;
   if (typeof actorNotify === 'function') actorNotify(p, 'attack');
-  AU.play(w.id);
+  if (!d.melee) AU.play(w.id);
   if (d.melee) {
-    // a blow in front: the katana is quick and light, the club heavy and sends them flying
-    const club = w.id === 'hammer',
-      full = ev && club,
-      arc = full ? TAU : d.arc[t],
-      R = d.range * p.area * (t === 2 ? 1.25 : 1),
-      kb = d.kb * (club && t === 2 ? 1.4 : 1);
     const applyMelee = () => {
-      for (const e of G.enemies) {
-        if (e.dead) continue;
-        const dx = e.x - p.x,
-          dz = e.z - p.z,
-          dd = Math.hypot(dx, dz);
-        if (dd < R + e.r && (arc >= TAU || angDiff(Math.atan2(dz, dx), ang) < arc / 2))
-          hit(e, dmg, { kb, ang: Math.atan2(dz, dx) });
-      }
-      slashFx(ang, arc >= TAU ? 2 : Math.min(t, 1), R, r1(p.x), r1(p.z));
-    };
-    // The enemy falls on the slash's impact frame, not before the animation.
-    setTimeout(applyMelee, 70);
-    if (club) {
-      shake(0.25);
-      // the spiked club: a shockwave rolls out all around
-      if (ev) {
-        ring(p.x, p.z, 0.5, R * 2.2, 0.4, [1.6, 0.8, 0.3]);
-        eachInRadius(p.x, p.z, R * 2.2, e => {
-          const a = Math.atan2(e.z - p.z, e.x - p.x);
-          hit(e, dmg * 0.4, { kb: 22, ang: a, quiet: 1 });
-        });
-      }
-    } else if (ev)
-      for (let i = 0; i < 6; i++)
-        shot(p.x, p.z, ang + (i / 6) * TAU, {
-          spd: 20,
-          dmg: dmg * 0.5,
-          size: 0.7,
-          pierce: 6,
-          life: 0.55,
+      AU.play(w.id);
+      // a blow in front: the katana is quick and light, the club heavy and sends them flying
+      const club = w.id === 'hammer',
+        full = ev && club,
+        arc = full ? TAU : d.arc[t],
+        R = d.range * p.area * (t === 2 ? 1.25 : 1),
+        kb = d.kb * (club && t === 2 ? 1.4 : 1);
+        for (const e of G.enemies) {
+          if (e.dead) continue;
+          const dx = e.x - p.x,
+            dz = e.z - p.z,
+            dd = Math.hypot(dx, dz);
+          if (dd < R + e.r && (arc >= TAU || angDiff(Math.atan2(dz, dx), ang) < arc / 2))
+            hit(e, dmg, { kb, ang: Math.atan2(dz, dx) });
+        }
+        slashFx(ang, arc >= TAU ? 2 : Math.min(t, 1), R, r1(p.x), r1(p.z));
+      if (club) {
+        shake(0.25);
+        // the spiked club: a shockwave rolls out all around
+        if (ev) {
+          ring(p.x, p.z, 0.5, R * 2.2, 0.4, [1.6, 0.8, 0.3]);
+          eachInRadius(p.x, p.z, R * 2.2, e => {
+            const a = Math.atan2(e.z - p.z, e.x - p.x);
+            hit(e, dmg * 0.4, { kb: 22, ang: a, quiet: 1 });
+          });
+        }
+      } else if (ev)
+        for (let i = 0; i < 6; i++)
+          shot(p.x, p.z, ang + (i / 6) * TAU, {
+            spd: 20,
+            dmg: dmg * 0.5,
+            size: 0.7,
+            pierce: 6,
+            life: 0.55,
+            kind: 5,
+            col,
+            fx: 'burn',
+          });
+      for (let i = 0; i < p.multi; i++)
+        shot(p.x, p.z, ang + (i - (p.multi - 1) / 2) * 0.3, {
+          spd: 22,
+          dmg: dmg * 0.6,
+          size: 0.6,
+          pierce: 4,
+          life: 0.5,
           kind: 5,
           col,
-          fx: 'burn',
         });
-    for (let i = 0; i < p.multi; i++)
-      shot(p.x, p.z, ang + (i - (p.multi - 1) / 2) * 0.3, {
-        spd: 22,
-        dmg: dmg * 0.6,
-        size: 0.6,
-        pierce: 4,
-        life: 0.5,
-        kind: 5,
-        col,
-      });
+    };
+    if (typeof PM !== 'undefined' && PM.actor && PM.actor.upperActions && PM.actor.upperActions.attack)
+      queueMeleeImpact(applyMelee);
+    else applyMelee(); // Keep legacy/fallback characters' original instant combat.
   } else if (d.chain) {
     // lightning whip: chains that jump between enemies (frozen for a moment when evolved)
     const jumps = 3 + t + (ev ? 2 : 0),

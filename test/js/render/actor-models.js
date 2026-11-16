@@ -256,6 +256,33 @@ const ACTOR_MODELS = (() => {
     for (const t of asset.rest) { t.o.position.copy(t.p); t.o.quaternion.copy(t.q); t.o.scale.copy(t.s); }
     asset.root.updateMatrixWorld(true);
   }
+  // Disjoint arm/body masks: no attack track can touch hips, roots, legs or feet.
+  function knightLayers(asset) {
+    const arms = new Set();
+    asset.root.traverse(o => {
+      if (o.isBone && /^(leftshoulder|rightshoulder)$/.test(compact(o.name).replace(/^mixamorig/, '')))
+        o.traverse(b => arms.add(b));
+    });
+    const split = (clip, upper) => {
+      const copy = clip.clone();
+      copy.name += upper ? '-arms' : '-body';
+      copy.tracks = copy.tracks.filter(t => {
+        const node = trackNode(asset.root, THREE.PropertyBinding.parseTrackName(t.name));
+        return arms.has(node) === upper;
+      });
+      return copy;
+    };
+    const lower = {}, upper = {};
+    for (const role of ['idle', 'walk', 'run']) if (asset.clips[role]) {
+      lower[role] = split(asset.clips[role], false);
+      upper[role] = split(asset.clips[role], true);
+    }
+    if (asset.clips.attack && arms.size) {
+      // Actual generated slash: strike at 2.07s. Remove its long preparation/recovery.
+      upper.attack = THREE.AnimationUtils.subclip(split(asset.clips.attack, true), 'quick-arm-slash', 59, 67, 30);
+    }
+    return { lower, upper };
+  }
   function makeRig(key) {
     const asset = assets[key], cfg = ACTOR_CONFIG[key], g = new THREE.Group(), fit = new THREE.Group(), offset = new THREE.Group();
     g.name = 'ashenActor-' + key;
@@ -264,8 +291,14 @@ const ACTOR_MODELS = (() => {
     g.add(fit); fit.add(offset); offset.add(asset.root);
     fit.scale.setScalar(asset.fit); offset.position.set(...asset.offset); fit.rotation.y = cfg.yaw;
     const mixer = new THREE.AnimationMixer(asset.root), actions = {};
-    for (const role in asset.clips) actions[role] = mixer.clipAction(asset.clips[role]);
+    const layers = key === 'knight' ? knightLayers(asset) : null;
+    for (const role in asset.clips) actions[role] = mixer.clipAction((layers && layers.lower[role]) || asset.clips[role]);
     const a = { key, asset, g, fit, mixer, actions, role: null, current: null, shot: null, previous: null, clock: null, wall: null, seen: {} };
+    if (layers) {
+      a.upperActions = {};
+      for (const role in layers.upper) a.upperActions[role] = mixer.clipAction(layers.upper[role]);
+      a.upperCurrent = null; a.upperRole = null; a.meleeCycle = null;
+    }
     mixer.addEventListener('finished', event => { if (event.action === a.current && a.shot !== 'fall') a.shot = null; });
     scene.add(g);
     change(a, 'idle'); mixer.update(0);
@@ -339,6 +372,44 @@ const ACTOR_MODELS = (() => {
     if (!a.shot) change(a, move);
     a.mixer.update(dt);
   }
+  function knightAnimate(a, s, move, dt, p, clock) {
+    const cycle = p.meleeVisual;
+    const slashing = cycle && clock >= cycle.start && clock < cycle.start + MELEE_TIMING.duration;
+    if (s.dead || s.fall || (s.hurt && !slashing) || a.shot === 'hurt' || a.shot === 'fall') {
+      if (a.upperCurrent) a.upperCurrent.stop();
+      a.upperCurrent = null; a.upperRole = null;
+      s.attack = false;
+      animate(a, s, move, dt, MELEE_TIMING.duration, 0);
+      return;
+    }
+    // The lower action never switches to attack: preserve the entire leg phase.
+    a.shot = null;
+    change(a, move);
+    if (a.current) a.current.setEffectiveTimeScale(a.role === 'run' ? 1.25 : 1);
+    const upperRole = slashing && a.upperActions.attack ? 'attack' : resolved(a, move);
+    const upper = a.upperActions[upperRole];
+    if (upper && (upper !== a.upperCurrent || (slashing && a.meleeCycle !== cycle.id))) {
+      if (a.upperCurrent) a.upperCurrent.stop();
+      upper.reset(); upper.enabled = true;
+      upper.setLoop(upperRole === 'attack' ? THREE.LoopOnce : THREE.LoopRepeat, upperRole === 'attack' ? 1 : Infinity);
+      upper.clampWhenFinished = upperRole === 'attack';
+      upper.setEffectiveWeight(1); upper.setEffectiveTimeScale(1); upper.play();
+      a.upperCurrent = upper; a.upperRole = upperRole;
+      if (slashing) a.meleeCycle = cycle.id;
+    }
+    // Sample both from the same game clock; no restart per victim or frame-speed reset.
+    if (upper) {
+      if (upperRole === 'attack') {
+        upper.paused = true;
+        upper.time = Math.max(0, Math.min(0.999, (clock - cycle.start) / MELEE_TIMING.duration)) * upper.getClip().duration;
+      } else {
+        upper.paused = false;
+        upper.time = a.current ? a.current.time : 0;
+        upper.setEffectiveTimeScale(a.role === 'run' ? 1.25 : 1);
+      }
+    }
+    a.mixer.update(dt);
+  }
   function weaponSync(R) {
     const a = R && R.actor;
     if (!a || !a.hand || !R.wp) return;
@@ -398,13 +469,11 @@ const ACTOR_MODELS = (() => {
       if (gaitSpeed > 0 && gaitSpeed < (p.speed || 6) * 0.5) move = 'walk';
     }
     a.g.position.set(p.x, ACTOR_CONFIG.knight.groundOffset, p.z); a.g.rotation.set(0, p.face || 0, 0);
-    // A short slash is allowed even while moving; it blends back into the run immediately.
-    animate(a, s, move, frozen && !s.dead ? 0 : dt, 0.12, 0);
+    knightAnimate(a, s, move, frozen && !s.dead ? 0 : dt, p, clock);
     // The provider's locomotion clips are authored side-on; turn the body back to its facing.
     const loco = a.role === 'run' || a.role === 'walk';
     const targetYaw = ACTOR_CONFIG.knight.yaw + (loco ? ACTOR_CONFIG.knight.locomotionYaw : 0);
     a.fit.rotation.y += (targetYaw - a.fit.rotation.y) * Math.min(1, dt * 14);
-    if (a.current) a.current.setEffectiveTimeScale(a.role === 'run' ? 1.25 : 1);
     weaponSync(R); return true;
   }
   function destroyBoss() {

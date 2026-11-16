@@ -225,6 +225,7 @@ function update(dt) {
   const p = G.p,
     cc = COOP.on && !COOP.host; // a co-op client mirrors the world (coopMirror), it doesn't run it
   G.t += dt;
+  updateMeleeImpacts();
   // input → move
   let mx = 0,
     mz = 0;
