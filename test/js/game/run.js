@@ -168,7 +168,7 @@ function startRun() {
   for (let i = 0; i < 6; i++) spawnAround('grunt', false, rand(13, 18));
   // Warm the boss-only guardian after the arena is live, never while a menu is opening.
   if (typeof loadBossActor === 'function') {
-    setTimeout(() => loadBossActor(0).catch(e => console.warn('boss actor', e)), 2500);
+    setTimeout(() => loadBossActor(0).catch(e => console.warn('boss actor', e)), 700);
   }
 }
 function endRun() {

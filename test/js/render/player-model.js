@@ -19,6 +19,59 @@ function mesh(g, c, x, y, z, sx, sy, sz, em) {
 }
 function buildPlayer() {
   buildRig(PM, S.char);
+  if (PM.actor) PM.previewPending = false;
+  if (typeof G !== 'undefined' && G.state === 'menu' && PM.previewPending && !PM.actor) showMenuPreview(S.char);
+  else clearMenuPreview();
+}
+let menuPreview = null;
+/** A portrait standee is instant while the real actor is still downloading; the actor replaces it on load. */
+function clearMenuPreview() {
+  if (!menuPreview) return;
+  scene.remove(menuPreview);
+  if (menuPreview.material.map) menuPreview.material.map.dispose();
+  menuPreview.material.dispose();
+  menuPreview = null;
+  if (PM.g) PM.g.visible = true;
+}
+function showMenuPreview(id) {
+  if ((id !== 'knight' && id !== 'ranger') || typeof PORTRAIT_FILES === 'undefined' || !PORTRAIT_FILES[id] || typeof THREE === 'undefined') {
+    clearMenuPreview();
+    return;
+  }
+  if (PM.g) PM.g.visible = false;
+  if (menuPreview && menuPreview.userData.id === id) return;
+  clearMenuPreview();
+  if (PM.g) PM.g.visible = false;
+  const tex = menuPreviewTexture(PORTRAIT_FILES[id]);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  s.userData.id = id;
+  s.position.set((G.p && G.p.x) || 0, 2.1, (G.p && G.p.z) || 0);
+  s.scale.set(3.2, 3.2, 1);
+  scene.add(s);
+  menuPreview = s;
+}
+/** Turn the portrait's black studio background transparent without touching the dark parts of the hero. */
+function menuPreviewTexture(src) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 220;
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const img = new Image();
+  img.onload = () => {
+    const x = canvas.getContext('2d');
+    x.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const data = x.getImageData(0, 0, canvas.width, canvas.height),
+      p = data.data;
+    for (let i = 0; i < p.length; i += 4) {
+      const m = Math.max(p[i], p[i + 1], p[i + 2]),
+        a = m < 18 ? 0 : Math.min(1, (m - 18) / 30);
+      p[i + 3] = Math.round(p[i + 3] * a);
+    }
+    x.putImageData(data, 0, 0);
+    tex.needsUpdate = true;
+  };
+  img.src = src;
+  return tex;
 }
 /** Build a hero rig (body, limbs, held weapon) into R: the local hero is PM; co-op teammates get their own. */
 function buildRig(R, charId, wep) {

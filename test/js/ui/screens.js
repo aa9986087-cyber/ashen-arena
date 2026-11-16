@@ -137,6 +137,7 @@ function drawChars() {
       onClick: () => {
         if (own) {
           S.char = id;
+          PM.previewPending = true;
           if (typeof loadActor === 'function') loadActor(id);
           save();
           AU.play('select');
@@ -147,6 +148,7 @@ function drawChars() {
           buy(c.cost, () => {
             S.chars[id] = 1;
             S.char = id;
+            PM.previewPending = true;
             if (typeof loadActor === 'function') loadActor(id);
             newRun();
             buildPlayer();

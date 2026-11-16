@@ -16,7 +16,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "tools" / "index.source.html"
 INDEX = ROOT / "index.html"
-VERSION = "bundle-20261116-v16"
+VERSION = "bundle-20261116-v17"
 OUT = ROOT / "releases" / VERSION
 TMP = Path("/tmp/ashen-bundle-build")
 SCRIPT_RE = re.compile(r'<script\b[^>]*\bsrc="([^"]+)"[^>]*>\s*</script>', re.I | re.S)

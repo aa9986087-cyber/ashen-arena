@@ -130,8 +130,44 @@ function spawnBoss() {
     a = Math.random() * TAU;
   G.bossName = G.forceBoss != null ? bossNameOf(k) : G.abyss ? 'ظلّ ' + bossNameOf(k) : STAGES[G.stage].boss;
   makeBoss(k, p.x + Math.cos(a) * 20, p.z + Math.sin(a) * 20);
-  if ((k === 0 || k === 2) && typeof loadBossActor === 'function') loadBossActor(k);
-  if (!bossIntroStart(G.boss)) {
+  const e = G.boss,
+    bossActor = (k === 0 || k === 2) && typeof loadBossActor === 'function' ? loadBossActor(k) : Promise.resolve();
+  if ((G.state === 'play' || G.state === 'lab') && !COOP.on && !DUEL.on) {
+    // Hide the primitive boss and hold the arena until the real actor is ready. The entrance then starts
+    // with the real model on its very first frame instead of swapping shape a second later.
+    CINE.pending = true;
+    e.y = -10;
+    bossMesh.visible = false;
+    $('bossbar').hidden = true;
+    G.p.inv = Math.max(G.p.inv, 1.2);
+    bossActor.then(result => {
+      if (!CINE.pending || G.boss !== e || e.dead) return;
+      CINE.pending = false;
+      const ok = Array.isArray(result) ? result.every(Boolean) : !!result;
+      if (!ok) {
+        bossMesh.visible = true;
+        $('bossbar').hidden = false;
+        $('bossbar').querySelector('span').textContent = G.bossName;
+        AU.play('boss');
+        shake(0.8);
+        banner(G.bossName, 'الزعيم وصل. اقرأ هجماته وراوغ الدوائر الحمراء.', 3);
+        return;
+      }
+      if (!bossIntroStart(e)) {
+        AU.play('boss');
+        shake(0.8);
+        banner(G.bossName, 'الزعيم وصل. اقرأ هجماته وراوغ الدوائر الحمراء.', 3);
+      }
+    }).catch(() => {
+      CINE.pending = false;
+      bossMesh.visible = true;
+      $('bossbar').hidden = false;
+      $('bossbar').querySelector('span').textContent = G.bossName;
+      AU.play('boss');
+      shake(0.8);
+      banner(G.bossName, 'الزعيم وصل. اقرأ هجماته وراوغ الدوائر الحمراء.', 3);
+    });
+  } else if (!bossIntroStart(e)) {
     AU.play('boss');
     shake(0.8);
     banner(G.bossName, 'الزعيم وصل. اقرأ هجماته وراوغ الدوائر الحمراء.', 3);

@@ -218,6 +218,7 @@ function forOrbitBlades(fn) {
   }
 }
 function update(dt) {
+  if (typeof CINE !== 'undefined' && CINE.pending) return; // boss is loading; keep the arena still
   if (typeof CINE !== 'undefined' && CINE.on) {
     bossIntroUpdate(dt); // the boss entrance: every enemy, shot and timer stays exactly where it was
     if (CINE.freeze) return;
