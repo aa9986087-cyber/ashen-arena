@@ -130,7 +130,7 @@ function spawnBoss() {
     a = Math.random() * TAU;
   G.bossName = G.forceBoss != null ? bossNameOf(k) : G.abyss ? 'ظلّ ' + bossNameOf(k) : STAGES[G.stage].boss;
   makeBoss(k, p.x + Math.cos(a) * 20, p.z + Math.sin(a) * 20);
-  if (k === 2 && typeof loadBossActor === 'function') loadBossActor(k);
+  if ((k === 0 || k === 2) && typeof loadBossActor === 'function') loadBossActor(k);
   if (!bossIntroStart(G.boss)) {
     AU.play('boss');
     shake(0.8);

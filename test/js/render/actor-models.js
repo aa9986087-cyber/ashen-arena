@@ -551,13 +551,14 @@ const ACTOR_MODELS = (() => {
     bossRig = bossEntity = tail = null;
   }
   function bossRender(e, now) {
-    if (!e || e.kind !== 2 || !assets.bossKnight || e.dead) return false;
-    if (!bossRig || bossEntity !== e) { destroyBoss(); bossRig = makeRig('bossKnight'); bossEntity = e; }
+    const key = e && e.kind === 2 ? 'bossKnight' : e && e.kind === 0 ? 'guardian' : null;
+    if (!key || !assets[key] || e.dead) return false;
+    if (!bossRig || bossEntity !== e) { destroyBoss(); bossRig = makeRig(key); bossEntity = e; }
     tail = null;
     const a = bossRig, old = a.previous, s = signals(a, e, true), dt = delta(a, e.t || 0, now);
     const cine = typeof CINE !== 'undefined' && CINE.on && CINE.freeze && CINE.boss === e;
     const moving = !cine && (e.st === 2 || (old && Math.hypot(e.x - old.x, e.z - old.z) > 0.001));
-    const cfg = ACTOR_CONFIG.bossKnight;
+    const cfg = ACTOR_CONFIG[key];
     a.g.visible = true; a.g.position.set(e.x, (e.y || 0) + cfg.groundOffset, e.z);
     a.g.rotation.set(0, e.face || 0, 0); a.g.scale.setScalar(e.scale || 1);
     animate(a, s, moving ? (e.st === 2 ? 'run' : 'walk') : 'idle', e.frz > 0 ? 0 : dt, Math.max(0.08, e.stT || 0.5), 0);
@@ -639,7 +640,11 @@ function loadActors() {
   return key === 'knight' || key === 'ranger' ? ACTOR_MODELS.load([key]) : Promise.resolve([]);
 }
 function loadActor(key) { return key === 'knight' || key === 'ranger' ? ACTOR_MODELS.load([key]) : Promise.resolve([]); }
-function loadBossActor(kind) { return kind === 2 ? ACTOR_MODELS.load(['bossKnight']) : Promise.resolve([]); }
+function loadBossActor(kind) {
+  if (kind === 2) return ACTOR_MODELS.load(['bossKnight']);
+  if (kind === 0) return ACTOR_MODELS.load(['guardian']);
+  return Promise.resolve([]);
+}
 function buildActorRig(R, charId, wep) { return ACTOR_MODELS.buildRig(R, charId, wep); }
 function actorRigPose(R, p, wepId, playing, now) { return ACTOR_MODELS.pose(R, p, wepId, playing, now); }
 function actorReleaseRig(R) { ACTOR_MODELS.releaseRig(R); }

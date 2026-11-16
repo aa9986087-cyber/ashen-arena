@@ -633,95 +633,98 @@
     <div id="toast"></div>
 
     <!-- three.js r128 + GLTFLoader (globals: THREE, THREE.GLTFLoader) -->
-    <script src="assets/vendor/01-three.min.js"></script>
-    <script src="assets/vendor/02-GLTFLoader.js"></script>
+
+    <script src="releases/bundle-20261116-v12/vendor.js?v=bundle-20261116-v12"></script>
+    <script src="releases/bundle-20261116-v12/app.js?v=bundle-20261116-v12"></script>
+
+
     <!-- bloom post-processing (used on high quality) -->
-    <script src="assets/vendor/03-CopyShader.js"></script>
-    <script src="assets/vendor/04-LuminosityHighPassShader.js"></script>
-    <script src="assets/vendor/05-EffectComposer.js"></script>
-    <script src="assets/vendor/06-RenderPass.js"></script>
-    <script src="assets/vendor/07-ShaderPass.js"></script>
-    <script src="assets/vendor/08-UnrealBloomPass.js"></script>
+
+
+
+
+
+
     <!-- Game scripts: plain (non-module) scripts sharing one global scope. ORDER MATTERS:
      each file may only use, at load time, what the files above it define. -->
-    <script src="js/data/icon-set.js?v=202611160222&rev=local-sample-688bc4488241f2c1"></script>
-    <script src="js/ui/icons.js?v=202611160222&rev=local-sample-856ec793f07fb07a"></script>
-    <script src="js/core/utils.js?v=202611160222&rev=local-sample-095bc13730c2e63a"></script>
-    <script src="js/core/config.js?v=202611160222&rev=local-sample-2ce6a86531001213"></script>
-    <script src="js/core/dom.js?v=202611160222&rev=local-sample-8656f803f49d9e41"></script>
-    <script src="js/core/clipboard.js?v=202611160222&rev=local-sample-88d88981e36c1641"></script>
-    <script src="js/core/codes.js?v=202611160222&rev=local-sample-958f1879b153eaf3"></script>
-    <script src="js/core/save.js?v=202611160222&rev=local-sample-d5ad8f3adf189758"></script>
-    <script src="js/data/weapons.js?v=202611160222&rev=local-sample-e17190884df55e30"></script>
-    <script src="js/data/characters.js?v=202611160222&rev=local-sample-4c93b8a330173a22"></script>
-    <script src="js/data/upgrades.js?v=202611160222&rev=local-sample-15c5256275bce355"></script>
-    <script src="js/data/achievements.js?v=202611160222&rev=local-sample-c3adb17dff87925a"></script>
-    <script src="js/data/stages.js?v=202611160222&rev=local-sample-074c1e5fe7732255"></script>
-    <script src="js/data/enemies.js?v=202611160222&rev=local-sample-2e9149168d03b8a9"></script>
-    <script src="js/data/missions.js?v=202611160222&rev=local-sample-b15e53d666e7bbe2"></script>
-    <script src="js/data/news.js?v=202611160222&rev=local-sample-e2f9d01db7491137"></script>
-    <script src="js/audio/sound.js?v=202611160222&rev=local-sample-5a5f7483e0946de5"></script>
-    <script src="js/audio/music-track.js?v=202611160222&rev=local-sample-937acab1c300a423"></script>
-    <script src="js/render/scene.js?v=202611160222&rev=local-sample-c31950eb346be99a"></script>
-    <script src="js/render/geometry.js?v=202611160222&rev=local-sample-2690df2fa76b14ed"></script>
-    <script src="js/render/instances.js?v=202611160222&rev=local-sample-f7d938addca467ef"></script>
-    <script src="js/render/vfx.js?v=202611160222&rev=local-sample-617e927dd26c0c35"></script>
-    <script src="js/render/world.js?v=202611160222&rev=local-sample-0d734463c166af23"></script>
-    <script src="js/render/atmosphere.js?v=202611160222&rev=local-sample-f80e90b5d4d111af"></script>
-    <script src="js/render/player-model.js?v=202611160222&rev=local-sample-820a9c8ed74b3757"></script>
-    <script src="js/game/state.js?v=202611160222&rev=local-sample-6022604da43031fb"></script>
-    <script src="js/game/fx.js?v=202611160222&rev=local-sample-fe552b07d814e221"></script>
-    <script src="js/game/spawning.js?v=actor-lazy-9"></script>
-    <script src="releases/slash-20261116-1054/combat.js?v=25dfd0509754"></script>
-    <script src="js/game/specials.js?v=202611160222&rev=local-sample-6b0c7000cc1afc04"></script>
-    <script src="js/game/boss-intro.js?v=202611160222&rev=local-sample-c5b675056f39bcd7"></script>
-    <script src="js/game/boss-ults.js?v=202611160222&rev=local-sample-96eee3538453a045"></script>
-    <script src="js/game/progression.js?v=202611160222&rev=local-sample-adddc7992b8f7edb"></script>
-    <script src="releases/slash-20261116-1054/update.js?v=21f68b9732d5"></script>
-    <script src="js/game/enemy-ai.js?v=202611160222&rev=local-sample-2b70c5dfb76ea527"></script>
-    <script src="js/game/cards.js?v=202611160222&rev=local-sample-c25749c9e89aa5d4"></script>
-    <script src="js/game/run.js?v=actor-lazy-9"></script>
-    <script src="js/game/daily.js?v=202611160222&rev=local-sample-d0c4ee549d76180e"></script>
-    <script src="js/ui/hud.js?v=202611160222&rev=local-sample-c7935c7e7d0d380a"></script>
-    <script src="js/ui/screens.js?v=actor-lazy-9"></script>
-    <script src="js/ui/portraits.js?v=202611160222&rev=local-sample-d2e52c095e8af596"></script>
-    <script src="js/ui/board-rank.js?v=202611160222&rev=local-sample-38ad0a8c09d25e3f"></script>
-    <script src="js/ui/leaderboard.js?v=202611160222&rev=local-sample-27faa8e2095e1052"></script>
-    <script src="js/ui/chat.js?v=202611160222&rev=local-sample-685b439958512409"></script>
-    <script src="js/ui/avatar.js?v=202611160222&rev=local-sample-934161f66c6ec02a"></script>
-    <script src="js/ui/profile.js?v=202611160222&rev=local-sample-6aa55510630a583c"></script>
-    <script src="js/ui/live.js?v=202611160222&rev=local-sample-9cce085cefb6473d"></script>
-    <script src="js/coop/coop.js?v=202611160222&rev=local-sample-350c67eba8431817"></script>
-    <script src="js/coop/coop-lobby.js?v=202611160222&rev=local-sample-a5c23020442c2aa7"></script>
-    <script src="js/ui/gift.js?v=202611160222&rev=local-sample-d52cdb4419d39a28"></script>
-    <script src="js/ui/backup.js?v=202611160222&rev=local-sample-79e58efee4061eb5"></script>
-    <script src="js/ui/share-card.js?v=202611160222&rev=local-sample-2038d69a8fa0ad68"></script>
-    <script src="js/ui/skill-tree.js?v=202611160222&rev=local-sample-241ad6f6d410ddd4"></script>
-    <script src="js/ui/news.js?v=202611160222&rev=local-sample-1499cad738fd5a7c"></script>
-    <script src="js/ui/lab.js?v=202611160222&rev=local-sample-b0e1011c1c3e992b"></script>
-    <script src="js/ui/dev.js?v=202611160222&rev=local-sample-1df143956748d5d7"></script>
-    <script src="js/ui/intro.js?v=202611160222&rev=local-sample-40252e84eb458a97"></script>
-    <script src="js/input.js?v=202611160222&rev=local-sample-a74c3860fd28a8ff"></script>
-    <script src="js/render/menu2.js?v=202611160222&rev=local-sample-31016e0c758954fb"></script>
-    <script src="js/render/renderer.js?v=202611160222&rev=local-sample-dc316c885909e80f"></script>
-    <script src="js/render/models.js?v=202611160222&rev=ranger-emerald-v8"></script>
-    <script src="releases/actor-lazy-20261116-v9/actor-models.js?v=9"></script>
-    <script src="js/render/perf.js?v=202611160222&rev=local-sample-8987919bfe68ee14"></script>
-    <script src="js/duel/duel-audio.js?v=202611160222&rev=local-sample-5c184a0a5a92f7fe"></script>
-    <script src="js/duel/duel-sfx.js?v=202611160222&rev=local-sample-cb79fad6b294a51d"></script>
-    <script src="js/duel/duel-fighter.js?v=202611160222&rev=local-sample-576f0598c323c3ea"></script>
-    <script src="js/duel/duel-weapons.js?v=202611160222&rev=local-sample-21c19050db81d74a"></script>
-    <script src="js/duel/duel-gore.js?v=202611160222&rev=local-sample-288995dc4957884e"></script>
-    <script src="js/duel/duel-arena.js?v=202611160222&rev=local-sample-a308f60f91817373"></script>
-    <script src="js/duel/duel-ai.js?v=202611160222&rev=local-sample-b9c42e33f91e4085"></script>
-    <script src="js/duel/duel-mode.js?v=202611160222&rev=local-sample-862634f2885c72ac"></script>
-    <script src="js/duel/duel-finisher.js?v=202611160222&rev=local-sample-969fbd48a70b7140"></script>
-    <script src="js/duel/duel-intro.js?v=202611160222&rev=local-sample-6633d3a9c80b13eb"></script>
-    <script src="js/duel/duel-net.js?v=202611160222&rev=local-sample-21414befc3145a53"></script>
-    <script src="js/duel/duel-lobby.js?v=202611160222&rev=local-sample-a7b22d3e92ce9918"></script>
-    <script src="js/duel/duel-ffa.js?v=202611160222&rev=local-sample-63595500b29194c0"></script>
-    <script src="js/ui/voice.js?v=202611160222&rev=local-sample-8d36212b9b47d94f"></script>
-    <script src="js/main.js?v=actor-lazy-10"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       <script id="preview-touch-bootstrap">
       /* Preview-only mobile touch fixes: do not auto-open the news bulletin over the menu,
          prefill the name field so the enter button works, and keep HUD controls above
