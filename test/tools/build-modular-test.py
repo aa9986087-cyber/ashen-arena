@@ -30,6 +30,10 @@ def replace_once(text, before, after, name):
 
 def patch(path, text):
     # Preview isolation, not game balance or artwork changes.
+    if path == 'js/core/config.js':
+        # #lab stays available in the test build, never as a public production shortcut.
+        text = replace_once(text, "let LAB = IS_SANDBOX || location.hash === '#lab';",
+            "let LAB = IS_SANDBOX || (location.pathname.indexOf('/test/') >= 0 && location.hash === '#lab');", path)
     if path == 'js/core/save.js':
         text = text.replace("const SAVE_KEY = 'ashen_arena_v1';", "const SAVE_KEY = 'ashen_arena_modular_test_v1';")
     if path == 'js/game/run.js':
@@ -58,7 +62,35 @@ def patch(path, text):
         text = replace_once(text, '  G.t += dt;', "  G.t += dt;\n  ASHEN_ADDONS.updateMelee();", path)
         text = replace_once(text, '  p.face += wrapAng(fa - p.face)',
             '  if (PM.actor && p.moving) fa = Math.atan2(mx, mz);\n  p.face += wrapAng(fa - p.face)', path)
+    if path == 'js/game/cards.js':
+        text = replace_once(text, '  G.cardMode = mode;', '  G.cardMode = mode;\n  G.cardPicked = false;', path)
+        text = replace_once(text, '  if (!c || (G.state !== \'cards\' && !G.cardsOpen)) return;',
+            "  if (!c || G.cardPicked || (G.state !== 'cards' && !G.cardsOpen)) return;\n"
+            "  if (c.k === 'up' && (G.ups[c.id] || 0) >= UP[c.id].max) return;\n"
+            "  if (c.k === 'wup') { const w = G.weapons.find(x => x.id === c.id); if (!w || w.lvl >= 5) return; }\n"
+            "  if (c.k === 'evo') { const w = G.weapons.find(x => x.id === c.id); if (!w || w.evo) return; }\n"
+            "  if (c.k === 'wnew' && G.weapons.some(x => x.id === c.id)) return;\n"
+            "  if (c.k === 'pact' && G.pacts[c.id]) return;\n"
+            "  G.cardPicked = true;", path)
     if path == 'js/game/combat.js':
+        text = replace_once(text, '  if (crit && G.ups.vamp) heal(G.ups.vamp);\n', '', path)
+        text = replace_once(text, '  p.hp = Math.min(p.maxHp, p.hp + v);\n}\n',
+            "  p.hp = Math.min(p.maxHp, p.hp + v);\n}\n"
+            "/** Combat healing (vampire/leech) is capped at 8% max HP per second. */\n"
+            "function healCombat(v) {\n"
+            "  const p = G.p;\n"
+            "  if (!p || !(v > 0) || choosingCards()) return;\n"
+            "  if (!(G.healSecT >= 0) || G.t - G.healSecT >= 1) { G.healSecT = G.t; G.healSec = 0; }\n"
+            "  const cap = Math.max(2, p.maxHp * 0.08), left = cap - (G.healSec || 0);\n"
+            "  if (left <= 0) return;\n"
+            "  const a = Math.min(v, left);\n"
+            "  G.healSec = (G.healSec || 0) + a;\n"
+            "  heal(a);\n"
+            "}\n", path)
+        text = replace_once(text, '  e.hp -= dmg;\n  e.flash = 0.1;',
+            "  e.hp -= dmg;\n  e.flash = 0.1;\n  if (crit && G.ups.vamp && dmg > 0) healCombat(G.ups.vamp);", path)
+        text = replace_once(text, '  if (mine && p.leech && !e.boss) heal(p.leech);',
+            '  if (mine && p.leech && !e.boss) healCombat(p.leech);', path)
         # Queue only the original melee block; range/arc/damage math remains exactly the production math.
         begin = text.index('  if (d.melee) {', text.index('function fire(w, ang)'))
         end = text.index('  } else if (d.chain) {', begin)

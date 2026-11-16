@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "release": "clean-20261117-v4",
+  "release": "clean-20261117-v5",
   "baseRevision": "dfb093f",
   "addonSourceRevision": "c0c1701",
   "enabledAddons": ["knight", "ranger", "forest-guardian"],
-  "notes": "النسخة الجديدة من الأساسية مع تفعيل إضافات الفارس والرامية وحارس الغابة فقط."
+  "notes": "النسخة الجديدة مع الإضافات الثلاث وإصلاح ثغرة الشفاء اللانهائي في بطاقة مصاص الدماء."
 }
