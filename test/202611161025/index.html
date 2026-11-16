@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <base href="/ashen-arena/test/">
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="نسخة تجربة محلية من Ashen Arena — ليست اللعبة الرسمية." />
+    <!-- Local review only: no production database/realtime traffic. -->
+    <meta http-equiv="Content-Security-Policy" content="connect-src 'self' data: blob:" />
+    <style id="preview-touch-fix">body.ashen-preview { --sb: calc(env(safe-area-inset-bottom, 0px) + 96px); } body.ashen-preview #news { padding-bottom: 108px; } body.ashen-preview #nameScr { padding-bottom: 120px; }</style>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="color-scheme" content="only dark" />
+    <meta name="darkreader-lock" />
+    <meta name="theme-color" content="#0b0d18" />
+    <title>تجربة — ساحة الرماد</title>
+    <meta name="author" content="Vamos" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/base.css?v=202611160222&rev=local-sample-28a5ded2d3deeb9c" />
+    <link rel="stylesheet" href="css/hud.css?v=202611160222&rev=local-sample-7dd03a2d9d54f7f6" />
+    <link rel="stylesheet" href="css/screens.css?v=202611160222&rev=local-sample-f90d576c8f4eba98" />
+    <link rel="stylesheet" href="css/cards.css?v=202611160222&rev=local-sample-5bcb1f17248b5690" />
+    <link rel="stylesheet" href="css/responsive.css?v=202611160222&rev=local-sample-944d6f88f744d269" />
+    <link rel="stylesheet" href="css/menu.css?v=202611160222&rev=local-sample-8949fb09a291613f" />
+    <link rel="stylesheet" href="css/menu2.css?v=202611160222&rev=local-sample-5e396450a245e3d5" />
+    <link rel="stylesheet" href="css/motion.css?v=202611160222&rev=local-sample-a6c1136438b8965f" />
+    <link rel="stylesheet" href="css/duel.css?v=202611160222&rev=local-sample-5ce2145cfb4bf30c" />
+    <link rel="stylesheet" href="css/coop.css?v=202611160222&rev=local-sample-dcbd423d133065d3" />
+    <link rel="stylesheet" href="css/skill-tree.css?v=202611160222&rev=local-sample-ecddc0875b015d97" />
+    </head>
+  <body class="mouse">
+<style>
+#verLoading{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;background:#08070c;color:#ffe9b8;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;transition:opacity .45s ease}
+#verLoading .ring{width:54px;height:54px;border-radius:50%;border:4px solid rgba(246,196,90,.2);border-top-color:#f6c45a;animation:vspin 1s linear infinite}
+#verLoading b{font-size:20px;font-weight:800}#verLoading small{color:#bfb39b;font-size:13px}
+@keyframes vspin{to{transform:rotate(360deg)}}
+</style>
+<div id="verLoading"><div class="ring"></div><b>جارٍ تحميل الساحة...</b><small>أول تحميل قد يأخذ لحظات</small></div>
+<script>window.addEventListener('load',function(){setTimeout(function(){var x=document.getElementById('verLoading');if(!x)return;x.style.opacity='0';setTimeout(function(){x.remove();},500);},700);});</script>
+    <canvas id="gl"></canvas>
+    <canvas id="fx"></canvas>
+    <div id="vig"></div>
+    <div id="dark"></div>
+    <div id="shade"></div>
+    <div id="intro">
+      <div class="iv"><span>VAMOS</span><i></i><small>يقدّم</small></div>
+    </div>
+    <div id="wipe"></div>
+
+    <div class="screen veil" id="liveScr" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>📺 مباشر</h2>
+          <button class="btn sm" id="liveBack">رجوع</button>
+        </div>
+        <p class="note" id="liveOnline"></p>
+        <h4 class="sec">⚔️ مبارزات شغالة</h4>
+        <div id="liveDuels"></div>
+        <h4 class="sec">🎮 يلعبون الحين</h4>
+        <div id="liveRuns"></div>
+      </div>
+    </div>
+    <div class="screen veil" id="coopMenu" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>🤝 التعاون</h2>
+          <button class="btn sm" id="cmBack">رجوع</button>
+        </div>
+        <p class="note">
+          العبوا مع بعض لين 4 محاربين ضد الوحوش والزعماء. كل ما زدتوا، صارت الوحوش أقوى. الخبرة والعالم مشتركين،
+          والبطاقات لكل واحد.
+        </p>
+        <button class="btn go" id="cmCreate">🏰 سوّ جلسة</button>
+        <div id="cmRoom" hidden>
+          <h4 class="sec" id="cmRoomT"></h4>
+          <div id="cmPlayers"></div>
+          <button class="btn go" id="cmStart"></button>
+          <p class="note" id="cmWait"></p>
+          <button class="btn" id="cmLeave">🚪 اطلع من الجلسة</button>
+        </div>
+        <h4 class="sec">🌐 جلسات مفتوحة</h4>
+        <p class="note" id="cmStatus"></p>
+        <div id="cmRooms"></div>
+      </div>
+    </div>
+    <div class="screen veil" id="duelMenu" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>⚔️ المبارزة</h2>
+          <button class="btn sm" id="dmBack">رجوع</button>
+        </div>
+        <h4 class="sec">🗡️ سلاحك</h4>
+        <div id="dmWeapons"></div>
+        <button class="btn go" id="dmTrain">🎯 تدريب ضد الكمبيوتر</button>
+        <h4 class="sec">👥 الملحمة · لين 4 لاعبين كل واحد لحاله</h4>
+        <p class="note">
+          آخر واحد واقف ياخذ الجولة، وأول من يفوز بـ3 جولات ياخذ الملحمة. فوق راس كل لاعب اسمه ولونه وصحته.
+        </p>
+        <button class="btn go" id="ffaTrain">🤖 تدريب: أنت ضد 3 بوتات</button>
+        <button class="btn" id="ffaCreate">🏟️ افتح ساحة</button>
+        <div id="ffaRoom" hidden>
+          <h4 class="sec" id="ffaRoomT"></h4>
+          <div id="ffaPlayers"></div>
+          <button class="btn go" id="ffaStart"></button>
+          <p class="note" id="ffaWait"></p>
+          <button class="btn" id="ffaLeave">🚪 اطلع من الساحة</button>
+        </div>
+        <p class="note" id="ffaStatus"></p>
+        <div id="ffaRooms"></div>
+        <h4 class="sec">🌐 تحدّى لاعب</h4>
+        <p class="note" id="dmStatus"></p>
+        <div id="dmList"></div>
+        <h4 class="sec">📜 سجل المبارزات</h4>
+        <div id="dmRec"></div>
+      </div>
+    </div>
+    <div id="voice" hidden>
+      <div class="vcBox">
+        <button class="iconBtn" id="vcClose" aria-label="إغلاق">✖</button>
+        <h3>🎧 غرف الصوت</h3>
+        <p class="note" id="vcStatus"></p>
+        <div id="vcRooms"></div>
+        <p class="note vcHint">
+          الصوت يروح من جهازك لجهازهم مباشرة. السماعة أفضل عشان ما يرجع صوتهم عندك. اللي ما يبي تسمعه اكتمه بـ🔊.
+        </p>
+      </div>
+    </div>
+    <div id="vcInv" hidden role="alert"></div>
+    <div id="vcBar" hidden>
+      <button id="vcBarRoom" aria-label="غرف الصوت">🎧</button>
+      <div id="vcTalk"></div>
+      <button id="vcBarMic" aria-label="المايك">🎙️</button>
+    </div>
+    <div id="pcard" hidden>
+      <div class="pcBox">
+        <button class="iconBtn" id="pcClose" aria-label="إغلاق">✖</button>
+        <div id="pcPic"></div>
+        <input type="file" id="avaFile" accept="image/*" />
+        <h3 id="pcName"></h3>
+        <p id="pcHero"></p>
+        <div id="pcBody"></div>
+      </div>
+    </div>
+    <div id="dmAsk" hidden>
+      <div class="dmBox">
+        <b id="dmAskT"></b>
+        <p id="dmAskS"></p>
+        <div class="dmRow"><button class="btn go" id="dmYes"></button><button class="btn" id="dmNo"></button></div>
+      </div>
+    </div>
+    <div id="duel" hidden>
+      <div id="dPad"></div>
+      <canvas id="dGore"></canvas>
+      <div id="dCine"><p id="dCineT"></p></div>
+      <div id="dIntro">
+        <b></b>
+        <p></p>
+      </div>
+      <div id="dRotate" hidden>
+        <i>📱</i><b>لف جوالك بالعرض</b>
+        <p>المبارزة تبدأ بعد لحظات…</p>
+      </div>
+      <div id="dHurt"></div>
+      <div id="dTop">
+        <div class="dSide me">
+          <b id="dNameMe">أنت</b>
+          <div class="dHp"><i id="dHpMe"></i></div>
+          <div class="dSt"><i id="dStMe"></i></div>
+          <span class="dPips" id="dPipsMe"></span>
+        </div>
+        <div id="dTime">60</div>
+        <div class="dSide foe">
+          <b id="dNameFoe">الخصم</b>
+          <div class="dHp"><i id="dHpFoe"></i></div>
+          <div class="dSt"><i id="dStFoe"></i></div>
+          <span class="dPips" id="dPipsFoe"></span>
+        </div>
+      </div>
+      <div id="dFfa"></div>
+      <div id="dFeed"></div>
+      <div id="dBtns">
+        <button class="iconBtn" id="dLand" aria-label="اقلب الشاشة بالعرض" hidden>🔄</button
+        ><button class="iconBtn" id="dView" aria-label="غيّر المنظور">👁️</button
+        ><button class="iconBtn" id="dExit" aria-label="خروج">✖</button>
+      </div>
+      <div id="dMsg">
+        <b></b>
+        <p></p>
+      </div>
+      <div id="dFloat"></div>
+      <div id="dJoy" hidden><i></i></div>
+      <div id="dActs">
+        <button class="dAct sm" id="dKick" aria-label="رفسة">🦶<small>رفسة</small></button>
+        <button class="dAct sm" id="dLock" aria-label="ثبّت النظر على الخصم">🎯<small>الخصم</small></button>
+        <button class="dAct" id="dDodge" aria-label="مراوغة">💨<small>مراوغة</small></button>
+        <button class="dAct" id="dBlock" aria-label="صد">🛡️<small>صد</small></button>
+        <button class="dAct big" id="dAtk" aria-label="ضرب">⚔️<small>اضغط سريعة · مطوّل قوية</small></button>
+      </div>
+      <p id="dKeys">
+        WASD حركة · Q E لف · R G فوق وتحت (أو اسحب بعجلة الماوس) · F ثبّت على الخصم · J ضرب (مطوّل = قوية) · K قوية ·
+        Shift صد (وقت رفع الضربة القوية = خدعة) · C ركض · U رفسة · Space مراوغة · V المنظور
+      </p>
+      <div id="dLoad">⚔️ جارٍ تجهيز الساحة…</div>
+      <div id="dOver" hidden>
+        <h2 id="dOverT"></h2>
+        <p id="dOverS"></p>
+        <div class="stack">
+          <button class="btn go" id="dAgain">🔁 إعادة</button>
+          <button class="btn" id="dLeave">خروج للقائمة</button>
+        </div>
+      </div>
+    </div>
+    <div id="hud" hidden>
+      <div id="coopTeam" hidden></div>
+      <div id="watchBar" hidden><b id="watchName"></b><button class="btn sm" id="watchExit">✖ خروج</button></div>
+      <div id="xpbar"><i></i></div>
+      <div id="topRow">
+        <div id="vital">
+          <div id="lvl">1</div>
+          <div id="bars">
+            <div class="bar" id="hpbar"><em></em><i></i><b></b></div>
+            <div class="bar" id="shbar" hidden><i></i></div>
+            <div id="lowHp" hidden></div>
+          </div>
+        </div>
+        <div id="stats">
+          <span id="sTime">⏱ 0:00</span><span id="sKills">💀 0</span><span id="sCoins">🪙 0</span>
+          <button id="labBtn" hidden aria-label="المختبر">🧪</button>
+          <button id="pauseBtn" aria-label="إيقاف مؤقت">⏸</button>
+          <button id="viewers" hidden aria-label="يشاهدونك">👁️ <b>0</b></button>
+        </div>
+      </div>
+      <div id="stageInfo"><span id="siName"></span><b id="siLeft" title="الأعداء الباقين قبل الزعيم"></b></div>
+      <div id="bossbar" hidden>
+        <span></span>
+        <div class="bar"><i></i></div>
+      </div>
+      <div id="bossCine" hidden aria-live="polite">
+        <i class="cineBar top"></i><i class="cineBar bot"></i>
+        <div class="cineTitle"><span>الزعيم</span><b id="bossCineName"></b></div>
+      </div>
+      <div id="loadout"></div>
+      <div id="fps" hidden></div>
+      <div id="count" hidden>
+        <b></b>
+        <p></p>
+      </div>
+      <div id="banner">
+        <h2></h2>
+        <p></p>
+      </div>
+      <div id="joy" hidden><i></i></div>
+      <div id="acts">
+        <button class="act" id="bSpec" aria-label="الضربة الخاصة">🌀<u></u><small>خاصة</small></button>
+        <button class="act" id="bPot" aria-label="جرعة شفاء" hidden>
+          ⚗️<u></u><b id="potN">0</b><small>جرعة</small>
+        </button>
+        <button class="act big" id="bDash" aria-label="مراوغة">💨<u></u><small>مراوغة</small></button>
+      </div>
+    </div>
+
+    <div class="screen boot" id="menu">
+      <div id="embers"></div>
+      <div id="menuTop">
+        <div class="mTopBtns">
+          <button class="iconBtn" id="mProfile" aria-label="ملفك الشخصي">👤</button>
+          <button class="iconBtn" id="mNews" aria-label="الأخبار">📰<i class="badge" id="newsDot" hidden></i></button>
+          <button class="iconBtn" id="mSet" data-go="settings" aria-label="الإعدادات">⚙️</button>
+          <button class="iconBtn" id="mLive" aria-label="مباشر">📺<i class="badge" id="liveBadge" hidden></i></button>
+          <button class="iconBtn" id="mVoice" aria-label="غرف الصوت">
+            🎧<i class="badge" id="voiceBadge" hidden></i>
+          </button>
+        </div>
+        <div class="wallet"><span class="wCoins">🪙 0</span><span class="wSp">✨ 0</span></div>
+      </div>
+      <div id="hero">
+        <div class="orn">
+          <i></i
+          ><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M12 2l4 10-4 10-4-10z" fill="currentColor" />
+            <path d="M2 12l10-3 10 3-10 3z" fill="currentColor" opacity=".55" /></svg
+          ><i></i>
+        </div>
+        <h1>ساحة الرماد</h1>
+        <p class="tag">ادخل ضعيفاً، واخرج إعصاراً</p>
+      </div>
+      <div id="menuNav">
+        <button class="btn" id="mUpdate" hidden>🔄 فيه تحديث جديد للعبة، اضغط هنا</button>
+        <button class="btn go" id="mResume" hidden></button>
+        <div id="playRow">
+          <button class="btn go" id="mPlay">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 3h3l9 9-3 3-9-9zM20 3h-3l-9 9 3 3 9-9zM5 16l3 3M19 16l-3 3M3 21l3-3M21 21l-3-3" /></svg
+            ><span id="mPlayT">ابدأ المعركة</span>
+          </button>
+          <button class="btn" id="mDuel" aria-label="المبارزة">⚔️<small>مبارزة</small></button>
+          <button class="btn" id="mCoop" aria-label="التعاون">🤝<small>تعاون</small></button>
+        </div>
+        <div id="tiles">
+          <button class="tile" data-go="chars">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 13a7 7 0 0 1 14 0v6h-4v-5h-1v5h-4v-5H9v5H5z" />
+              <path d="M12 6V3M10 3h4" /></svg
+            ><b>الأبطال</b>
+          </button>
+          <button class="tile" data-go="shop">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 8h12l1 12H5z" />
+              <path d="M9 8V6a3 3 0 0 1 6 0v2M9 12a3 3 0 0 0 6 0" /></svg
+            ><b>المتجر</b><i class="sale" id="saleTag" dir="ltr" hidden>−30%</i>
+          </button>
+          <button class="tile" data-go="tree">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="5" r="2" />
+              <circle cx="6" cy="18" r="2" />
+              <circle cx="18" cy="18" r="2" />
+              <circle cx="12" cy="13" r="1.4" />
+              <path d="M12 7v4.6M11 14l-4 2.6M13 14l4 2.6" /></svg
+            ><b>المهارات</b>
+          </button>
+          <button class="tile" data-go="ach">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
+              <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8M10 17h4" /></svg
+            ><b>المهام</b><i class="badge" id="dailyBadge" hidden></i>
+          </button>
+          <button class="tile" data-go="board">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 17 3 8l5 4 4-7 4 7 5-4-1 9z" />
+              <path d="M4 20.5h16" />
+              <circle cx="12" cy="13.5" r="1" /></svg
+            ><b>الصدارة</b>
+          </button>
+          <button class="tile" id="mChat">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 5h16v11H9l-5 4z" />
+              <path d="M8 9.5h8M8 12.5h5" /></svg
+            ><b>الشات</b><i class="badge" id="chatBadge" hidden></i>
+          </button>
+        </div>
+        <button class="btn" id="mLab" hidden>🧪 المختبر: جرّب كل شي بسرعة</button>
+        <p class="credit">
+          <span class="crOrn">✦</span> صُنعت في <em>الرافعية</em> بواسطة <b>Vamos</b> <span class="crOrn">✦</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="screen veil" id="chars" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>الأبطال</h2>
+          <div class="wallet"><span class="wCoins"></span></div>
+          <button class="btn sm" data-go="menu">رجوع</button>
+        </div>
+        <div class="grid" id="charGrid"></div>
+      </div>
+    </div>
+
+    <div id="news" hidden>
+      <div class="nBox" role="dialog" aria-label="أخبار اللعبة">
+        <header class="nHead">
+          <span class="nIc">📰</span>
+          <div>
+            <h2>أخبار الساحة</h2>
+            <small>وش الجديد باللعبة</small>
+          </div>
+          <button class="nClose" id="newsClose" aria-label="إغلاق">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </header>
+        <div id="newsList"></div>
+        <button class="btn go" id="newsOk">يلا نلعب</button>
+      </div>
+    </div>
+
+    <div class="screen veil" id="shop" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>المتجر</h2>
+          <div class="wallet"><span class="wCoins"></span></div>
+          <button class="btn sm" data-go="menu">رجوع</button>
+        </div>
+        <div id="shopHero"></div>
+        <h4 class="sec">تطويرات دائمة</h4>
+        <div class="grid" id="permGrid"></div>
+        <h4 class="sec">دليل الأسلحة: تجيك كلها بالبطاقات أثناء الجولة، وتتطور فيها</h4>
+        <div class="grid" id="wepGrid"></div>
+      </div>
+    </div>
+
+    <div class="screen veil" id="tree" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>شجرة المهارات</h2>
+          <div class="wallet"><span class="wSp"></span></div>
+          <button class="btn sm" data-go="menu">رجوع</button>
+        </div>
+        <p class="note" id="treeNote">
+          تكسب نقطة مهارة ✨ عن كل زعيم تهزمه وعن بعض الإنجازات. اختر الفرع من فوق، وكل فرع ينفتح من أول مهارة لآخرها.
+        </p>
+        <div id="treeView"></div>
+      </div>
+    </div>
+
+    <div class="screen veil" id="ach" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>المهام والإنجازات</h2>
+          <button class="btn sm" data-go="menu">رجوع</button>
+        </div>
+        <h4 class="sec">🎯 مهام اليوم</h4>
+        <div class="grid" id="dailyGrid"></div>
+        <p class="note" id="dailyReset"></p>
+        <h4 class="sec">🏆 الإنجازات</h4>
+        <div class="grid" id="achGrid"></div>
+      </div>
+    </div>
+
+    <div class="screen veil" id="settings" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>الإعدادات</h2>
+          <button class="btn sm" id="setBack">رجوع</button>
+        </div>
+        <div class="row">
+          <label for="oSfx">المؤثرات الصوتية</label><input type="range" id="oSfx" min="0" max="1" step="0.05" />
+        </div>
+        <div class="row">
+          <label for="oMus">الموسيقى</label><input type="range" id="oMus" min="0" max="1" step="0.05" />
+        </div>
+        <div class="row"><span>الظلال</span><button class="btn sm sw" id="oShadow"></button></div>
+        <div class="row"><span>اهتزاز الشاشة</span><button class="btn sm sw" id="oShake"></button></div>
+        <div class="row"><span>جودة الرسم</span><button class="btn sm sw" id="oQual"></button></div>
+        <div class="row"><span>عداد الفريمات (FPS)</span><button class="btn sm sw" id="oFps"></button></div>
+        <div class="row"><span>توفير البطارية (60 إطار ثابتة)</span><button class="btn sm sw" id="oEco"></button></div>
+        <div class="row"><span>مكان أزرار الهجوم</span><button class="btn sm sw" id="oSide"></button></div>
+        <div class="row">
+          <span>كود هدية</span>
+          <span class="giftBox"
+            ><input class="txt" id="giftIn" placeholder="GF1-..." autocomplete="off" spellcheck="false" /><button
+              class="btn sm"
+              id="giftOk"
+            >
+              استخدم
+            </button></span
+          >
+        </div>
+        <p class="note credits">
+          أصوات القوائم: «Interface Sounds» من Kenney (CC0). أصوات المبارزة: «Oculus Audio Pack 01» من Oculus VR (رخصة
+          CC BY 4.0)، وKenney وPanderMusubi (CC0). المقاتل والحركات: Quaternius (CC0). الأيقونات: game-icons.net من Lorc
+          وDelapouite وغيرهم (رخصة CC BY 3.0)، وLucide (ISC). مؤثرات القتال: Kenney Particle Pack (CC0). نماذج الأسلحة:
+          KayKit وKenney (CC0).
+        </p>
+        <div id="devBox" hidden>
+          <h4 class="sec">👑 أدوات المطور</h4>
+          <p class="note">تعدّل حسابك على هذا الجهاز فقط. أدوات القتال (استدعاء وحوش وزعماء…) من زر 🧪 أثناء اللعب.</p>
+          <div class="labg" id="devTools"></div>
+        </div>
+        <div class="row bkRow">
+          <span>نسخة احتياطية لتقدمك</span>
+          <div class="bkBox">
+            <textarea class="txt" id="bkIn" placeholder="الصق كود التقدم هنا (AS1-...)" spellcheck="false"></textarea>
+            <div class="bkBtns">
+              <button class="btn sm" id="bkCopy">📋 انسخ تقدمي</button
+              ><button class="btn sm" id="bkLoad">استرجع</button>
+            </div>
+          </div>
+        </div>
+        <div class="row"><span>مسح كل التقدم</span><button class="btn sm sw" id="oReset">امسح</button></div>
+      </div>
+    </div>
+
+    <div class="screen veil" id="board" hidden>
+      <div class="wrap boardWrap">
+        <div class="head">
+          <div class="boardTitle">
+            <p class="eyebrow">HALL OF ASH</p>
+            <h2>قاعة المجد</h2>
+          </div>
+          <button class="iconBtn" id="bHow" aria-label="كيف تنحسب الترتيبات" aria-expanded="false">ⓘ</button>
+          <button class="btn sm" id="bName"></button>
+          <button class="btn sm" data-go="menu">رجوع</button>
+        </div>
+        <div id="bRule">
+          <b>خمس قاعات، خمس بطولات</b>
+          <p>كل لاعب يظهر بكل جولاته مع بعض (نفس أرقام ملفه). اختر القاعة من التبويبات، والترتيب كذا:</p>
+          <ol>
+            <li>
+              <span>🏆</span>
+              <p>
+                <b>الأسبوع:</b> زعماء هذا الأسبوع، ثم قتلاته، ثم أسرع فوز.
+                <small class="bWhy">يتجدد كل اثنين، فكل أسبوع معركة جديدة. جولات المختبر ما تنحسب.</small>
+              </p>
+            </li>
+            <li>
+              <span>🛡️</span>
+              <p><b>الصمود:</b> أطول مدة بقاء حياً في جولة وحدة.</p>
+            </li>
+            <li>
+              <span>👑</span>
+              <p><b>الزعماء:</b> أكثر زعماء أسقطتهم في كل جولاتك. الزعيم هو وحش المرحلة الكبير، وبالهاوية بعد.</p>
+            </li>
+            <li>
+              <span>⚡</span>
+              <p><b>الأسرع:</b> أقل زمن للوصول إلى أول زعيم وإسقاطه.</p>
+            </li>
+            <li>
+              <span>💀</span>
+              <p><b>القتلات:</b> أكثر أعداء أسقطتهم في كل جولاتك.</p>
+            </li>
+          </ol>
+          <p class="bNote">⭐ أرقام الصمود والأسرع تُسجَّل من الجولات الجديدة، والأرقام تتحدث بعد كل جولة تخلصها.</p>
+        </div>
+        <nav class="boardTabs" id="boardTabs" role="tablist" aria-label="ترتيبات قاعة المجد">
+          <button type="button" role="tab" data-metric="week" class="active">🏆 الأسبوع</button>
+          <button type="button" role="tab" data-metric="endure">🛡️ الصمود</button>
+          <button type="button" role="tab" data-metric="bosses">👑 الزعماء</button>
+          <button type="button" role="tab" data-metric="fast">⚡ الأسرع</button>
+          <button type="button" role="tab" data-metric="kills">💀 القتلات</button>
+        </nav>
+        <p class="boardLead" id="boardLead"></p>
+        <div class="podium" id="podium" aria-live="polite"></div>
+        <div id="boardList"></div>
+        <p class="note" id="boardMode"></p>
+        <div id="offBox">
+          <h4 class="sec">أرسل نتيجتك لخوياك</h4>
+          <textarea class="txt" id="myCode" readonly></textarea>
+          <button class="btn sm mt8" id="bCopy">📋 انسخ نتيجتي</button>
+          <h4 class="sec">أضف نتيجة خويّك</h4>
+          <p class="note" id="pasteNote">الصق هنا الرسالة أو الكود اللي أرسله لك.</p>
+          <textarea class="txt" id="inCode" placeholder="AR1-..."></textarea>
+          <button class="btn sm mt8" id="bAdd">أضف للقائمة</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="screen veil center" id="nameScr" hidden>
+      <h2>وش اسمك؟</h2>
+      <p class="note" id="nameNote">يظهر اسمك في قائمة الصدارة</p>
+      <div class="stack">
+        <input class="txt" id="nameIn" maxlength="14" autocomplete="off" placeholder="اكتب اسمك" />
+        <button class="btn go" id="nameOk">ادخل الساحة</button>
+      </div>
+    </div>
+
+    <div class="screen" id="cards" hidden>
+      <h2 id="cardTitle"></h2>
+      <p id="cardSub"></p>
+      <div id="cardRow"></div>
+      <button class="btn sm" id="reroll" hidden></button>
+    </div>
+
+    <div class="screen" id="lab" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>🧪 المختبر</h2>
+          <button class="btn go" id="labClose">رجوع للعب</button>
+        </div>
+        <p class="note" id="labNote">جولات المختبر ما تنحسب بالصدارة ولا تعطي عملات.</p>
+        <h4 class="sec">استدعِ وحوش (3 من كل نوع)</h4>
+        <div class="labg" id="labMon"></div>
+        <h4 class="sec">جرّب سلاح</h4>
+        <div class="labg" id="labWep"></div>
+        <h4 class="sec">استدعِ زعيم</h4>
+        <div class="labg" id="labBoss"></div>
+        <h4 class="sec">انتقل لمرحلة</h4>
+        <div class="labg" id="labStage"></div>
+        <h4 class="sec">أدوات</h4>
+        <div class="labg" id="labTools"></div>
+      </div>
+    </div>
+
+    <div class="screen veil" id="chat" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>الشات العام</h2>
+          <button class="btn sm" id="cName"></button><button class="btn sm" id="cBack">رجوع</button>
+        </div>
+        <p class="note" id="chatInfo"></p>
+        <div class="labg" id="chatMod" hidden></div>
+        <div id="chatList"></div>
+        <form id="chatForm">
+          <input class="txt" id="chatIn" maxlength="200" autocomplete="off" placeholder="اكتب رسالتك…" />
+          <button class="btn go sm" id="chatSend">إرسال</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="screen veil center" id="pause" hidden>
+      <h2>استراحة</h2>
+      <div id="pStats"></div>
+      <div class="stack">
+        <button class="btn go" id="pResume">أكمل القتال</button>
+        <button class="btn" id="pSet">⚙️ الإعدادات</button>
+        <button class="btn" id="pChat">💬 الشات العام</button>
+        <button class="btn" id="pSave">احفظ واخرج للقائمة</button>
+        <button class="btn" id="pQuit">أنهِ الجولة</button>
+        <p class="credit">
+          <span class="crOrn">✦</span> صُنعت في <em>الرافعية</em> بواسطة <b>Vamos</b> <span class="crOrn">✦</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="screen veil center" id="over" hidden>
+      <h2 id="ovTitle">سقطت في الساحة</h2>
+      <div class="sum" id="ovSum"></div>
+      <div class="stack">
+        <button class="btn go" id="ovRetry">جولة جديدة</button>
+        <button class="btn" id="ovShot">🖼️ صورة نتيجتي</button>
+        <button class="btn" id="ovCopy">📋 انسخ نتيجتي لخوياي</button>
+        <button class="btn" id="ovMenu">القائمة الرئيسية</button>
+        <p class="credit">
+          <span class="crOrn">✦</span> صُنعت في <em>الرافعية</em> بواسطة <b>Vamos</b> <span class="crOrn">✦</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="screen center" id="ending" hidden>
+      <h2>مبروك، وصلت النهاية</h2>
+      <p id="endStats"></p>
+      <p id="endTaunt"></p>
+      <div class="stack">
+        <button class="btn go" id="endGo">ادخل الهاوية</button>
+        <button class="btn" id="endExit">هذا حدّي، احفظ رقمي واخرج</button>
+      </div>
+    </div>
+
+    <div id="cine"><b></b></div>
+    <div id="evoFx" hidden>
+      <div class="efRays"></div>
+      <div class="efIcons"><i class="efFrom"></i><b class="efArrow">←</b><i class="efTo"></i></div>
+      <small>تطوّر السلاح</small>
+      <h3></h3>
+      <p></p>
+    </div>
+    <div id="toast"></div>
+
+    <!-- three.js r128 + GLTFLoader (globals: THREE, THREE.GLTFLoader) -->
+    <script src="assets/vendor/01-three.min.js"></script>
+    <script src="assets/vendor/02-GLTFLoader.js"></script>
+    <!-- bloom post-processing (used on high quality) -->
+    <script src="assets/vendor/03-CopyShader.js"></script>
+    <script src="assets/vendor/04-LuminosityHighPassShader.js"></script>
+    <script src="assets/vendor/05-EffectComposer.js"></script>
+    <script src="assets/vendor/06-RenderPass.js"></script>
+    <script src="assets/vendor/07-ShaderPass.js"></script>
+    <script src="assets/vendor/08-UnrealBloomPass.js"></script>
+    <!-- Game scripts: plain (non-module) scripts sharing one global scope. ORDER MATTERS:
+     each file may only use, at load time, what the files above it define. -->
+    <script src="js/data/icon-set.js?v=202611160222&rev=local-sample-688bc4488241f2c1"></script>
+    <script src="js/ui/icons.js?v=202611160222&rev=local-sample-856ec793f07fb07a"></script>
+    <script src="js/core/utils.js?v=202611160222&rev=local-sample-095bc13730c2e63a"></script>
+    <script src="js/core/config.js?v=202611160222&rev=local-sample-2ce6a86531001213"></script>
+    <script src="js/core/dom.js?v=202611160222&rev=local-sample-8656f803f49d9e41"></script>
+    <script src="js/core/clipboard.js?v=202611160222&rev=local-sample-88d88981e36c1641"></script>
+    <script src="js/core/codes.js?v=202611160222&rev=local-sample-958f1879b153eaf3"></script>
+    <script src="js/core/save.js?v=202611160222&rev=local-sample-d5ad8f3adf189758"></script>
+    <script src="js/data/weapons.js?v=202611160222&rev=local-sample-e17190884df55e30"></script>
+    <script src="js/data/characters.js?v=202611160222&rev=local-sample-4c93b8a330173a22"></script>
+    <script src="js/data/upgrades.js?v=202611160222&rev=local-sample-15c5256275bce355"></script>
+    <script src="js/data/achievements.js?v=202611160222&rev=local-sample-c3adb17dff87925a"></script>
+    <script src="js/data/stages.js?v=202611160222&rev=local-sample-074c1e5fe7732255"></script>
+    <script src="js/data/enemies.js?v=202611160222&rev=local-sample-2e9149168d03b8a9"></script>
+    <script src="js/data/missions.js?v=202611160222&rev=local-sample-b15e53d666e7bbe2"></script>
+    <script src="js/data/news.js?v=202611160222&rev=local-sample-e2f9d01db7491137"></script>
+    <script src="js/audio/sound.js?v=202611160222&rev=local-sample-5a5f7483e0946de5"></script>
+    <script src="js/audio/music-track.js?v=202611160222&rev=local-sample-937acab1c300a423"></script>
+    <script src="js/render/scene.js?v=202611160222&rev=local-sample-c31950eb346be99a"></script>
+    <script src="js/render/geometry.js?v=202611160222&rev=local-sample-2690df2fa76b14ed"></script>
+    <script src="js/render/instances.js?v=202611160222&rev=local-sample-f7d938addca467ef"></script>
+    <script src="js/render/vfx.js?v=202611160222&rev=local-sample-617e927dd26c0c35"></script>
+    <script src="js/render/world.js?v=202611160222&rev=local-sample-0d734463c166af23"></script>
+    <script src="js/render/atmosphere.js?v=202611160222&rev=local-sample-f80e90b5d4d111af"></script>
+    <script src="js/render/player-model.js?v=202611160222&rev=local-sample-820a9c8ed74b3757"></script>
+    <script src="js/game/state.js?v=202611160222&rev=local-sample-6022604da43031fb"></script>
+    <script src="js/game/fx.js?v=202611160222&rev=local-sample-fe552b07d814e221"></script>
+    <script src="js/game/spawning.js?v=202611160222&rev=local-sample-e41bfc589d4932b9"></script>
+    <script src="js/game/combat.js?v=202611161015&rev=local-sample-attackpulse"></script>
+    <script src="js/game/specials.js?v=202611160222&rev=local-sample-6b0c7000cc1afc04"></script>
+    <script src="js/game/boss-intro.js?v=202611160222&rev=local-sample-c5b675056f39bcd7"></script>
+    <script src="js/game/boss-ults.js?v=202611160222&rev=local-sample-96eee3538453a045"></script>
+    <script src="js/game/progression.js?v=202611160222&rev=local-sample-adddc7992b8f7edb"></script>
+    <script src="js/game/update.js?v=202611161020&rev=local-sample-updatefix"></script>
+    <script src="js/game/enemy-ai.js?v=202611160222&rev=local-sample-2b70c5dfb76ea527"></script>
+    <script src="js/game/cards.js?v=202611160222&rev=local-sample-c25749c9e89aa5d4"></script>
+    <script src="js/game/run.js?v=202611160222&rev=local-sample-9fa3f62df9360a4b"></script>
+    <script src="js/game/daily.js?v=202611160222&rev=local-sample-d0c4ee549d76180e"></script>
+    <script src="js/ui/hud.js?v=202611160222&rev=local-sample-c7935c7e7d0d380a"></script>
+    <script src="js/ui/screens.js?v=202611160222&rev=local-sample-3797dbc39b5d161e"></script>
+    <script src="js/ui/portraits.js?v=202611160222&rev=local-sample-d2e52c095e8af596"></script>
+    <script src="js/ui/board-rank.js?v=202611160222&rev=local-sample-38ad0a8c09d25e3f"></script>
+    <script src="js/ui/leaderboard.js?v=202611160222&rev=local-sample-27faa8e2095e1052"></script>
+    <script src="js/ui/chat.js?v=202611160222&rev=local-sample-685b439958512409"></script>
+    <script src="js/ui/avatar.js?v=202611160222&rev=local-sample-934161f66c6ec02a"></script>
+    <script src="js/ui/profile.js?v=202611160222&rev=local-sample-6aa55510630a583c"></script>
+    <script src="js/ui/live.js?v=202611160222&rev=local-sample-9cce085cefb6473d"></script>
+    <script src="js/coop/coop.js?v=202611160222&rev=local-sample-350c67eba8431817"></script>
+    <script src="js/coop/coop-lobby.js?v=202611160222&rev=local-sample-a5c23020442c2aa7"></script>
+    <script src="js/ui/gift.js?v=202611160222&rev=local-sample-d52cdb4419d39a28"></script>
+    <script src="js/ui/backup.js?v=202611160222&rev=local-sample-79e58efee4061eb5"></script>
+    <script src="js/ui/share-card.js?v=202611160222&rev=local-sample-2038d69a8fa0ad68"></script>
+    <script src="js/ui/skill-tree.js?v=202611160222&rev=local-sample-241ad6f6d410ddd4"></script>
+    <script src="js/ui/news.js?v=202611160222&rev=local-sample-1499cad738fd5a7c"></script>
+    <script src="js/ui/lab.js?v=202611160222&rev=local-sample-b0e1011c1c3e992b"></script>
+    <script src="js/ui/dev.js?v=202611160222&rev=local-sample-1df143956748d5d7"></script>
+    <script src="js/ui/intro.js?v=202611160222&rev=local-sample-40252e84eb458a97"></script>
+    <script src="js/input.js?v=202611160222&rev=local-sample-a74c3860fd28a8ff"></script>
+    <script src="js/render/menu2.js?v=202611160222&rev=local-sample-31016e0c758954fb"></script>
+    <script src="js/render/renderer.js?v=202611160222&rev=local-sample-dc316c885909e80f"></script>
+    <script src="js/render/models.js?v=202611160222&rev=local-sample-b5956f92f3bfa383"></script>
+    <script src="js/render/actor-models.js?v=202611161025&rev=local-sample-fastattack"></script>
+    <script src="js/render/perf.js?v=202611160222&rev=local-sample-8987919bfe68ee14"></script>
+    <script src="js/duel/duel-audio.js?v=202611160222&rev=local-sample-5c184a0a5a92f7fe"></script>
+    <script src="js/duel/duel-sfx.js?v=202611160222&rev=local-sample-cb79fad6b294a51d"></script>
+    <script src="js/duel/duel-fighter.js?v=202611160222&rev=local-sample-576f0598c323c3ea"></script>
+    <script src="js/duel/duel-weapons.js?v=202611160222&rev=local-sample-21c19050db81d74a"></script>
+    <script src="js/duel/duel-gore.js?v=202611160222&rev=local-sample-288995dc4957884e"></script>
+    <script src="js/duel/duel-arena.js?v=202611160222&rev=local-sample-a308f60f91817373"></script>
+    <script src="js/duel/duel-ai.js?v=202611160222&rev=local-sample-b9c42e33f91e4085"></script>
+    <script src="js/duel/duel-mode.js?v=202611160222&rev=local-sample-862634f2885c72ac"></script>
+    <script src="js/duel/duel-finisher.js?v=202611160222&rev=local-sample-969fbd48a70b7140"></script>
+    <script src="js/duel/duel-intro.js?v=202611160222&rev=local-sample-6633d3a9c80b13eb"></script>
+    <script src="js/duel/duel-net.js?v=202611160222&rev=local-sample-21414befc3145a53"></script>
+    <script src="js/duel/duel-lobby.js?v=202611160222&rev=local-sample-a7b22d3e92ce9918"></script>
+    <script src="js/duel/duel-ffa.js?v=202611160222&rev=local-sample-63595500b29194c0"></script>
+    <script src="js/ui/voice.js?v=202611160222&rev=local-sample-8d36212b9b47d94f"></script>
+    <script src="js/main.js?v=202611160222&rev=local-sample-961ce4bbe107dcd7"></script>
+      <script id="preview-touch-bootstrap">
+      /* Preview-only mobile touch fixes: do not auto-open the news bulletin over the menu,
+         prefill the name field so the enter button works, and keep HUD controls above
+         the temporary-preview banner injected by Manus. */
+      (function () {
+        var marked = false;
+        function mark() {
+          var root = document.querySelector('manus-previewer-root');
+          if (!marked && (root || location.hostname.indexOf('manus.computer') >= 0)) {
+            marked = true;
+            document.body.classList.add('ashen-preview');
+          }
+        }
+        mark();
+        new MutationObserver(mark).observe(document.documentElement, { childList: true, subtree: true });
+        var tries = 0;
+        var timer = setInterval(function () {
+          if (++tries > 40) return clearInterval(timer);
+          if (typeof S === 'undefined' || typeof NEWS === 'undefined') return;
+          try {
+            if (NEWS.length) { S.newsSeen = NEWS[0].id; save(); newsDot(); }
+            var input = document.getElementById('nameIn');
+            if (input && !input.value) input.value = 'ضيف التجربة';
+            clearInterval(timer);
+          } catch (e) {}
+        }, 200);
+        /* Manual play only. If an in-app browser suppresses the synthetic click after a
+           touch, forward the touch to the same button once. */
+        document.addEventListener('click', function (e) {
+          var t = e.target && e.target.closest ? e.target.closest('button, [data-go], a') : null;
+          if (t) t.__lastClick = Date.now();
+        }, true);
+        document.addEventListener('touchend', function (e) {
+          var t = e.target && e.target.closest ? e.target.closest('button, [data-go], a') : null;
+          if (!t) return;
+          setTimeout(function () {
+            if (t.__lastClick && Date.now() - t.__lastClick < 700) return;
+            try { t.click(); } catch (err) {}
+          }, 70);
+        }, { capture: true, passive: true });
+      })();
+    </script>
+  </body>
+</html>
