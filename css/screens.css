@@ -339,8 +339,29 @@ textarea.txt {
   z-index: 60;
 }
 /* leaderboard: the hall of ash */
+/* the hall opens over the live scene: dark at the edges, the arena glowing through */
+#board.veil {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(5, 4, 9, 0.95) 0%,
+      rgba(5, 4, 9, 0.38) 24%,
+      rgba(5, 4, 9, 0.22) 58%,
+      rgba(5, 4, 9, 0.92) 100%
+    ),
+    radial-gradient(120% 80% at 50% 45%, transparent 35%, rgba(3, 2, 6, 0.72) 100%);
+  backdrop-filter: blur(1.5px) saturate(1.08);
+}
 #board .boardWrap {
   max-width: 720px;
+  padding: 12px 14px 20px;
+  border: 1px solid rgba(246, 196, 90, 0.16);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(10, 10, 20, 0.6), rgba(8, 7, 16, 0.72));
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.45),
+    inset 0 1px rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
 }
 .boardTitle {
   margin-inline-end: auto;

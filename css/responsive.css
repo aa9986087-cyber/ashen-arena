@@ -1,5 +1,9 @@
 /* Phone layout and reduced motion. */
 @media (max-width: 640px) {
+  #board .boardWrap {
+    padding: 8px 8px 16px;
+    border-radius: 18px;
+  }
   /* the hall of ash: a compact throne for three */
   .pod {
     padding: 12px 5px 10px;

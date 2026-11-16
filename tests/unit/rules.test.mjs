@@ -253,3 +253,14 @@ test('opening the hall draws it and asks for the online board exactly once', asy
   assert.equal(g.node('board').hidden, true);
   assert.equal(g.events.network.length, 0); // the stub stands in for the real fetch
 });
+
+test('every update has one news entry, and the newest sits on top', async () => {
+  const g = await globals();
+  assert.ok(g.run('NEWS.length > 2'));
+  assert.equal(g.run('new Set(NEWS.map(n => n.id)).size'), g.run('NEWS.length'));
+  assert.equal(
+    g.run('NEWS.every(n => /^\\d{4}-\\d\\d-\\d\\d-\\d{4}$/.test(n.id) && n.title && n.items.length > 0)'),
+    true
+  );
+  assert.equal(g.run('NEWS.every((n, i) => i === 0 || NEWS[i - 1].id > n.id)'), true);
+});
