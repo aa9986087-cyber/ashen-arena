@@ -9,7 +9,7 @@ const cfg = JSON.parse(fs.readFileSync(path.join(root, 'test/modular-config.json
 const release = path.join(root, 'test/releases', cfg.release);
 const manifest = JSON.parse(fs.readFileSync(path.join(release, 'manifest.json'), 'utf8'));
 const sha = b => createHash('sha256').update(b).digest('hex');
-assert.deepEqual(manifest.enabledAddons, []);
+assert.deepEqual(manifest.enabledAddons, cfg.enabledAddons);
 assert.equal(manifest.sourceKind, 'production-root');
 for (const [file, hash] of Object.entries(manifest.baseHashes)) {
   assert.equal(sha(fs.readFileSync(path.join(root, file))), hash, 'production source changed: ' + file);
