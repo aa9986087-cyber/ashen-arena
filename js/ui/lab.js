@@ -53,10 +53,10 @@ function buildLab() {
     labBtn(B, q.boss, () => {
       clearField();
       G.forceBoss = q.bk;
+      closeLab(); // the entrance plays in a live run, not behind the lab panel
       spawnBoss();
       G.forceBoss = null;
       G.wave = 5;
-      closeLab();
     })
   );
   STAGES.forEach((q, i) =>
