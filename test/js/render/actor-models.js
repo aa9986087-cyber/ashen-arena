@@ -2,7 +2,7 @@
 /* SAMPLE only: one local knight and one forest guardian. No baked geometry/crowd changes.
    See runtime-integration.md for the small parent-owned hooks. No loading side effects. */
 const ACTOR_CONFIG = {
-  version: 2,
+  version: 3,
   textureEdge: 1024,
   fade: 0.08,
   knight: {
@@ -13,7 +13,7 @@ const ACTOR_CONFIG = {
   },
   ranger: {
     // Fantasy ranger silhouette: hooded rogue/cape, not the uncovered generic rogue.
-    file: 'assets/models/hero-ranger-fantasy-animated.glb', height: 2.5, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0,
+    file: 'assets/models/hero-ranger-fantasy-emerald-bright.glb', height: 2.5, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0,
     clips: { idle: 'idle', run: 'run', attack: 'shoot', hurt: 'hurt', fall: 'fall' }, handBone: 'R_Hand',
     weapon: { position: [0, 0, 0], rotation: [Math.PI, 0, 0], scale: 1 },
   },
@@ -234,7 +234,9 @@ const ACTOR_MODELS = (() => {
     root.traverse(o => {
       if (!o.isMesh || !o.material || !o.material.color) return;
       const n = compact(o.name);
-      // Desaturated leather, charcoal cloth and a restrained ember-red hood accent.
+      // Lift the generated albedo slightly so the emerald palette reads on mobile screens.
+      o.material.color.setRGB(1.18, 1.18, 1.18);
+      // Emerald cloth, warm copper leather and restrained antique-gold accents.
       if (/headhooded|cape/.test(n)) o.material.color.multiply(new THREE.Color(0.42, 0.24, 0.2));
       else if (/body|arm|leg/.test(n)) o.material.color.multiply(new THREE.Color(0.48, 0.5, 0.46));
     });
