@@ -8,6 +8,8 @@ const MUSIC = {
   win: 'assets/audio/music/win.m4a',
   lose: 'assets/audio/music/lose.m4a',
 };
+/** Music bed levels (before the player's music setting): quiet behind the fight, a little louder for the boss. */
+const MUSIC_VOL = { menu: 0.45, run: 0.28, runPeak: 0.12, boss: 0.5, sting: 0.6 };
 /** Which theme belongs to a game state: a boss overrides the run; everything outside a run is the menu. */
 function musicFor(state, boss) {
   const run = state === 'play' || state === 'cards' || state === 'paused' || state === 'lab';

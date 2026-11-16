@@ -55,12 +55,16 @@ const CM = {
       mus = S.set.mus;
     for (const [k, a] of this.el) {
       let target = 0;
-      if (k === this.cur) target = (k === 'menu' ? 0.6 : k === 'boss' ? 0.95 : 0.55 + 0.35 * MUS.i) * mus * duck;
+      if (k === this.cur)
+        target =
+          (k === 'menu' ? MUSIC_VOL.menu : k === 'boss' ? MUSIC_VOL.boss : MUSIC_VOL.run + MUSIC_VOL.runPeak * MUS.i) *
+          mus *
+          duck;
       a.volume = clamp(a.volume + (target - a.volume) * 0.06, 0, 1);
       if (a.volume <= 0.002 && !a.paused && (k !== this.cur || mus <= 0)) a.pause();
     }
     for (const s of this.stings) {
-      s.volume = clamp(s.volume + (mus * 0.9 - s.volume) * 0.2, 0, 1);
+      s.volume = clamp(s.volume + (mus * MUSIC_VOL.sting - s.volume) * 0.2, 0, 1);
       if (s.ended) this.stings.delete(s);
     }
   },

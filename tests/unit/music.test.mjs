@@ -19,6 +19,13 @@ test('musicFor picks the boss over the run and the menu everywhere else', () => 
   for (const st of ['menu', 'over', 'intro', 'count', 'duel']) assert.equal(run(`musicFor('${st}', true)`), 'menu', st);
 });
 
+test('the music stays a background bed, and the boss sits just above the run', () => {
+  const v = run('MUSIC_VOL');
+  assert.ok(v.run + v.runPeak <= v.boss, 'the run never outshines the boss theme');
+  assert.ok(v.boss <= 0.55, 'even the boss theme stays behind the effects');
+  assert.ok(v.menu > v.run, 'the menu can be a little fuller than the fight');
+});
+
 test('every theme in the soundtrack exists as a real audio file', () => {
   const themes = run('MUSIC');
   assert.deepEqual(Object.keys(themes).sort(), ['boss', 'lose', 'menu', 'run', 'win']);

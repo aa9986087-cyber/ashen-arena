@@ -12,10 +12,12 @@ const AU = {
     try {
       const C = window.AudioContext || window.webkitAudioContext;
       this.ctx = new C();
-      this.sg = this.ctx.createGain();
+      this.sg = this.ctx.createGain(); // the fight
+      this.ug = this.ctx.createGain(); // menus: kept softer than the fight
       this.mg = this.ctx.createGain();
       const comp = this.ctx.createDynamicsCompressor();
       this.sg.connect(comp);
+      this.ug.connect(comp);
       this.mg.connect(comp);
       comp.connect(this.ctx.destination);
       const dl = this.ctx.createDelay(1),
@@ -42,7 +44,8 @@ const AU = {
   },
   vol() {
     if (!this.ctx) return;
-    this.sg.gain.value = S.set.sfx;
+    this.sg.gain.value = Math.min(1, S.set.sfx * 1.25); // the fight sits above the music bed
+    this.ug.gain.value = S.set.sfx * 0.85; // button clips stay gentle
     this.mg.gain.value = S.set.mus * 0.55;
   },
   tone(f, d, type, v, f2, when, dest) {
@@ -100,7 +103,7 @@ const AU = {
     s.buffer = buf;
     g.gain.value = v;
     s.connect(g);
-    g.connect(this.sg);
+    g.connect(this.ug || this.sg);
     s.start();
     // a screen opening, a purchase or a refusal right on a button's click: that sound alone, not both on top
     if (n === 'click') this.lastClick = { s, t: c.currentTime };
