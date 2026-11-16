@@ -84,7 +84,7 @@ const AU = {
     if (this.ui) return;
     this.ui = {};
     for (const n of ['click', 'open', 'back', 'ok', 'no'])
-      fetch('assets/audio/ui/' + n + '.mp3?v=1')
+      fetch('assets/audio/ui/' + n + '.mp3?v=2')
         .then(r => r.arrayBuffer())
         .then(b => new Promise((ok, no) => this.ctx.decodeAudioData(b, ok, no)))
         .then(buf => (this.ui[n] = buf))
