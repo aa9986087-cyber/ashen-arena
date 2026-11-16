@@ -11,8 +11,16 @@ const ACTOR_CONFIG = {
     // PROVISIONAL: actual provider bone axes must be calibrated, not a KayKit socket.
     weapon: { position: [0, 0, 0], rotation: [Math.PI, 0, 0], scale: 1 },
   },
+  ranger: {
+    file: 'assets/models/hero-ranger.glb', height: 2.5, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0,
+    clips: {}, handBone: null,
+    weapon: { position: [0, 0, 0], rotation: [Math.PI, 0, 0], scale: 1 },
+  },
   guardian: {
     file: 'assets/models/overhaul/guardian.glb', height: null, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0, clips: {},
+  },
+  bossKnight: {
+    file: 'assets/models/boss-knight.glb', height: null, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0, clips: {},
   },
 };
 const ACTOR_MODELS = (() => {
@@ -291,7 +299,7 @@ const ACTOR_MODELS = (() => {
     g.add(fit); fit.add(offset); offset.add(asset.root);
     fit.scale.setScalar(asset.fit); offset.position.set(...asset.offset); fit.rotation.y = cfg.yaw;
     const mixer = new THREE.AnimationMixer(asset.root), actions = {};
-    const layers = key === 'knight' ? knightLayers(asset) : null;
+    const layers = ['knight', 'ranger'].includes(key) ? knightLayers(asset) : null;
     for (const role in asset.clips) actions[role] = mixer.clipAction((layers && layers.lower[role]) || asset.clips[role]);
     const a = { key, asset, g, fit, mixer, actions, role: null, current: null, shot: null, previous: null, clock: null, wall: null, seen: {} };
     if (layers) {
@@ -413,7 +421,7 @@ const ACTOR_MODELS = (() => {
   function weaponSync(R) {
     const a = R && R.actor;
     if (!a || !a.hand || !R.wp) return;
-    const cfg = ACTOR_CONFIG.knight.weapon;
+    const cfg = (ACTOR_CONFIG[a.key] || ACTOR_CONFIG.knight).weapon || ACTOR_CONFIG.knight.weapon;
     a.g.updateMatrixWorld(true);
     a.hand.matrixWorld.decompose(a.hp, a.hq, a.hs);
     // Rigid sibling of the fitted/skinned body: cancel inherited scale and never skin the weapon.
@@ -441,16 +449,16 @@ const ACTOR_MODELS = (() => {
     R.wpHand = false;
   }
   function buildRig(R, charId, wep) {
-    if (typeof PM === 'undefined' || R !== PM || charId !== 'knight' || !assets.knight) return false;
+    if (typeof PM === 'undefined' || R !== PM || !['knight', 'ranger'].includes(charId) || !assets[charId]) return false;
     releaseRig(R);
-    const a = makeRig('knight'); knightRig = a;
+    const a = makeRig(charId); knightRig = a;
     R.actor = a; R.char = charId; R.g = a.g; R.hm = R.anim = null; R.wpHand = false;
     R.wp = new THREE.Group(); R.g.add(R.wp);
-    a.hand = findHand(a.asset.root, ACTOR_CONFIG.knight.handBone);
+    a.hand = findHand(a.asset.root, ACTOR_CONFIG[charId].handBone);
     for (const k of ['hp', 'hs', 'offset']) a[k] = new THREE.Vector3();
     for (const k of ['hq', 'gq', 'align']) a[k] = new THREE.Quaternion();
     R.wp.visible = !!a.hand;
-    if (!a.hand) console.warn('actor knight: no real right-hand BONE; held weapon hidden. Set ACTOR_CONFIG.knight.handBone.');
+    if (!a.hand) console.warn('actor ' + charId + ': no real right-hand BONE; held weapon hidden.');
     if (typeof buildWeapon === 'function') buildWeapon(R, wep);
     weaponSync(R); return true;
   }
@@ -468,11 +476,13 @@ const ACTOR_MODELS = (() => {
       const gaitSpeed = Math.max(0, (p.walk - old.walk) / dt / 1.5);
       if (gaitSpeed > 0 && gaitSpeed < (p.speed || 6) * 0.5) move = 'walk';
     }
-    a.g.position.set(p.x, ACTOR_CONFIG.knight.groundOffset, p.z); a.g.rotation.set(0, p.face || 0, 0);
-    knightAnimate(a, s, move, frozen && !s.dead ? 0 : dt, p, clock);
+    const cfg = ACTOR_CONFIG[a.key] || ACTOR_CONFIG.knight;
+    a.g.position.set(p.x, cfg.groundOffset, p.z); a.g.rotation.set(0, p.face || 0, 0);
+    if (a.key === 'knight') knightAnimate(a, s, move, frozen && !s.dead ? 0 : dt, p, clock);
+    else animate(a, s, move, frozen && !s.dead ? 0 : dt, 0.34, p.swing > 0 ? 1 - p.swing : 0);
     // The provider's locomotion clips are authored side-on; turn the body back to its facing.
     const loco = a.role === 'run' || a.role === 'walk';
-    const targetYaw = ACTOR_CONFIG.knight.yaw + (loco ? ACTOR_CONFIG.knight.locomotionYaw : 0);
+    const targetYaw = cfg.yaw + (loco ? cfg.locomotionYaw : 0);
     a.fit.rotation.y += (targetYaw - a.fit.rotation.y) * Math.min(1, dt * 14);
     weaponSync(R); return true;
   }
@@ -484,17 +494,18 @@ const ACTOR_MODELS = (() => {
     bossRig = bossEntity = tail = null;
   }
   function bossRender(e, now) {
-    if (!e || e.kind !== 0 || !assets.guardian || e.dead) return false;
-    if (!bossRig || bossEntity !== e) { destroyBoss(); bossRig = makeRig('guardian'); bossEntity = e; }
+    if (!e || e.kind !== 2 || !assets.bossKnight || e.dead) return false;
+    if (!bossRig || bossEntity !== e) { destroyBoss(); bossRig = makeRig('bossKnight'); bossEntity = e; }
     tail = null;
     const a = bossRig, old = a.previous, s = signals(a, e, true), dt = delta(a, e.t || 0, now);
     const cine = typeof CINE !== 'undefined' && CINE.on && CINE.freeze && CINE.boss === e;
     const moving = !cine && (e.st === 2 || (old && Math.hypot(e.x - old.x, e.z - old.z) > 0.001));
-    a.g.visible = true; a.g.position.set(e.x, (e.y || 0) + ACTOR_CONFIG.guardian.groundOffset, e.z);
+    const cfg = ACTOR_CONFIG.bossKnight;
+    a.g.visible = true; a.g.position.set(e.x, (e.y || 0) + cfg.groundOffset, e.z);
     a.g.rotation.set(0, e.face || 0, 0); a.g.scale.setScalar(e.scale || 1);
     animate(a, s, moving ? (e.st === 2 ? 'run' : 'walk') : 'idle', e.frz > 0 ? 0 : dt, Math.max(0.08, e.stT || 0.5), 0);
     const loco = a.role === 'run' || a.role === 'walk';
-    const targetYaw = ACTOR_CONFIG.guardian.yaw + (loco ? ACTOR_CONFIG.guardian.locomotionYaw : 0);
+    const targetYaw = cfg.yaw + (loco ? cfg.locomotionYaw : 0);
     a.fit.rotation.y += (targetYaw - a.fit.rotation.y) * Math.min(1, dt * 14);
     // Preserve original aura/bar in renderer/HUD; only the old body is suppressed.
     if (typeof bossMesh !== 'undefined') bossMesh.visible = false;
@@ -524,7 +535,11 @@ const ACTOR_MODELS = (() => {
     if (!cfg.height && typeof GEO !== 'undefined' && GEO.boss0) {
       GEO.boss0.computeBoundingBox(); cfg.height = GEO.boss0.boundingBox.max.y - GEO.boss0.boundingBox.min.y;
     }
-    return Promise.all(['knight', 'guardian'].map(key => {
+    const bossCfg = ACTOR_CONFIG.bossKnight;
+    if (!bossCfg.height && typeof GEO !== 'undefined' && GEO.boss2) {
+      GEO.boss2.computeBoundingBox(); bossCfg.height = GEO.boss2.boundingBox.max.y - GEO.boss2.boundingBox.min.y;
+    }
+    return Promise.all(['knight', 'ranger', 'guardian', 'bossKnight'].map(key => {
       if (assets[key]) return Promise.resolve(true);
       if (pending[key]) return pending[key];
       pending[key] = new Promise(resolve => {
@@ -534,9 +549,9 @@ const ACTOR_MODELS = (() => {
             try {
               if (token !== generation) { disposeResources(resources(gl.scene)); resolve(false); return; }
               assets[key] = prepare(key, gl, ACTOR_CONFIG[key].height);
-              if (key === 'knight') {
-                if (typeof PORTRAITS !== 'undefined') delete PORTRAITS.knight;
-                if (typeof S !== 'undefined' && S.char === 'knight' && typeof buildPlayer === 'function') buildPlayer();
+              if (key === 'knight' || key === 'ranger') {
+                if (typeof PORTRAITS !== 'undefined') delete PORTRAITS[key];
+                if (typeof S !== 'undefined' && S.char === key && typeof buildPlayer === 'function') buildPlayer();
               }
               console.info('actor ready', key, assets[key].diagnostics); resolve(true);
             } catch (error) {
