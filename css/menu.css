@@ -689,24 +689,3 @@
 }
 
 
-/* experimental build entry: a quiet pill, never part of the news or the run */
-#mTest {
-  position: fixed;
-  left: 14px;
-  bottom: calc(var(--sb) + 14px);
-  z-index: 30;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(246, 196, 90, 0.55);
-  background: rgba(10, 8, 18, 0.78);
-  color: #f2c46a;
-  font: 800 12px system-ui, sans-serif;
-  letter-spacing: 0.2px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-}
-#mTest:active { transform: scale(0.96); }
