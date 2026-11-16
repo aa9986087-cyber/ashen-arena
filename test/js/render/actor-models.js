@@ -288,7 +288,7 @@ const ACTOR_MODELS = (() => {
     if (one && duration > 0) next.setDuration(duration);
     next.time = Math.min(0.98, Math.max(0, progress)) * next.getClip().duration;
     next.play();
-    if (old && old !== next) { old.fadeOut(ACTOR_CONFIG.fade); next.fadeIn(ACTOR_CONFIG.fade); }
+    if (old && old !== next) { if (nextRole === 'attack') { old.stop(); next.setEffectiveWeight(1); } else { old.fadeOut(ACTOR_CONFIG.fade); next.fadeIn(ACTOR_CONFIG.fade); } }
     a.role = nextRole; a.current = next; a.shot = one ? nextRole : null;
     a.shotAge = 0;
     return true;
@@ -397,7 +397,7 @@ const ACTOR_MODELS = (() => {
     // Keep the run cycle intact while moving: weapon hits still fire, but the body does not
     // swap to the standing attack clip and snap back every swing.
     if (p.moving && !p.dashT) { s.attack = false; if (a.shot === 'attack') a.shot = null; }
-    animate(a, s, move, frozen && !s.dead ? 0 : dt, 0.22, 0);
+    animate(a, s, move, frozen && !s.dead ? 0 : dt, 0.16, 0);
     // The provider's locomotion clips are authored side-on; turn the body back to its facing.
     const loco = a.role === 'run' || a.role === 'walk';
     const targetYaw = ACTOR_CONFIG.knight.yaw + (loco ? ACTOR_CONFIG.knight.locomotionYaw : 0);

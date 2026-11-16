@@ -345,15 +345,19 @@ function fire(w, ang) {
       arc = full ? TAU : d.arc[t],
       R = d.range * p.area * (t === 2 ? 1.25 : 1),
       kb = d.kb * (club && t === 2 ? 1.4 : 1);
-    for (const e of G.enemies) {
-      if (e.dead) continue;
-      const dx = e.x - p.x,
-        dz = e.z - p.z,
-        dd = Math.hypot(dx, dz);
-      if (dd < R + e.r && (arc >= TAU || angDiff(Math.atan2(dz, dx), ang) < arc / 2))
-        hit(e, dmg, { kb, ang: Math.atan2(dz, dx) });
-    }
-    slashFx(ang, arc >= TAU ? 2 : Math.min(t, 1), R, r1(p.x), r1(p.z));
+    const applyMelee = () => {
+      for (const e of G.enemies) {
+        if (e.dead) continue;
+        const dx = e.x - p.x,
+          dz = e.z - p.z,
+          dd = Math.hypot(dx, dz);
+        if (dd < R + e.r && (arc >= TAU || angDiff(Math.atan2(dz, dx), ang) < arc / 2))
+          hit(e, dmg, { kb, ang: Math.atan2(dz, dx) });
+      }
+      slashFx(ang, arc >= TAU ? 2 : Math.min(t, 1), R, r1(p.x), r1(p.z));
+    };
+    // The enemy falls on the slash's impact frame, not before the animation.
+    setTimeout(applyMelee, 90);
     if (club) {
       shake(0.25);
       // the spiked club: a shockwave rolls out all around
