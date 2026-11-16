@@ -12,7 +12,8 @@ const ACTOR_CONFIG = {
     weapon: { position: [0, 0, 0], rotation: [Math.PI, 0, 0], scale: 1 },
   },
   ranger: {
-    file: 'assets/models/hero-ranger.glb', height: 2.5, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0,
+    // Fantasy ranger silhouette: hooded rogue/cape, not the uncovered generic rogue.
+    file: 'assets/models/hero-assassin.glb', height: 2.5, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0,
     clips: {}, handBone: null,
     weapon: { position: [0, 0, 0], rotation: [Math.PI, 0, 0], scale: 1 },
   },
