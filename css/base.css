@@ -53,7 +53,9 @@ body {
   font-family: var(--body);
   user-select: none;
   -webkit-user-select: none;
-  touch-action: none;
+  /* The canvas keeps touch-action:none for the joystick; the page itself must allow
+     the browser to synthesize clicks for menu buttons on Android WebViews. */
+  touch-action: manipulation;
   overscroll-behavior: none;
 }
 canvas {

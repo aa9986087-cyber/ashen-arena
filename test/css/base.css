@@ -53,7 +53,7 @@ body {
   font-family: var(--body);
   user-select: none;
   -webkit-user-select: none;
-  touch-action: none;
+  touch-action: manipulation;
   overscroll-behavior: none;
 }
 canvas {

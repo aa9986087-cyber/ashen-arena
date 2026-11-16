@@ -32,8 +32,7 @@
     <link rel="stylesheet" href="css/duel.css?v=202611160222&rev=local-sample-5ce2145cfb4bf30c" />
     <link rel="stylesheet" href="css/coop.css?v=202611160222&rev=local-sample-dcbd423d133065d3" />
     <link rel="stylesheet" href="css/skill-tree.css?v=202611160222&rev=local-sample-ecddc0875b015d97" />
-    <style>#demoBadge{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;padding:7px 14px;border-radius:999px;background:rgba(8,6,16,.82);border:1px solid rgba(246,196,90,.6);color:#f2c46a;font:800 12px system-ui,sans-serif;white-space:nowrap}</style>
-</head>
+    </head>
   <body class="mouse">
     <canvas id="gl"></canvas>
     <canvas id="fx"></canvas>
@@ -749,67 +748,21 @@
             clearInterval(timer);
           } catch (e) {}
         }, 200);
-        /* Some in-app mobile browsers deliver the tap to a preview overlay instead of the
-           game button. A capture-phase tap anywhere still moves the test forward. */
-        function advance(e) {
-          try {
-            var t = e.target;
-            if (t && t.closest && t.closest('button, a, input, textarea, select')) return;
-            var name = document.getElementById('nameScr');
-            if (name && !name.hidden) {
-              var input = document.getElementById('nameIn');
-              if (input && !input.value) input.value = 'ضيف التجربة';
-              document.getElementById('nameOk').click();
-              return;
-            }
-            if (typeof G !== 'undefined' && G.state === 'menu' && !document.getElementById('menu').hidden) {
-              document.getElementById('mPlay').click();
-            }
-          } catch (err) {}
-        }
-        document.addEventListener('pointerdown', advance, true);
-        document.addEventListener('click', advance, true);
-        document.addEventListener('touchstart', advance, { capture: true, passive: true });
-        document.addEventListener('touchend', advance, { capture: true, passive: true });
-        /* Test page: start a run by itself so the new art can be reviewed even when a
-           mobile in-app browser refuses to deliver taps to the game canvas. */
-        var auto = true;
-        ['pointerdown', 'touchstart', 'keydown'].forEach(function (ev) {
-          addEventListener(ev, function () { stopAuto(); var b = document.getElementById('demoBadge'); if (b) b.hidden = true; }, { capture: true, once: true });
-        });
-        var bootTries = 0;
-        var bootTimer = setInterval(function () {
-          if (++bootTries > 50) return clearInterval(bootTimer);
-          if (typeof G === 'undefined' || !G || typeof IN === 'undefined') return;
-          clearInterval(bootTimer);
+        /* Manual play only. If an in-app browser suppresses the synthetic click after a
+           touch, forward the touch to the same button once. */
+        document.addEventListener('click', function (e) {
+          var t = e.target && e.target.closest ? e.target.closest('button, [data-go], a') : null;
+          if (t) t.__lastClick = Date.now();
+        }, true);
+        document.addEventListener('touchend', function (e) {
+          var t = e.target && e.target.closest ? e.target.closest('button, [data-go], a') : null;
+          if (!t) return;
           setTimeout(function () {
-            try {
-              var n = document.getElementById('nameScr');
-              if (n && !n.hidden) document.getElementById('nameOk').click();
-              setTimeout(function () {
-                try { if (G.state === 'menu') document.getElementById('mPlay').click(); } catch (e) {}
-              }, 700);
-            } catch (e) {}
-          }, 900);
-        }, 200);
-        function stopAuto() {
-          auto = false;
-          try {
-            IN.k.KeyW = IN.k.KeyA = IN.k.KeyS = IN.k.KeyD = false;
-            IN.atk = false;
-          } catch (e) {}
-        }
-        setInterval(function () {
-          if (!auto || typeof G === 'undefined' || !G || G.state !== 'play') return;
-          var t = performance.now() / 1000;
-          IN.k.KeyD = Math.sin(t * 0.6) > 0;
-          IN.k.KeyA = !IN.k.KeyD;
-          IN.k.KeyS = Math.cos(t * 0.6) > 0;
-          IN.k.KeyW = !IN.k.KeyS;
-          IN.atk = true;
-        }, 250);
+            if (t.__lastClick && Date.now() - t.__lastClick < 700) return;
+            try { t.click(); } catch (err) {}
+          }, 70);
+        }, { capture: true, passive: true });
       })();
     </script>
-  <div id="demoBadge">▶ عرض تلقائي — المس الشاشة للتحكم</div>
   </body>
 </html>
