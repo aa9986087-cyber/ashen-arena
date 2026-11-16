@@ -331,7 +331,11 @@ const ACTOR_MODELS = (() => {
       if (a.shot !== 'fall') change(a, 'fall', true);
     } else if (s.hurt && change(a, 'hurt', true)) {
       // Real health loss, not boss wind-up flash.
-    } else if (s.attack && a.shot !== 'hurt') change(a, 'attack', true, attackDuration, progress);
+    } else if (s.attack && a.shot !== 'hurt') {
+      // Do not restart the slash for every enemy in a wave: finish the current one first.
+      const fresh = a.role !== 'attack' || !a.shot;
+      change(a, 'attack', fresh, attackDuration, progress);
+    }
     if (!a.shot) change(a, move);
     a.mixer.update(dt);
   }
@@ -394,10 +398,8 @@ const ACTOR_MODELS = (() => {
       if (gaitSpeed > 0 && gaitSpeed < (p.speed || 6) * 0.5) move = 'walk';
     }
     a.g.position.set(p.x, ACTOR_CONFIG.knight.groundOffset, p.z); a.g.rotation.set(0, p.face || 0, 0);
-    // Keep the run cycle intact while moving: weapon hits still fire, but the body does not
-    // swap to the standing attack clip and snap back every swing.
-    if (p.moving && !p.dashT) { s.attack = false; if (a.shot === 'attack') a.shot = null; }
-    animate(a, s, move, frozen && !s.dead ? 0 : dt, 0.16, 0);
+    // A short slash is allowed even while moving; it blends back into the run immediately.
+    animate(a, s, move, frozen && !s.dead ? 0 : dt, 0.12, 0);
     // The provider's locomotion clips are authored side-on; turn the body back to its facing.
     const loco = a.role === 'run' || a.role === 'walk';
     const targetYaw = ACTOR_CONFIG.knight.yaw + (loco ? ACTOR_CONFIG.knight.locomotionYaw : 0);

@@ -357,7 +357,7 @@ function fire(w, ang) {
       slashFx(ang, arc >= TAU ? 2 : Math.min(t, 1), R, r1(p.x), r1(p.z));
     };
     // The enemy falls on the slash's impact frame, not before the animation.
-    setTimeout(applyMelee, 90);
+    setTimeout(applyMelee, 70);
     if (club) {
       shake(0.25);
       // the spiked club: a shockwave rolls out all around
