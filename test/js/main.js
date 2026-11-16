@@ -39,7 +39,11 @@ buildPlayer();
 resize();
 drawSet();
 go('menu');
-if (typeof preloadPortraits === 'function') setTimeout(preloadPortraits, 600);
+warmGPU();
+if (typeof loadActors === 'function') loadActors().catch(e => console.warn('actors', e));
+try {
+  loadModels();
+} catch {}
 if (!S.name) askName();
 if (S._mig) {
   delete S._mig;

@@ -27,7 +27,6 @@ let goTok = 0,
 function go(id) {
   const cur = SCREENS.find(q => q !== 'cards' && q !== id && !$(q).hidden),
     tok = ++goTok;
-  if (id !== 'menu' && typeof pauseModelLoading === 'function') pauseModelLoading();
   if (goFirst || !cur) {
     goFirst = false;
     goNow(id);
@@ -49,8 +48,6 @@ function hideScreens(keep) {
   }
 }
 function goNow(id) {
-  if (id !== 'menu' && typeof pauseModelLoading === 'function') pauseModelLoading();
-  else if (id === 'menu' && typeof resumeModelLoading === 'function') resumeModelLoading();
   hideScreens(id);
   if (id !== 'menu' && typeof closeNews === 'function') closeNews(); // the bulletin belongs to the menu
   if (id === 'chars') drawChars();
@@ -137,8 +134,6 @@ function drawChars() {
       onClick: () => {
         if (own) {
           S.char = id;
-          PM.previewPending = true;
-          if (typeof loadActor === 'function') loadActor(id);
           save();
           AU.play('select');
           newRun();
@@ -148,8 +143,6 @@ function drawChars() {
           buy(c.cost, () => {
             S.chars[id] = 1;
             S.char = id;
-            PM.previewPending = true;
-            if (typeof loadActor === 'function') loadActor(id);
             newRun();
             buildPlayer();
             drawChars();

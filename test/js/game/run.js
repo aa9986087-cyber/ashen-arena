@@ -75,7 +75,6 @@ function resumeRun() {
   }
   AU.init();
   S.char = o.char;
-  if (typeof loadActor === 'function') loadActor(o.char);
   newRun();
   Object.assign(G, {
     state: 'count',
@@ -127,14 +126,9 @@ function resumeRun() {
 /** Build the arena for the current G and switch from menus to the HUD. */
 function enterArena() {
   if (typeof closeNews === 'function') closeNews(); // the bulletin belongs to the menu
-  if (typeof resumeModelLoading === 'function') resumeModelLoading();
-  if (typeof loadModels === 'function') loadModels(); // enemy models warm behind the first waves
   $('bSpec').firstChild.textContent = heroSpecial().i;
   setStage(G.stage);
   buildPlayer();
-  setTimeout(() => {
-    if (typeof loadActors === 'function') loadActors().catch(e => console.warn('actors', e));
-  }, 300);
   refreshLoadout();
   goTok++;
   hideScreens();
@@ -149,45 +143,7 @@ function runPerks() {
   if (S.tree.U5) G.pending++; // a free upgrade card right away
   if (S.tree.W5) G.coins = 60;
 }
-let bootLoading = false;
-/** Warm the HTTP cache during the wait; the menu is already built behind the boot screen. */
-function prefetchArenaAssets() {
-  if (typeof MODEL_FILES !== 'undefined' && typeof MODEL_DIR !== 'undefined')
-    for (const file in MODEL_FILES) fetch(MODEL_DIR + file + '?v=' + MODEL_VER, { cache: 'force-cache' }).catch(() => {});
-  if (typeof ACTOR_CONFIG !== 'undefined')
-    for (const key in ACTOR_CONFIG) {
-      const a = ACTOR_CONFIG[key];
-      fetch(a.file + '?v=' + a.version, { cache: 'force-cache' }).catch(() => {});
-    }
-}
-/** First page visit: hold the menu for five seconds while portraits and models warm up. */
-function startBootLoading() {
-  if (bootLoading) return;
-  bootLoading = true;
-  const overlay = $('loadScr'),
-    fill = $('loadFill'),
-    status = $('loadStatus'),
-    t0 = performance.now(),
-    wait = 5000;
-  if (overlay) overlay.hidden = false;
-  if (typeof preloadPortraits === 'function') preloadPortraits();
-  const tick = () => {
-    const k = Math.min(1, (performance.now() - t0) / wait),
-      left = Math.max(0, Math.ceil(5 - k * 5));
-    if (fill) fill.style.width = Math.round(k * 100) + '%';
-    if (status) status.textContent = left ? 'نُجهّز الأبطال والوحوش... ' + left : 'كل شيء جاهز، تفضل';
-    if (k < 1) requestAnimationFrame(tick);
-  };
-  tick();
-  setTimeout(() => {
-    if (overlay) overlay.hidden = true;
-    bootLoading = false;
-  }, wait);
-}
 function startRun() {
-  beginRun();
-}
-function beginRun() {
   AU.init();
   clearRun();
   newRun();
@@ -204,10 +160,6 @@ function beginRun() {
     4.5
   );
   for (let i = 0; i < 6; i++) spawnAround('grunt', false, rand(13, 18));
-  // Warm the boss-only guardian after the arena is live, never while a menu is opening.
-  if (typeof loadBossActor === 'function') {
-    setTimeout(() => loadBossActor(0).catch(e => console.warn('boss actor', e)), 700);
-  }
 }
 function endRun() {
   if (G.state === 'over') return;

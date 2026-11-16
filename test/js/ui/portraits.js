@@ -1,33 +1,9 @@
 'use strict';
-/* Hero portraits: static thumbnails keep the hero screen instant; the old 3D renderer is a fallback. */
-const PORTRAIT_VER = 'heroes-20261116-v22';
-const portraitFile = id => `assets/portraits/${id}.jpg?v=${PORTRAIT_VER}`;
-const PORTRAIT_FILES = {
-  knight: portraitFile('knight'),
-  ranger: portraitFile('ranger'),
-  gunner: portraitFile('gunner'),
-  mage: portraitFile('mage'),
-  berserker: portraitFile('berserker'),
-  assassin: portraitFile('assassin'),
-  gunnerx: portraitFile('gunnerx'),
-};
+/* Hero portraits: each hero rendered in 3D (with their starting weapon) into a small image, cached. */
 const PORTRAITS = {};
 let portraitKey = '';
-let portraitsWarmed = false;
-/** Fetch the small thumbnails while the player is still on the menu. */
-function preloadPortraits() {
-  if (portraitsWarmed) return;
-  portraitsWarmed = true;
-  for (const id in PORTRAIT_FILES) {
-    const img = new Image();
-    img.decoding = 'async';
-    img.src = PORTRAIT_FILES[id];
-  }
-}
 function heroPortrait(id) {
-  if (PORTRAIT_FILES[id]) return PORTRAIT_FILES[id];
-  // Fallback for a hero without a baked thumbnail: the old on-demand 3D render.
-  // A newly loaded hero model invalidates this fallback cache.
+  // a newly loaded hero model invalidates the cache
   const key = Object.keys(HERO_GEOS).join();
   if (key !== portraitKey) {
     for (const k in PORTRAITS) delete PORTRAITS[k];

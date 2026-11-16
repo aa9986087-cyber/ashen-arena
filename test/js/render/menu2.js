@@ -3,12 +3,10 @@
    a low camera drifting in on your hero, who swings his weapon now and then; a brazier burning before him with
    rising embers and a flickering light; ground fog rolling; a giant's silhouette looming in the fog behind.
    The menu's buttons get the motion to match (css/menu2.css). */
-// The cinematic layer is paused: its background giant/trees can sit in front of the selected hero.
-// The reliable orbit camera keeps the chosen hero visible and matches instantly after a pick.
-const M2 = { on: false, t: 0, swingT: 2, boss: null, light: null, fog: 0 };
+const M2 = { on: !/menu1/.test(location.hash), t: 0, swingT: 2, boss: null, light: null, fog: 0 };
 if (M2.on) document.body.classList.add('m2');
 addEventListener('hashchange', () => {
-  M2.on = false;
+  M2.on = !/menu1/.test(location.hash);
   document.body.classList.toggle('m2', M2.on);
 });
 function menu2Frame(dt) {

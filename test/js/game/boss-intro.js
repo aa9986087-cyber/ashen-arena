@@ -2,7 +2,7 @@
 /* Boss entrance: the camera cuts to the boss while it rises out of the ground, then glides back to the player.
    The whole fight is frozen for that moment (update() returns early), so nothing can hurt the player and every
    enemy, shot and timer stays exactly where it was. Co-op and duels keep the instant spawn. */
-const CINE = { on: false, pending: false, freeze: false, t: 0, dur: 3.1, tail: 0.7, boss: null, landed: false };
+const CINE = { on: false, freeze: false, t: 0, dur: 3.1, tail: 0.7, boss: null, landed: false };
 /** Only a solo run gets the cinematic; co-op clients mirror the host and duels keep their own start. */
 function bossIntroEligible() {
   return G.state === 'play' && !COOP.on && !DUEL.on;
@@ -85,7 +85,6 @@ function bossIntroEnd() {
 }
 /** A new run or a boss death while the camera is still on it: put everything back. */
 function bossIntroClear() {
-  CINE.pending = false;
   if (!CINE.on) return;
   CINE.on = false;
   CINE.freeze = false;

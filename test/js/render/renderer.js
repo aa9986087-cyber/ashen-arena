@@ -70,8 +70,6 @@ let lastMenu = null;
 function render(dt, now) {
   const p = G.p,
     playing = G.state !== 'menu';
-  if (typeof menuPreview !== 'undefined' && menuPreview && G.state !== 'menu' && typeof clearMenuPreview === 'function')
-    clearMenuPreview();
   if (lastMenu !== !playing) {
     lastMenu = !playing;
     resize(); // in or out of the menu: its sharpness differs
@@ -110,11 +108,7 @@ function render(dt, now) {
       sup = G.superT > 0;
     poseRig(PM, p, (G.weapons[0] || PM.lastWep || {}).id, playing, now);
     if (COOP.on) coopRender(now); // teammates
-    const previewing = typeof menuPreview !== 'undefined' && menuPreview && G.state === 'menu';
-    g.visible =
-      !previewing &&
-      !(p.inv > 0 && p.dashT <= 0 && ((now / 60) | 0) % 2 === 0 && G.state === 'play') &&
-      !p.dead;
+    g.visible = !(p.inv > 0 && p.dashT <= 0 && ((now / 60) | 0) % 2 === 0 && G.state === 'play') && !p.dead;
     const s = sup ? 1.25 : 1;
     g.scale.set(s, s, s);
     glow.intensity = sup ? 2.2 : 0;
@@ -155,10 +149,6 @@ function render(dt, now) {
     if (e.boss) {
       const s = e.scale,
         b = bossMesh;
-      if (typeof CINE !== 'undefined' && CINE.pending && G.boss === e) {
-        b.visible = false; // never flash the primitive while the real guardian is still loading
-        continue;
-      }
       const actorBody = typeof actorBossRender === 'function' && actorBossRender(e, now);
       b.visible = !actorBody;
       if (!actorBody) {

@@ -12,7 +12,6 @@ function zoneBarrage(cx, cz, n, spread, r, d0, dstep, dmg) {
     zone(cx + (j ? rand(-spread, spread) : 0), cz + (j ? rand(-spread, spread) : 0), r, d0 + j * dstep, dmg, false);
 }
 function updEnemies(dt) {
-  if (typeof CINE !== 'undefined' && CINE.pending) return;
   const P0 = G.p, // the local hero (burn damage scales with him); each enemy chases its own target below
     E = G.enemies,
     fl = G.ups.fire || 0;

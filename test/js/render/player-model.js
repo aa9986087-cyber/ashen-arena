@@ -19,61 +19,6 @@ function mesh(g, c, x, y, z, sx, sy, sz, em) {
 }
 function buildPlayer() {
   buildRig(PM, S.char);
-  if (PM.actor) PM.previewPending = false;
-  // In the menu the chosen portrait is the instant stand-in until a real 3D actor is ready.
-  // This applies to every hero, so returning from the hero screen never falls back to another shape.
-  if (typeof G !== 'undefined' && G.state === 'menu' && !PM.actor) showMenuPreview(S.char);
-  else clearMenuPreview();
-}
-let menuPreview = null;
-/** A portrait standee is instant while the real actor is still downloading; the actor replaces it on load. */
-function clearMenuPreview() {
-  if (!menuPreview) return;
-  scene.remove(menuPreview);
-  if (menuPreview.material.map) menuPreview.material.map.dispose();
-  menuPreview.material.dispose();
-  menuPreview = null;
-  if (PM.g) PM.g.visible = true;
-}
-function showMenuPreview(id) {
-  if (typeof PORTRAIT_FILES === 'undefined' || !PORTRAIT_FILES[id] || typeof THREE === 'undefined') {
-    clearMenuPreview();
-    return;
-  }
-  if (PM.g) PM.g.visible = false;
-  if (menuPreview && menuPreview.userData.id === id) return;
-  clearMenuPreview();
-  if (PM.g) PM.g.visible = false;
-  const tex = menuPreviewTexture(PORTRAIT_FILES[id]);
-  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
-  s.userData.id = id;
-  s.position.set((G.p && G.p.x) || 0, 2.1, (G.p && G.p.z) || 0);
-  s.scale.set(3.2, 3.2, 1);
-  scene.add(s);
-  menuPreview = s;
-}
-/** Turn the portrait's black studio background transparent without touching the dark parts of the hero. */
-function menuPreviewTexture(src) {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 220;
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const img = new Image();
-  img.onload = () => {
-    const x = canvas.getContext('2d');
-    x.drawImage(img, 0, 0, canvas.width, canvas.height);
-    const data = x.getImageData(0, 0, canvas.width, canvas.height),
-      p = data.data;
-    for (let i = 0; i < p.length; i += 4) {
-      const m = Math.max(p[i], p[i + 1], p[i + 2]),
-        a = m < 18 ? 0 : Math.min(1, (m - 18) / 30);
-      p[i + 3] = Math.round(p[i + 3] * a);
-    }
-    x.putImageData(data, 0, 0);
-    tex.needsUpdate = true;
-  };
-  img.src = src;
-  return tex;
 }
 /** Build a hero rig (body, limbs, held weapon) into R: the local hero is PM; co-op teammates get their own. */
 function buildRig(R, charId, wep) {
@@ -205,8 +150,7 @@ const WEP_MODEL = {
   axe: { m: ['axe', 'axe2', 'axe2'], len: [1.3, 1.5, 1.7] },
   staff: { m: ['wand', 'staff', 'staff'], len: [1.2, 1.9, 2.1] },
   shuriken: { m: ['dagger', 'dagger', 'dagger'], len: [0.9, 1, 1.1] },
-  // The ranger uses the fantasy bow built below; no modern crossbow silhouette.
-  bow: { len: [1.1, 1.2, 1.3], procedural: true },
+  bow: { m: ['crossbow', 'crossbow', 'crossbow'], len: [1.1, 1.2, 1.3], axis: 'z+' },
   pistol: { m: ['blaster', 'blaster', 'blaster'], len: [0.6, 0.65, 0.7], axis: 'z+' },
   rifle: { m: ['repeater', 'repeater', 'repeater'], len: [0.9, 0.95, 1], axis: 'z+' },
   rocket: { m: ['repeater', 'repeater', 'repeater'], len: [1.05, 1.1, 1.15], axis: 'z+', tint: 0x6a7040 },
@@ -240,7 +184,7 @@ const WEP_MODELS = {};
 /** The weapon as a model (or null while it loads / if it has none): pointing along −Y, `len` long. */
 function weaponModel(id, t, ev, tc) {
   const d = WEP_MODEL[id];
-  if (!d || d.procedural) return null;
+  if (!d) return null;
   let src;
   if (d.duel) src = typeof window[d.duel] === 'function' ? window[d.duel]() : null;
   else src = WEP_MODELS[d.m[t]] ? WEP_MODELS[d.m[t]].clone(true) : null;
@@ -292,15 +236,13 @@ function buildWeapon(R = PM, wep) {
     if (t) w.add(mesh(BOX, tc, 0, -1.05, -0.2 * s, 0.08, 0.45 * s, 0.4 * s, em));
   } else if (id === 'bow') {
     const b = new THREE.Mesh(
-      new THREE.TorusGeometry(0.72 * s, 0.045 + 0.018 * t, 8, 18, Math.PI),
-      lam(t ? tc : 0x5a321e, em)
+      new THREE.TorusGeometry(0.62 * s, 0.05 + 0.02 * t, 6, 14, Math.PI),
+      lam(t ? tc : 0x8a5a2b, em)
     );
     b.rotation.set(Math.PI, Math.PI / 2, 0);
     b.castShadow = true;
     w.add(b);
-    w.add(mesh(CYL, 0x342018, 0, 0, 0, 0.055 * s, 0.34 * s, 0.055 * s));
-    w.add(mesh(BOX, t ? tc : 0xd7c6a0, 0, 0, 0, 0.018, 0.018, 1.44 * s, em));
-    w.add(mesh(CONE, t ? tc : 0xd7c6a0, 0, -0.72 * s, 0, 0.06 * s, 0.18 * s, 0.06 * s, em));
+    w.add(mesh(BOX, 0xf0f0f0, 0, 0, 0, 0.02, 0.02, 1.24 * s));
   } else if (id === 'pistol') {
     w.add(mesh(BOX, 0x30343c, 0, -0.22, 0, 0.15, 0.45, 0.16));
     w.add(mesh(BOX, tc, 0, -0.5 * s, 0, 0.1, 0.2 * s, 0.1, em));

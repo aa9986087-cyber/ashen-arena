@@ -9,7 +9,7 @@ const MODEL_FILES = {
   'hero-knight.glb': 'hero:knight',
   'hero-berserker.glb': 'hero:berserker',
   'hero-mage.glb': 'hero:mage',
-  'hero-ranger-fantasy-emerald-bright-v2.glb': 'hero:ranger',
+  'hero-ranger.glb': 'hero:ranger',
   'hero-assassin.glb': 'hero:assassin',
   // Quaternius SWAT with gun clips retargeted from the cyberpunk character (tools/retarget-swat.html);
   // a dark uniform: lifted colours so it reads on the dark arena and the hero card
@@ -29,7 +29,7 @@ const MODEL_FILES = {
   'boss-flame.glb': { to: 'boss5', size: 0.85 }, // wide wings
 };
 /** Bump to make browsers fetch updated model files. */
-const MODEL_VER = 9;
+const MODEL_VER = 8;
 const lin2s = v => (v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
 function texSampler(tex) {
   try {
@@ -178,7 +178,7 @@ function bakeModel(root, animations, targetH, scary, lift) {
   const clips = {},
     mixer = animations && animations.length ? new THREE.AnimationMixer(root) : null;
   for (const role in ANIM_FRAMES) {
-    const clip = mixer && animations.find(a => a.name === role || (role === 'attack' && a.name === 'shoot'));
+    const clip = mixer && animations.find(a => a.name === role);
     if (!clip) continue;
     const act = mixer.clipAction(clip).play(),
       k = ANIM_FRAMES[role];
@@ -194,44 +194,12 @@ function bakeModel(root, animations, targetH, scary, lift) {
 }
 /** Pick a frame from a clip by cycle progress (0…1, wraps). */
 const animFrame = (frames, t) => frames[((((t % 1) + 1) % 1) * frames.length) | 0];
-let modelLoadingPaused = false;
-let modelQueueNext = null;
-let modelsStarted = false;
-function pauseModelLoading() {
-  modelLoadingPaused = true;
-}
-function resumeModelLoading() {
-  if (!modelLoadingPaused) return;
-  modelLoadingPaused = false;
-  if (modelQueueNext) modelQueueNext();
-}
 function loadModels() {
-  if (modelsStarted) return;
-  modelsStarted = true;
   if (!THREE.GLTFLoader || !/^https?:$/.test(location.protocol) || IS_SANDBOX) return;
   const L = new THREE.GLTFLoader();
-  // Menus use static thumbnails now: early-wave enemies first, then heroes, then the heavy boss models.
-  const files = Object.keys(MODEL_FILES).sort((a, b) => {
-    const rank = f => (f.startsWith('boss-') ? 2 : f.startsWith('hero-') ? 1 : 0);
-    return rank(a) - rank(b);
-  });
-  let nextFile = 0;
-  // Loading every GLB at once makes the browser bake them back-to-back and freezes the menus.
-  // One model per idle slice keeps the menu responsive; warmGPU waits for the whole queue.
-  const scheduleNext = () => {
-    if (modelLoadingPaused || nextFile >= files.length) return;
-    if ('requestIdleCallback' in window) requestIdleCallback(loadNext, { timeout: 700 });
-    else setTimeout(loadNext, 30);
-  };
-  modelQueueNext = scheduleNext;
-  const done = () => (nextFile >= files.length ? warmGPU() : scheduleNext());
-  function loadNext() {
-    if (modelLoadingPaused) return;
-    if (nextFile >= files.length) {
-      warmGPU();
-      return;
-    }
-    const file = files[nextFile++];
+  let left = Object.keys(MODEL_FILES).length;
+  const done = () => --left || warmGPU(); // all in: push every model and frame to the GPU before play needs it
+  for (const file in MODEL_FILES) {
     const o = typeof MODEL_FILES[file] === 'string' ? { to: MODEL_FILES[file] } : MODEL_FILES[file],
       key = o.to,
       hero = key.startsWith('hero:') ? key.slice(5) : null;
@@ -279,5 +247,4 @@ function loadModels() {
       }
     );
   }
-  scheduleNext(); // let the first arena frame paint before the first bake
 }
