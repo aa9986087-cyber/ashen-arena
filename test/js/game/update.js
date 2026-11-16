@@ -324,8 +324,9 @@ function update(dt) {
   const tgt = manual ? null : nearest(p.x, p.z, 14);
   let fa = p.face;
   if (manual) fa = Math.atan2(Math.cos(mAng), Math.sin(mAng));
-  else if (tgt) fa = Math.atan2(tgt.x - p.x, tgt.z - p.z);
+  // While moving, the body follows the joystick; only a standing player turns to face a target.
   else if (p.moving) fa = Math.atan2(mx, mz);
+  else if (tgt) fa = Math.atan2(tgt.x - p.x, tgt.z - p.z);
   p.face += wrapAng(fa - p.face) * Math.min(1, dt * 14);
   // abilities
   const u = G.ups,
