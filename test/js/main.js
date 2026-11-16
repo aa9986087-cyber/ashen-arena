@@ -40,10 +40,14 @@ resize();
 drawSet();
 go('menu');
 warmGPU();
-if (typeof loadActors === 'function') loadActors().catch(e => console.warn('actors', e));
-try {
-  loadModels();
-} catch {}
+// The selected hero comes first; the heavy enemy/portrait models wait for the menu to paint.
+const warmModels = () => setTimeout(() => {
+  try {
+    loadModels();
+  } catch {}
+}, 250);
+if (typeof loadActors === 'function') loadActors().catch(e => console.warn('actors', e)).then(warmModels);
+else warmModels();
 if (!S.name) askName();
 if (S._mig) {
   delete S._mig;
