@@ -394,15 +394,10 @@ const ACTOR_MODELS = (() => {
       if (gaitSpeed > 0 && gaitSpeed < (p.speed || 6) * 0.5) move = 'walk';
     }
     a.g.position.set(p.x, ACTOR_CONFIG.knight.groundOffset, p.z); a.g.rotation.set(0, p.face || 0, 0);
-    // The slash belongs to close combat: keep it out of long-range swings and out of the
-    // run cycle, so the body only swaps to the attack clip beside a nearby enemy.
-    const close = (() => {
-      const es = (typeof G !== 'undefined' && G.enemies) || [];
-      for (const e of es) if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) < 10) return true;
-      return false;
-    })();
-    if ((p.moving && !p.dashT) || !close) { s.attack = false; if (a.shot === 'attack') a.shot = null; }
-    animate(a, s, move, frozen && !s.dead ? 0 : dt, 0.35, p.swing > 0 ? 1 - p.swing : 0);
+    // Keep the run cycle intact while moving: weapon hits still fire, but the body does not
+    // swap to the standing attack clip and snap back every swing.
+    if (p.moving && !p.dashT) { s.attack = false; if (a.shot === 'attack') a.shot = null; }
+    animate(a, s, move, frozen && !s.dead ? 0 : dt, 0.2, p.swing > 0 ? 1 - p.swing : 0);
     // The provider's locomotion clips are authored side-on; turn the body back to its facing.
     const loco = a.role === 'run' || a.role === 'walk';
     const targetYaw = ACTOR_CONFIG.knight.yaw + (loco ? ACTOR_CONFIG.knight.locomotionYaw : 0);

@@ -335,6 +335,7 @@ function fire(w, ang) {
     dmg = d.dmg * (1 + 0.22 * (L - 1)) * p.dmgMul * (ev ? 1.5 : 1),
     col = ev ? EVOC : TIERC[t];
   p.swing = 1;
+  p.swingT = (p.swingT || 0) + 1;
   if (typeof actorNotify === 'function') actorNotify(p, 'attack');
   AU.play(w.id);
   if (d.melee) {
