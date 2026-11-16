@@ -390,7 +390,7 @@ const ACTOR_MODELS = (() => {
     let move = playing && (p.moving || p.dashT > 0) ? 'run' : 'idle';
     if (move === 'run' && old && dt > 0 && p.dashT <= 0) {
       const gaitSpeed = Math.max(0, (p.walk - old.walk) / dt / 1.5);
-      if (gaitSpeed > 0 && gaitSpeed < (p.speed || 6) * 0.82) move = 'walk';
+      if (gaitSpeed > 0 && gaitSpeed < (p.speed || 6) * 0.5) move = 'walk';
     }
     a.g.position.set(p.x, ACTOR_CONFIG.knight.groundOffset, p.z); a.g.rotation.set(0, p.face || 0, 0);
     animate(a, s, move, frozen && !s.dead ? 0 : dt, 0.2, p.swing > 0 ? 1 - p.swing : 0);
@@ -398,6 +398,7 @@ const ACTOR_MODELS = (() => {
     const loco = a.role === 'run' || a.role === 'walk';
     const targetYaw = ACTOR_CONFIG.knight.yaw + (loco ? ACTOR_CONFIG.knight.locomotionYaw : 0);
     a.fit.rotation.y += (targetYaw - a.fit.rotation.y) * Math.min(1, dt * 14);
+    if (a.current) a.current.setEffectiveTimeScale(a.role === 'run' ? 1.25 : 1);
     weaponSync(R); return true;
   }
   function destroyBoss() {
