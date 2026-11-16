@@ -7,8 +7,14 @@ const near = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-9,
 
 test('shared pure/data scripts execute in index order in one VM global scope', async () => {
   const g = await globals();
-  assert.deepEqual(g.loaded, (await scriptOrder()).filter(f => g.loaded.includes(f)));
-  assert.equal(g.run('typeof TAU + ":" + typeof WEP + ":" + typeof S + ":" + typeof rankCmp'), 'number:object:object:function');
+  assert.deepEqual(
+    g.loaded,
+    (await scriptOrder()).filter(f => g.loaded.includes(f))
+  );
+  assert.equal(
+    g.run('typeof TAU + ":" + typeof WEP + ":" + typeof S + ":" + typeof rankCmp'),
+    'number:object:object:function'
+  );
   assert.equal(g.events.network.length, 0);
 });
 
@@ -19,7 +25,8 @@ test('utils clamp, wrapped angles, rotation, time and bounded random', async () 
   near(g.run('wrapAng(-5*Math.PI)'), -Math.PI);
   near(g.run('angDiff(0,TAU-0.2)'), 0.2);
   const rotated = g.json('rotate(1,0,Math.PI/2)');
-  near(rotated[0], 0); near(rotated[1], 1);
+  near(rotated[0], 0);
+  near(rotated[1], 1);
   assert.deepEqual(g.json('[fmtT(0),fmtT(59.9),fmtT(61),fmtT(600)]'), ['0:00', '0:59', '1:01', '10:00']);
   g.run('Math.random = () => 0.5');
   assert.equal(g.run('rand(2,6)'), 4);
@@ -31,19 +38,31 @@ test('codes round-trip Arabic and emoji with URL-safe encoding and embedded text
   const code = g.run('packCode("AR1", ["فارس 🔥", "120", "4", "65", "1"], "salt")');
   assert.match(code, /^AR1-[A-Za-z0-9_-]+$/);
   g.context.code = code;
-  assert.deepEqual(g.json('unpackCode("AR1", "رسالة " + code + "\\nنهاية", 5, "salt")'), ['فارس 🔥', '120', '4', '65', '1']);
+  assert.deepEqual(g.json('unpackCode("AR1", "رسالة " + code + "\\nنهاية", 5, "salt")'), [
+    'فارس 🔥',
+    '120',
+    '4',
+    '65',
+    '1',
+  ]);
   assert.equal(g.run('unb64(b64("عربي 🌍"))'), 'عربي 🌍');
   assert.equal(g.run('sig("hello")'), 'm3bicr');
 });
 
 test('codes reject tampering, wrong salt/count/prefix and malformed input', async () => {
   const g = await globals();
-  g.run('var code = packCode("AR1", ["name","12"], "salt"); var tampered = "AR1-" + b64(unb64(code.slice(4)).replace("12", "99"))');
+  g.run(
+    'var code = packCode("AR1", ["name","12"], "salt"); var tampered = "AR1-" + b64(unb64(code.slice(4)).replace("12", "99"))'
+  );
   for (const expr of [
-    'unpackCode("AR1",tampered,2,"salt")', 'unpackCode("AR1",code,2,"wrong")',
-    'unpackCode("AR1",code,3,"salt")', 'unpackCode("GF1",code,2,"salt")',
-    'unpackCode("AR1","AR1-_",2,"salt")', 'unpackCode("AR1",null,2,"salt")',
-  ]) assert.equal(g.run(expr), null, expr);
+    'unpackCode("AR1",tampered,2,"salt")',
+    'unpackCode("AR1",code,2,"wrong")',
+    'unpackCode("AR1",code,3,"salt")',
+    'unpackCode("GF1",code,2,"salt")',
+    'unpackCode("AR1","AR1-_",2,"salt")',
+    'unpackCode("AR1",null,2,"salt")',
+  ])
+    assert.equal(g.run(expr), null, expr);
 });
 
 test('fresh saves are independent and include the starter hero/weapons', async () => {
@@ -56,20 +75,36 @@ test('fresh saves are independent and include the starter hero/weapons', async (
 });
 
 test('v1 save migration clears old permanent upgrades but preserves currency and heroes', async () => {
-  const g = await globals({ stored: { coins: 900, perm: { hp: 3 }, chars: { knight: 1, ranger: 1 }, char: 'ranger', stats: { kills: 12 }, set: { sfx: 0.2 } } });
+  const g = await globals({
+    stored: {
+      coins: 900,
+      perm: { hp: 3 },
+      chars: { knight: 1, ranger: 1 },
+      char: 'ranger',
+      stats: { kills: 12 },
+      set: { sfx: 0.2 },
+    },
+  });
   assert.deepEqual(g.json('S.perm'), {});
-  assert.equal(g.run('S.ver'), 2); assert.equal(g.run('S._mig'), 1);
-  assert.equal(g.run('S.coins'), 900); assert.equal(g.run('S.chars.ranger'), 1);
-  assert.equal(g.run('S.stats.kills'), 12); assert.equal(g.run('S.stats.runs'), 0);
-  assert.equal(g.run('S.set.sfx'), 0.2); assert.equal(g.run('S.set.mus'), 0.5);
+  assert.equal(g.run('S.ver'), 2);
+  assert.equal(g.run('S._mig'), 1);
+  assert.equal(g.run('S.coins'), 900);
+  assert.equal(g.run('S.chars.ranger'), 1);
+  assert.equal(g.run('S.stats.kills'), 12);
+  assert.equal(g.run('S.stats.runs'), 0);
+  assert.equal(g.run('S.set.sfx'), 0.2);
+  assert.equal(g.run('S.set.mus'), 0.5);
 });
 
 test('v2 save keeps permanent upgrades, fills nested defaults and persists locally', async () => {
   const g = await globals({ stored: { ver: 2, coins: 123, perm: { hp: 2 }, stats: { kills: 9 } } });
-  assert.equal(g.run('S.perm.hp'), 2); assert.equal(g.run('S._mig'), undefined);
+  assert.equal(g.run('S.perm.hp'), 2);
+  assert.equal(g.run('S._mig'), undefined);
   g.run('save()');
   const saved = JSON.parse(g.storage.get('ashen_arena_v1'));
-  assert.equal(saved.coins, 123); assert.equal(saved.stats.kills, 9); assert.equal(saved.stats.bosses, 0);
+  assert.equal(saved.coins, 123);
+  assert.equal(saved.stats.kills, 9);
+  assert.equal(saved.stats.bosses, 0);
   assert.equal(g.events.writes, 1);
 });
 
@@ -83,7 +118,12 @@ test('corrupt JSON or denied storage falls back safely; failed save does not thr
 
 test('heroes reference real weapons and specials with valid numeric starting stats', async () => {
   const g = await globals();
-  assert.deepEqual(g.json('Object.entries(CHARS).filter(([id,c]) => !WEP[c.wep] || !SPECIALS[c.sp] || !(c.hp>0 && c.spd>0 && c.dmg>0 && c.cost>=0))'), []);
+  assert.deepEqual(
+    g.json(
+      'Object.entries(CHARS).filter(([id,c]) => !WEP[c.wep] || !SPECIALS[c.sp] || !(c.hp>0 && c.spd>0 && c.dmg>0 && c.cost>=0))'
+    ),
+    []
+  );
   assert.equal(g.run('CHARS.knight.cost'), 0);
   assert.ok(g.run('Object.keys(CHARS).length') > 0);
 });
@@ -91,16 +131,33 @@ test('heroes reference real weapons and specials with valid numeric starting sta
 test('all weapons have complete evolutions that point to an enabled upgrade', async () => {
   const g = await globals();
   assert.deepEqual(g.json('Object.keys(WEP).sort()'), g.json('Object.keys(EVO).sort()'));
-  assert.deepEqual(g.json('Object.entries(WEP).filter(([id,w]) => !(w.dmg>0 && w.cd>0 && w.range>0 && w.cost>=0) || w.evo.length!==2 || !UP[EVO[id].up] || UP[EVO[id].up].off)'), []);
+  assert.deepEqual(
+    g.json(
+      'Object.entries(WEP).filter(([id,w]) => !(w.dmg>0 && w.cd>0 && w.range>0 && w.cost>=0) || w.evo.length!==2 || !UP[EVO[id].up] || UP[EVO[id].up].off)'
+    ),
+    []
+  );
   assert.deepEqual(g.json('[wTier(1),wTier(2),wTier(3),wTier(4),wTier(5)]'), [0, 0, 1, 1, 2]);
 });
 
 test('upgrade families/tree/mission/achievement IDs are unique and references valid', async () => {
   const g = await globals();
-  assert.equal(g.run('var ids=PATHS.flatMap(p=>p.steps); ids.length===new Set(ids).size && ids.every(id=>UP[id] && PATH_OF[id])'), true);
-  assert.equal(g.run('var treeIds=TREE.flatMap(b=>b.nodes.map(n=>n.id)); treeIds.length===new Set(treeIds).size'), true);
-  assert.equal(g.run('MISSIONS.length===new Set(MISSIONS.map(m=>m.id)).size && MISSIONS.every(m=>m.goal>0 && m.c>=0)'), true);
-  assert.equal(g.run('ACH.length===new Set(ACH.map(a=>a.id)).size && ACH.every(a=>typeof a.t==="function" && a.c>=0)'), true);
+  assert.equal(
+    g.run('var ids=PATHS.flatMap(p=>p.steps); ids.length===new Set(ids).size && ids.every(id=>UP[id] && PATH_OF[id])'),
+    true
+  );
+  assert.equal(
+    g.run('var treeIds=TREE.flatMap(b=>b.nodes.map(n=>n.id)); treeIds.length===new Set(treeIds).size'),
+    true
+  );
+  assert.equal(
+    g.run('MISSIONS.length===new Set(MISSIONS.map(m=>m.id)).size && MISSIONS.every(m=>m.goal>0 && m.c>=0)'),
+    true
+  );
+  assert.equal(
+    g.run('ACH.length===new Set(ACH.map(a=>a.id)).size && ACH.every(a=>typeof a.t==="function" && a.c>=0)'),
+    true
+  );
 });
 
 test('derived hero stats combine shop/tree/upgrades; armor is capped and hp clamped', async () => {
@@ -174,22 +231,25 @@ test('daily missions are deterministic, distinct by kind, reward once, and lab r
   assert.deepEqual(g.json('daily().ids'), ids);
   assert.equal(g.run('new Set(daily().ids.map(id=>missionById(id).k)).size'), 3);
   g.run('S.daily={day:todayKey(),ids:["boss3"],prog:{},done:{}}; dailyTrack("boss",3); dailyTrack("boss",3)');
-  assert.equal(g.run('S.coins'), 380); assert.equal(g.run('S.sp'), 1);
+  assert.equal(g.run('S.coins'), 380);
+  assert.equal(g.run('S.sp'), 1);
   g.run('S.daily.prog={}; S.daily.done={}; G.lab=true; dailyTrack("boss",3)');
   assert.deepEqual(g.json('S.daily.prog'), {});
   assert.equal(g.run('S.coins'), 380);
 });
 
-test('board maintenance navigation and return never draw or fetch leaderboard data', async () => {
+test('opening the hall draws it and asks for the online board exactly once', async () => {
   const g = await globals();
-  g.run('var boardDraws=0,boardLoads=0; drawBoard=()=>{boardDraws++}; loadOnline=()=>{boardLoads++}; menuState=()=>{}; go("board")');
+  g.run(
+    'var boardDraws=0,boardLoads=0; drawBoard=()=>{boardDraws++}; loadOnline=()=>{boardLoads++}; menuState=()=>{}; go("board")'
+  );
   assert.equal(g.node('board').hidden, false);
   assert.equal(g.node('menu').hidden, true);
-  assert.equal(g.node('boardContent').hidden, true);
+  assert.equal(g.run('boardDraws'), 1);
+  assert.equal(g.run('boardLoads'), 1);
   g.run('go("menu")');
   for (const fn of g.events.timers) fn();
   assert.equal(g.node('menu').hidden, false);
   assert.equal(g.node('board').hidden, true);
-  assert.equal(g.run('boardDraws + boardLoads'), 0);
-  assert.equal(g.events.network.length, 0);
+  assert.equal(g.events.network.length, 0); // the stub stands in for the real fetch
 });

@@ -17,7 +17,25 @@ const defSave = () => ({
   gifts: {},
   /** today's missions and progress (js/game/daily.js) */
   daily: null,
-  stats: { kills: 0, runs: 0, bestTime: 0, bestLvl: 0, bosses: 0, maxBoss: 0, legend: 0, abyss: 0, evos: 0 },
+  stats: {
+    kills: 0,
+    runs: 0,
+    bestTime: 0,
+    bestLvl: 0,
+    bosses: 0,
+    maxBoss: 0,
+    legend: 0,
+    abyss: 0,
+    evos: 0,
+    /** fastest boss kill in one run (seconds), 0 = none yet */
+    ft: 0,
+    /** weekly counters: wk is the ISO week they belong to, reset by weeklyRoll */
+    wk: '',
+    wb: 0,
+    wkk: 0,
+    wt: 0,
+    wft: 0,
+  },
   set: { sfx: 0.7, mus: 0.5, shadow: 1, shake: 1, qual: 1, left: 1 },
 });
 let S = defSave();

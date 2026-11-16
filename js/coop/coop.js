@@ -1003,6 +1003,9 @@ function coopShared(g, bn) {
     G.bossesRun = bosses;
     S.stats.bosses++;
     S.stats.maxBoss = Math.max(S.stats.maxBoss, G.bossesRun);
+    const bt = Math.max(0, Math.round(G.t || 0));
+    if (bt && (!S.stats.ft || bt < S.stats.ft)) S.stats.ft = bt;
+    if (bt && !G.bossT) G.bossT = bt;
     S.sp++;
     save();
     G.slow = 1.2;

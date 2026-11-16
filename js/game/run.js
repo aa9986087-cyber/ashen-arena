@@ -173,6 +173,7 @@ function endRun() {
   S.coins += kept;
   S.stats.bestLvl = Math.max(S.stats.bestLvl, G.lvl);
   S.stats.bestTime = Math.max(S.stats.bestTime, G.t);
+  if (!G.lab) weeklyRoll(S.stats, G);
   lastRun = { n: S.name || 'لاعب', k: G.kills, l: G.lvl, t: G.t | 0, b: G.bossesRun };
   if (G.lab) {
     $('ovTitle').textContent = 'انتهت تجربة المختبر';

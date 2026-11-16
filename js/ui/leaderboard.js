@@ -1,5 +1,5 @@
 'use strict';
-/* Leaderboard: local list, shareable signed score codes, and the online (Supabase) board. */
+/* Leaderboard: local list, shareable signed score codes, and the online (Supabase) boards. */
 let lastRun = null;
 function mkCode(e) {
   return packCode('AR1', [e.n, e.k, e.l, e.t | 0, e.b], '#vamos');
@@ -60,9 +60,39 @@ async function api(path, opt) {
   const t = await r.text(); // RPCs that return void answer with an empty body
   return t ? JSON.parse(t) : null;
 }
-/** A leaderboard row from a profile's numbers. */
+/** A board row from a profile's numbers (all of a player's runs added up, plus this week's counters). */
 function profileRow(n, s) {
-  return { n, b: s.b | 0, k: s.k | 0, l: s.lvl | 0, r: s.r | 0, t: s.t | 0 };
+  return {
+    n,
+    b: s.b | 0,
+    k: s.k | 0,
+    lvl: s.lvl | 0,
+    r: s.r | 0,
+    t: s.t | 0,
+    ft: s.ft | 0,
+    wk: s.wk || '',
+    wb: s.wb | 0,
+    wkk: s.wkk | 0,
+    wt: s.wt | 0,
+    wft: s.wft | 0,
+  };
+}
+/** A row from this device's own list (no profile yet: weekly and fastest are unknown). */
+function localRow(e) {
+  return {
+    n: e.n,
+    b: e.b | 0,
+    k: e.k | 0,
+    lvl: e.l | 0,
+    r: e.r | 0,
+    t: e.t | 0,
+    ft: 0,
+    wk: '',
+    wb: 0,
+    wkk: 0,
+    wt: 0,
+    wft: 0,
+  };
 }
 async function loadOnline() {
   try {
@@ -84,7 +114,7 @@ async function loadOnline() {
       if (i >= 0) L.splice(i, 1);
       if (S.stats.runs > 0) L.push(profileRow(S.name, profileStats()));
     }
-    onlineRows = L.sort(rankCmp).slice(0, 300);
+    onlineRows = L.slice(0, 400);
     onlineOK = true;
   } catch (err) {
     onlineOK = false;
@@ -100,13 +130,69 @@ async function sendOnline(e) {
     loadOnline();
   } catch (err) {}
 }
+/** Which board is open (🏆 week, 🛡️ endure, 👑 bosses, ⚡ fastest, 💀 kills); remembered on this device. */
+let boardId = 'week';
+try {
+  const saved = localStorage.getItem('ashen_board_tab');
+  if (saved) boardId = boardMetric(saved).id;
+} catch (e) {}
+function podCard(e, place) {
+  const p = el('button', 'pod pod' + place + (e.n === S.name ? ' me' : ''));
+  p.onclick = () => profileOpen(e.n);
+  p.append(
+    el('span', 'podMedal', ['🥇', '🥈', '🥉'][place - 1]),
+    el('span', 'podAva', e.n.slice(0, 2)),
+    el('b', '', e.n),
+    el('strong', '', e.text),
+    el('small', '', e.sub)
+  );
+  return p;
+}
 function drawBoard() {
-  const L = $('boardList');
-  L.innerHTML = '';
+  const metric = boardMetric(boardId),
+    live = onlineOK && onlineRows,
+    rows = live ? onlineRows : (S.board || []).map(localRow),
+    ranked = boardRank(rows, metric.id);
   $('bName').textContent = '✏️ ' + (S.name || 'اسمك');
-  const live = onlineOK && onlineRows,
-    list = live ? onlineRows : S.board;
-  $('boardMode').textContent = live ? '🌐 قائمة مباشرة لكل اللاعبين' : '📱 قائمة هذا الجهاز فقط';
+  // tabs: the open one glows
+  for (const b of $('boardTabs').children) {
+    const on = b.dataset.metric === metric.id;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  }
+  $('boardLead').textContent = metric.lead + (ranked.length ? ' · ' + ranked.length + ' لاعب' : '');
+  // the throne: silver, gold, bronze — the champion in the middle
+  const P = $('podium');
+  P.replaceChildren();
+  const top = ranked.slice(0, 3);
+  for (const place of [2, 1, 3]) if (top[place - 1]) P.appendChild(podCard(top[place - 1], place));
+  // the rest of the hall
+  const L = $('boardList');
+  L.replaceChildren();
+  if (!ranked.length) {
+    const empty = el('div', 'boardEmpty');
+    empty.append(el('span', 'boardEmptyIcon', metric.icon), el('p', '', metric.empty));
+    L.appendChild(empty);
+  }
+  const max = Math.max(...ranked.map(r => r.num), 1),
+    min = Math.min(...ranked.filter(r => r.num > 0).map(r => r.num), max);
+  ranked.slice(3).forEach((e, i) => {
+    const pct = Math.max(8, Math.round((metric.id === 'fast' ? min / e.num : e.num / max) * 100)),
+      r = el('div', 'rk' + (e.n === S.name ? ' me' : ''));
+    r.style.setProperty('--w', pct + '%');
+    r.onclick = () => profileOpen(e.n); // the whole row opens the player's card
+    r.append(
+      el('i', '', i + 4),
+      el('span', 'rkFill'),
+      profileLink(el('span', 'rkName', ''), e.n),
+      el('b', '', e.text),
+      el('small', '', e.sub)
+    );
+    L.appendChild(r);
+  });
+  $('boardMode').textContent = live
+    ? '🌐 قائمة مباشرة لكل اللاعبين · تتحدث بعد كل جولة'
+    : '📱 قائمة هذا الجهاز فقط · افتح الاتصال لترى قائمة كل اللاعبين';
   // how the order is decided: open the first time, then as the player left it (ⓘ)
   let open = true;
   try {
@@ -116,22 +202,6 @@ function drawBoard() {
   $('bHow').setAttribute('aria-expanded', open);
   if (!live) S.board.sort(rankCmp);
   $('offBox').hidden = !!live;
-  if (!list.length) L.appendChild(el('p', '', 'ما فيه نتائج للحين. العب جولة وسجّل أول رقم.'));
-  list.forEach((e, i) => {
-    const r = el('div', 'rk' + (e.n === S.name ? ' me' : ''));
-    r.classList.add('tapRow');
-    r.onclick = () => profileOpen(e.n); // the whole row opens the player's card, not only the name
-    r.append(
-      el('i', '', i + 1),
-      profileLink(el('span', '', e.n), e.n),
-      // just the numbers: the headings over the columns say what each one is
-      el('b', '', e.b || 0),
-      el('small', '', e.k),
-      el('small', '', e.l),
-      el('small', '', e.r !== undefined ? e.r : '–')
-    );
-    L.appendChild(r);
-  });
   const me = S.board.find(x => x.n === S.name);
   $('myCode').value = me ? shareText(me) : '';
   $('bCopy').disabled = !me;
@@ -169,6 +239,16 @@ $('bHow').onclick = () => {
     localStorage.setItem('ashen_rule_seen', open ? '0' : '1');
   } catch (e) {}
 };
+$('boardTabs').addEventListener('click', e => {
+  const b = e.target.closest('button[data-metric]');
+  if (!b || b.dataset.metric === boardId) return;
+  boardId = boardMetric(b.dataset.metric).id;
+  try {
+    localStorage.setItem('ashen_board_tab', boardId);
+  } catch (err) {}
+  AU.play('select');
+  drawBoard();
+});
 $('bCopy').onclick = () => {
   const me = S.board.find(x => x.n === S.name);
   if (me) copyText(shareText(me));

@@ -11,8 +11,11 @@ const runtimeFiles = (await filesIn('js')).filter(f => f.endsWith('.js'));
 test(`all ${runtimeFiles.length} runtime JS files parse as classic scripts`, async () => {
   const failures = [];
   for (const file of runtimeFiles) {
-    try { parse(await read(file), { ecmaVersion: 'latest', sourceType: 'script', locations: true }); }
-    catch (error) { failures.push(`${file}: ${error.message}`); }
+    try {
+      parse(await read(file), { ecmaVersion: 'latest', sourceType: 'script', locations: true });
+    } catch (error) {
+      failures.push(`${file}: ${error.message}`);
+    }
   }
   assert.deepEqual(failures, []);
 });
@@ -21,16 +24,22 @@ test('index loads every runtime JS exactly once, without async/defer/module orde
   const order = await scriptOrder();
   assert.equal(new Set(order).size, order.length, 'duplicate local scripts');
   assert.deepEqual([...order].sort(), runtimeFiles);
-  for (const { attrs } of tags(await read('index.html')).filter(t => t.tag === 'script' && localPath(t.attrs.src || ''))) {
+  for (const { attrs } of tags(await read('index.html')).filter(
+    t => t.tag === 'script' && localPath(t.attrs.src || '')
+  )) {
     assert.equal(attrs.type === 'module' || 'async' in attrs || 'defer' in attrs, false, attrs.src);
   }
   assert.equal(order.at(-1), 'js/main.js');
 });
 
 test('HTML local script/link/image resources exist and stay inside the game folders', async () => {
-  const refs = tags(await read('index.html')).flatMap(t =>
-    ['script', 'img', 'source'].includes(t.tag) ? [t.attrs.src] : t.tag === 'link' ? [t.attrs.href] : []
-  ).filter(Boolean).map(localPath).filter(Boolean);
+  const refs = tags(await read('index.html'))
+    .flatMap(t =>
+      ['script', 'img', 'source'].includes(t.tag) ? [t.attrs.src] : t.tag === 'link' ? [t.attrs.href] : []
+    )
+    .filter(Boolean)
+    .map(localPath)
+    .filter(Boolean);
   assert.ok(refs.length > 0);
   for (const ref of refs) {
     assert.match(ref, /^(?:js|css|assets)\//, ref);
@@ -68,14 +77,26 @@ test('HTML IDs are unique; SCREENS and data-go refer to existing screen elements
     assert.ok(tag, `SCREENS target ${id} missing`);
     assert.ok(tag.attrs.class.split(/\s+/).includes('screen'), `${id} lacks .screen`);
   }
-  for (const tag of html.filter(t => 'data-go' in t.attrs)) assert.ok(screens.includes(tag.attrs['data-go']), `data-go=${tag.attrs['data-go']}`);
+  for (const tag of html.filter(t => 'data-go' in t.attrs))
+    assert.ok(screens.includes(tag.attrs['data-go']), `data-go=${tag.attrs['data-go']}`);
 });
 
-test('maintenance board keeps legacy content hidden and has an accessible return action', async () => {
-  const html = tags(await read('index.html'));
-  assert.ok('hidden' in html.find(t => t.attrs.id === 'boardContent').attrs);
-  assert.ok(html.some(t => t.attrs.class?.split(/\s+/).includes('board-maint') && t.attrs.role === 'status' && t.attrs['aria-live'] === 'polite'));
-  const board = (await read('index.html')).split('id="board"')[1].split('id="nameScr"')[0];
-  assert.match(board, /الصدارة تحت الصيانة/);
-  assert.match(board, /data-go="menu"[^>]*>العودة إلى القائمة/);
+test('hall of ash has five boards, a throne and an accessible rules panel', async () => {
+  const src = await read('index.html');
+  const html = tags(src);
+  assert.equal(
+    html.some(t => t.attrs.id === 'boardContent'),
+    false
+  );
+  assert.equal(
+    html.some(t => (t.attrs.class || '').includes('board-maint')),
+    false
+  );
+  const tabs = html.filter(t => t.attrs['data-metric']).map(t => t.attrs['data-metric']);
+  assert.deepEqual([...new Set(tabs)], ['week', 'endure', 'bosses', 'fast', 'kills']);
+  assert.ok(html.some(t => t.attrs.id === 'podium'));
+  assert.ok(html.some(t => t.attrs.id === 'boardLead'));
+  assert.ok(html.some(t => t.attrs.id === 'bHow' && t.attrs['aria-expanded'] === 'false'));
+  assert.match(src, /قاعة المجد/);
+  assert.match(src, /js\/ui\/board-rank\.js/);
 });

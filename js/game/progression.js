@@ -34,6 +34,9 @@ function bossDown(e) {
     // a run touched by the lab's test tools counts for nothing (the leaderboard is the total of bosses)
     S.stats.bosses++;
     S.stats.maxBoss = Math.max(S.stats.maxBoss, G.bossesRun);
+    const bt = Math.max(0, Math.round(G.t || 0));
+    if (bt && (!S.stats.ft || bt < S.stats.ft)) S.stats.ft = bt; // the fastest boss kill
+    if (bt && !G.bossT) G.bossT = bt; // this run's first boss, for the weekly fastest
   }
   S.sp++;
   save();
