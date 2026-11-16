@@ -150,7 +150,8 @@ const WEP_MODEL = {
   axe: { m: ['axe', 'axe2', 'axe2'], len: [1.3, 1.5, 1.7] },
   staff: { m: ['wand', 'staff', 'staff'], len: [1.2, 1.9, 2.1] },
   shuriken: { m: ['dagger', 'dagger', 'dagger'], len: [0.9, 1, 1.1] },
-  bow: { m: ['crossbow', 'crossbow', 'crossbow'], len: [1.1, 1.2, 1.3], axis: 'z+' },
+  // The ranger uses the fantasy bow built below; no modern crossbow silhouette.
+  bow: { len: [1.1, 1.2, 1.3], procedural: true },
   pistol: { m: ['blaster', 'blaster', 'blaster'], len: [0.6, 0.65, 0.7], axis: 'z+' },
   rifle: { m: ['repeater', 'repeater', 'repeater'], len: [0.9, 0.95, 1], axis: 'z+' },
   rocket: { m: ['repeater', 'repeater', 'repeater'], len: [1.05, 1.1, 1.15], axis: 'z+', tint: 0x6a7040 },
@@ -184,7 +185,7 @@ const WEP_MODELS = {};
 /** The weapon as a model (or null while it loads / if it has none): pointing along −Y, `len` long. */
 function weaponModel(id, t, ev, tc) {
   const d = WEP_MODEL[id];
-  if (!d) return null;
+  if (!d || d.procedural) return null;
   let src;
   if (d.duel) src = typeof window[d.duel] === 'function' ? window[d.duel]() : null;
   else src = WEP_MODELS[d.m[t]] ? WEP_MODELS[d.m[t]].clone(true) : null;
@@ -236,13 +237,15 @@ function buildWeapon(R = PM, wep) {
     if (t) w.add(mesh(BOX, tc, 0, -1.05, -0.2 * s, 0.08, 0.45 * s, 0.4 * s, em));
   } else if (id === 'bow') {
     const b = new THREE.Mesh(
-      new THREE.TorusGeometry(0.62 * s, 0.05 + 0.02 * t, 6, 14, Math.PI),
-      lam(t ? tc : 0x8a5a2b, em)
+      new THREE.TorusGeometry(0.72 * s, 0.045 + 0.018 * t, 8, 18, Math.PI),
+      lam(t ? tc : 0x5a321e, em)
     );
     b.rotation.set(Math.PI, Math.PI / 2, 0);
     b.castShadow = true;
     w.add(b);
-    w.add(mesh(BOX, 0xf0f0f0, 0, 0, 0, 0.02, 0.02, 1.24 * s));
+    w.add(mesh(CYL, 0x342018, 0, 0, 0, 0.055 * s, 0.34 * s, 0.055 * s));
+    w.add(mesh(BOX, t ? tc : 0xd7c6a0, 0, 0, 0, 0.018, 0.018, 1.44 * s, em));
+    w.add(mesh(CONE, t ? tc : 0xd7c6a0, 0, -0.72 * s, 0, 0.06 * s, 0.18 * s, 0.06 * s, em));
   } else if (id === 'pistol') {
     w.add(mesh(BOX, 0x30343c, 0, -0.22, 0, 0.15, 0.45, 0.16));
     w.add(mesh(BOX, tc, 0, -0.5 * s, 0, 0.1, 0.2 * s, 0.1, em));

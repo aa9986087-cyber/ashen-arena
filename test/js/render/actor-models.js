@@ -230,6 +230,15 @@ const ACTOR_MODELS = (() => {
     });
     return found;
   }
+  function styleRanger(root) {
+    root.traverse(o => {
+      if (!o.isMesh || !o.material || !o.material.color) return;
+      const n = compact(o.name);
+      // Desaturated leather, charcoal cloth and a restrained ember-red hood accent.
+      if (/headhooded|cape/.test(n)) o.material.color.multiply(new THREE.Color(0.42, 0.24, 0.2));
+      else if (/body|arm|leg/.test(n)) o.material.color.multiply(new THREE.Color(0.48, 0.5, 0.46));
+    });
+  }
   function prepare(key, gl, targetHeight) {
     if (!gl.scene) throw new Error('GLB has no scene');
     const root = gl.scene, r = resources(root);
@@ -245,6 +254,7 @@ const ACTOR_MODELS = (() => {
     }
     if (!skinned || !pbr || !r.textures.size) throw new Error('Sample requires a skinned root with textured PBR materials');
     capTextures(root);
+    if (key === 'ranger') styleRanger(root);
     const clips = selectClips((gl.animations || []).map(c => pinClip(c, root)), ACTOR_CONFIG[key].clips);
     if (!clips.idle && !clips.walk && !clips.run) throw new Error('No recognized idle/walk/run clip; set ACTOR_CONFIG.' + key + '.clips to exact provider names');
     // Fit actual skinned vertices at a real idle pose (r128 Box3 ignores skin deformation).
