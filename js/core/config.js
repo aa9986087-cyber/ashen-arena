@@ -1,7 +1,18 @@
 'use strict';
 /* Global configuration: asset paths and environment flags. */
-/** Folder that holds the background music file. */
-const MUSIC_URL = 'assets/audio/music.m4a';
+/** The recorded soundtrack: one original theme for each moment of the game. */
+const MUSIC = {
+  menu: 'assets/audio/music/menu.m4a',
+  run: 'assets/audio/music/run.m4a',
+  boss: 'assets/audio/music/boss.m4a',
+  win: 'assets/audio/music/win.m4a',
+  lose: 'assets/audio/music/lose.m4a',
+};
+/** Which theme belongs to a game state: a boss overrides the run; everything outside a run is the menu. */
+function musicFor(state, boss) {
+  const run = state === 'play' || state === 'cards' || state === 'paused' || state === 'lab';
+  return run ? (boss ? 'boss' : 'run') : 'menu';
+}
 /** Folder scanned for optional .glb/.gltf replacement models (see assets/models/README.md). */
 const MODEL_DIR = 'assets/models/';
 /** True when the game runs inside a Claude/Anthropic preview sandbox. */

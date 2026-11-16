@@ -49,7 +49,8 @@ if (S._mig) {
   save();
   setTimeout(() => toast('تغيّرت أسعار المتجر، فرجعت التطويرات الدائمة للصفر. عملاتك وأبطالك محفوظة'), 1200);
 }
-CM.set(MUSIC_URL);
+CM.set('menu');
+setTimeout(() => CM.prefetch(['run', 'boss']), 6000); // warm the run themes while the player reads the menu
 window.__game = {
   get G() {
     return G;

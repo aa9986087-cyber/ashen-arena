@@ -191,6 +191,7 @@ function endRun() {
           ? 'رقم قياسي جديد!'
           : 'سقطت في الساحة';
     sendOnline(S.board.find(x => x.n === lastRun.n) || lastRun);
+    if (CM && CM.sting) CM.sting(G.won ? 'win' : 'lose'); // the results sting over the score screen
   }
   checkAch();
   save();

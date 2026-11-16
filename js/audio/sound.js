@@ -218,12 +218,9 @@ const AU = {
     const c = this.ctx;
     if (!c) return;
     if (CM.on && CM.state !== 'missing') {
-      CM.tick();
-      // the synthesized score plays only while fighting without a boss (the track covers menu and bosses)
-      if (!((G.state === 'play' || G.state === 'cards') && !MUS.boss)) {
-        this.next = c.currentTime + 0.1;
-        return;
-      }
+      CM.tick(); // the recorded soundtrack covers the menu, the run and the boss
+      this.next = c.currentTime + 0.1;
+      return;
     }
     if (S.set.mus <= 0 || c.state !== 'running') {
       this.next = c.currentTime + 0.1;
