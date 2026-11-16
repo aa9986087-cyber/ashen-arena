@@ -265,10 +265,10 @@ const ACTOR_MODELS = (() => {
     asset.root.updateMatrixWorld(true);
   }
   // Disjoint arm/body masks: no attack track can touch hips, roots, legs or feet.
-  function knightLayers(asset) {
+  function knightLayers(asset, key = 'knight') {
     const arms = new Set();
     asset.root.traverse(o => {
-      if (o.isBone && /^(leftshoulder|rightshoulder)$/.test(compact(o.name).replace(/^mixamorig/, '')))
+      if (o.isBone && /^(leftshoulder|rightshoulder|upperarm[lr]|lowerarm[lr]|hand[lr]|wrist[lr])$/.test(compact(o.name).replace(/^mixamorig/, '')))
         o.traverse(b => arms.add(b));
     });
     const split = (clip, upper) => {
@@ -286,8 +286,10 @@ const ACTOR_MODELS = (() => {
       upper[role] = split(asset.clips[role], true);
     }
     if (asset.clips.attack && arms.size) {
-      // Actual generated slash: strike at 2.07s. Remove its long preparation/recovery.
-      upper.attack = THREE.AnimationUtils.subclip(split(asset.clips.attack, true), 'quick-arm-slash', 59, 67, 30);
+      // The knight uses its short generated slash; ranged heroes keep their authored arm shot.
+      upper.attack = key === 'knight'
+        ? THREE.AnimationUtils.subclip(split(asset.clips.attack, true), 'quick-arm-slash', 59, 67, 30)
+        : split(asset.clips.attack, true);
     }
     return { lower, upper };
   }
@@ -299,7 +301,7 @@ const ACTOR_MODELS = (() => {
     g.add(fit); fit.add(offset); offset.add(asset.root);
     fit.scale.setScalar(asset.fit); offset.position.set(...asset.offset); fit.rotation.y = cfg.yaw;
     const mixer = new THREE.AnimationMixer(asset.root), actions = {};
-    const layers = ['knight', 'ranger'].includes(key) ? knightLayers(asset) : null;
+    const layers = ['knight', 'ranger'].includes(key) ? knightLayers(asset, key) : null;
     for (const role in asset.clips) actions[role] = mixer.clipAction((layers && layers.lower[role]) || asset.clips[role]);
     const a = { key, asset, g, fit, mixer, actions, role: null, current: null, shot: null, previous: null, clock: null, wall: null, seen: {} };
     if (layers) {
@@ -418,6 +420,47 @@ const ACTOR_MODELS = (() => {
     }
     a.mixer.update(dt);
   }
+  function rangerAnimate(a, s, move, dt, clock) {
+    const duration = 0.34;
+    if (s.attack && !a.rangerAttackActive) {
+      a.rangerAttackActive = true;
+      a.rangerAttackStart = clock;
+      a.rangerAttackId = (a.rangerAttackId || 0) + 1;
+    }
+    const shooting = !!a.rangerAttackActive && clock < a.rangerAttackStart + duration;
+    if (!shooting) a.rangerAttackActive = false;
+    if (s.dead || s.fall || s.hurt || a.shot === 'hurt' || a.shot === 'fall') {
+      if (a.upperCurrent) a.upperCurrent.stop();
+      a.upperCurrent = null; a.upperRole = null;
+      animate(a, s, move, dt, duration, 0);
+      return;
+    }
+    a.shot = null;
+    change(a, move);
+    if (a.current) a.current.setEffectiveTimeScale(a.role === 'run' ? 1.25 : 1);
+    const upperRole = shooting && a.upperActions.attack ? 'attack' : resolved(a, move);
+    const upper = a.upperActions[upperRole];
+    if (upper && (upper !== a.upperCurrent || (shooting && a.rangerUpperAttackId !== a.rangerAttackId))) {
+      if (a.upperCurrent) a.upperCurrent.stop();
+      upper.reset(); upper.enabled = true;
+      upper.setLoop(upperRole === 'attack' ? THREE.LoopOnce : THREE.LoopRepeat, upperRole === 'attack' ? 1 : Infinity);
+      upper.clampWhenFinished = upperRole === 'attack';
+      upper.setEffectiveWeight(1); upper.setEffectiveTimeScale(1); upper.play();
+      a.upperCurrent = upper; a.upperRole = upperRole;
+      if (shooting) a.rangerUpperAttackId = a.rangerAttackId;
+    }
+    if (upper) {
+      if (upperRole === 'attack') {
+        upper.paused = true;
+        upper.time = Math.max(0, Math.min(0.999, (clock - a.rangerAttackStart) / duration)) * upper.getClip().duration;
+      } else {
+        upper.paused = false;
+        upper.time = a.current ? a.current.time : 0;
+        upper.setEffectiveTimeScale(a.role === 'run' ? 1.25 : 1);
+      }
+    }
+    a.mixer.update(dt);
+  }
   function weaponSync(R) {
     const a = R && R.actor;
     if (!a || !a.hand || !R.wp) return;
@@ -479,6 +522,7 @@ const ACTOR_MODELS = (() => {
     const cfg = ACTOR_CONFIG[a.key] || ACTOR_CONFIG.knight;
     a.g.position.set(p.x, cfg.groundOffset, p.z); a.g.rotation.set(0, p.face || 0, 0);
     if (a.key === 'knight') knightAnimate(a, s, move, frozen && !s.dead ? 0 : dt, p, clock);
+    else if (a.key === 'ranger') rangerAnimate(a, s, move, frozen && !s.dead ? 0 : dt, clock);
     else animate(a, s, move, frozen && !s.dead ? 0 : dt, 0.34, p.swing > 0 ? 1 - p.swing : 0);
     // The provider's locomotion clips are authored side-on; turn the body back to its facing.
     const loco = a.role === 'run' || a.role === 'walk';
