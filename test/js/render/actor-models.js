@@ -2,7 +2,7 @@
 /* SAMPLE only: one local knight and one forest guardian. No baked geometry/crowd changes.
    See runtime-integration.md for the small parent-owned hooks. No loading side effects. */
 const ACTOR_CONFIG = {
-  version: 1,
+  version: 2,
   textureEdge: 1024,
   fade: 0.08,
   knight: {
@@ -13,8 +13,8 @@ const ACTOR_CONFIG = {
   },
   ranger: {
     // Fantasy ranger silhouette: hooded rogue/cape, not the uncovered generic rogue.
-    file: 'assets/models/hero-assassin.glb', height: 2.5, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0,
-    clips: {}, handBone: null,
+    file: 'assets/models/hero-ranger-fantasy-animated.glb', height: 2.5, yaw: 0, locomotionYaw: -Math.PI / 2, groundOffset: 0,
+    clips: { idle: 'idle', run: 'run', attack: 'shoot', hurt: 'hurt', fall: 'fall' }, handBone: 'R_Hand',
     weapon: { position: [0, 0, 0], rotation: [Math.PI, 0, 0], scale: 1 },
   },
   guardian: {
@@ -53,7 +53,7 @@ const ACTOR_MODELS = (() => {
   const aliases = {
     idle: ['idle', 'standingidle', 'breathingidle'],
     walk: ['walk', 'walking'], run: ['run', 'running', 'jog', 'jogging'],
-    attack: ['attack', 'swing', 'slash', 'meleeattack', 'swordattack', 'swordswing', 'swordslash'],
+  attack: ['attack', 'shoot', 'swing', 'slash', 'meleeattack', 'swordattack', 'swordswing', 'swordslash'],
     hurt: ['hurt', 'hit', 'hitreaction', 'damage', 'takinghit'],
     fall: ['fall', 'death', 'die', 'dying', 'fallingdown', 'knockdown'],
   };
@@ -279,7 +279,7 @@ const ACTOR_MODELS = (() => {
   function knightLayers(asset, key = 'knight') {
     const arms = new Set();
     asset.root.traverse(o => {
-      if (o.isBone && /^(leftshoulder|rightshoulder|upperarm[lr]|lowerarm[lr]|hand[lr]|wrist[lr])$/.test(compact(o.name).replace(/^mixamorig/, '')))
+      if (o.isBone && /^(leftshoulder|rightshoulder|upperarm[lr]|lowerarm[lr]|hand[lr]|wrist[lr]|[lr](clavicle|upperarm|forearm|hand|wrist))/.test(compact(o.name).replace(/^mixamorig/, '')))
         o.traverse(b => arms.add(b));
     });
     const split = (clip, upper) => {
