@@ -20,7 +20,9 @@ function mesh(g, c, x, y, z, sx, sy, sz, em) {
 function buildPlayer() {
   buildRig(PM, S.char);
   if (PM.actor) PM.previewPending = false;
-  if (typeof G !== 'undefined' && G.state === 'menu' && PM.previewPending && !PM.actor) showMenuPreview(S.char);
+  // In the menu the chosen portrait is the instant stand-in until a real 3D actor is ready.
+  // This applies to every hero, so returning from the hero screen never falls back to another shape.
+  if (typeof G !== 'undefined' && G.state === 'menu' && !PM.actor) showMenuPreview(S.char);
   else clearMenuPreview();
 }
 let menuPreview = null;
@@ -34,7 +36,7 @@ function clearMenuPreview() {
   if (PM.g) PM.g.visible = true;
 }
 function showMenuPreview(id) {
-  if ((id !== 'knight' && id !== 'ranger') || typeof PORTRAIT_FILES === 'undefined' || !PORTRAIT_FILES[id] || typeof THREE === 'undefined') {
+  if (typeof PORTRAIT_FILES === 'undefined' || !PORTRAIT_FILES[id] || typeof THREE === 'undefined') {
     clearMenuPreview();
     return;
   }

@@ -1,6 +1,6 @@
 'use strict';
 /* Hero portraits: static thumbnails keep the hero screen instant; the old 3D renderer is a fallback. */
-const PORTRAIT_VER = 'heroes-20261116-v21';
+const PORTRAIT_VER = 'heroes-20261116-v22';
 const portraitFile = id => `assets/portraits/${id}.jpg?v=${PORTRAIT_VER}`;
 const PORTRAIT_FILES = {
   knight: portraitFile('knight'),

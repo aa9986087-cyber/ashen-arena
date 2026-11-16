@@ -70,6 +70,8 @@ let lastMenu = null;
 function render(dt, now) {
   const p = G.p,
     playing = G.state !== 'menu';
+  if (typeof menuPreview !== 'undefined' && menuPreview && G.state !== 'menu' && typeof clearMenuPreview === 'function')
+    clearMenuPreview();
   if (lastMenu !== !playing) {
     lastMenu = !playing;
     resize(); // in or out of the menu: its sharpness differs
