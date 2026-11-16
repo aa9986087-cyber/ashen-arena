@@ -1,13 +1,15 @@
 'use strict';
 /* Hero portraits: static thumbnails keep the hero screen instant; the old 3D renderer is a fallback. */
+const PORTRAIT_VER = 'heroes-20261116-v20';
+const portraitFile = id => `assets/portraits/${id}.jpg?v=${PORTRAIT_VER}`;
 const PORTRAIT_FILES = {
-  knight: 'assets/portraits/knight.jpg',
-  ranger: 'assets/portraits/ranger.jpg',
-  gunner: 'assets/portraits/gunner.jpg',
-  mage: 'assets/portraits/mage.jpg',
-  berserker: 'assets/portraits/berserker.jpg',
-  assassin: 'assets/portraits/assassin.jpg',
-  gunnerx: 'assets/portraits/gunnerx.jpg',
+  knight: portraitFile('knight'),
+  ranger: portraitFile('ranger'),
+  gunner: portraitFile('gunner'),
+  mage: portraitFile('mage'),
+  berserker: portraitFile('berserker'),
+  assassin: portraitFile('assassin'),
+  gunnerx: portraitFile('gunnerx'),
 };
 const PORTRAITS = {};
 let portraitKey = '';
