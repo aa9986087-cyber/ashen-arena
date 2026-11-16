@@ -62,10 +62,30 @@ jobs:
         with:
           path: dist/game
 
+  # Legacy Pages keeps publishing main on every push. This probe lets deploy
+  # activate itself as soon as Settings → Pages → Source becomes GitHub Actions.
+  pages:
+    name: pages
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    permissions:
+      pages: read
+    outputs:
+      actions: ${{ steps.probe.outputs.actions }}
+    steps:
+      - name: Detect Pages source
+        id: probe
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          type=$(gh api "repos/${{ github.repository }}/pages" --jq .build_type 2>/dev/null || echo legacy)
+          if [ "$type" = "workflow" ]; then echo "actions=true" >> "$GITHUB_OUTPUT"; else echo "actions=false" >> "$GITHUB_OUTPUT"; fi
+          echo "Pages build_type: $type"
+
   deploy:
     name: deploy
-    needs: check
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: [check, pages]
+    if: needs.pages.outputs.actions == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
