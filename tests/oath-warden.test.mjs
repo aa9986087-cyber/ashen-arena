@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import fs from 'node:fs/promises';
 const source=await fs.readFile(new URL('../test/expansions/oath-warden/combat.js',import.meta.url),'utf8');
 function setup(){
- const c=vm.createContext({S:{char:'reaper'},G:{state:'play',t:0,p:{x:0,z:0,face:0,area:1,dead:false},enemies:[]},choosingCards:()=>false,clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),ring:()=>{}});
+ const c=vm.createContext({S:{char:'reaper'},G:{state:'play',t:0,p:{x:0,z:0,face:0,area:1,dead:false},enemies:[]},choosingCards:()=>false,clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),parts:()=>{}});
  c.eachInRadius=(x,z,r,fn)=>{for(const e of c.G.enemies)if(!e.dead&&Math.hypot(e.x-x,e.z-z)<=r)fn(e);};
  c.hit=(e,d)=>{e.hp-=d;if(e.hp<=0)e.dead=true;};vm.runInContext(source,c);return {c,run:s=>vm.runInContext(s,c)};
 }

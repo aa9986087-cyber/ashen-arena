@@ -28,7 +28,9 @@ function wardenSpecial(power, damageRank=0, radiusRank=0) {
   const rank=v=>Number.isFinite(v)?clamp(Math.floor(v),0,3):0;
   s.wardUntil=G.t+3;s.specialAt=G.t;
   s.cleave={at:G.t+0.28,power:power*(1+0.15*rank(damageRank)),radius:7*p.area*(1+0.08*rank(radiusRank))};
-  ring(p.x,p.z,0.5,4,0.28,[0.8,0.9,1.2]);
+  // Keep the impact close to the shield so the swing remains readable.
+  parts(p.x + Math.sin(f) * 1.3, 1.5, p.z + Math.cos(f) * 1.3,
+    9, 1, 0.75, 0.38, 6, 0.045, 0.22);
   eachInRadius(p.x,p.z,4,e=>{
     const dx=e.x-p.x,dz=e.z-p.z,d=Math.hypot(dx,dz);
     if(d>0.01 && (dx*Math.sin(f)+dz*Math.cos(f))/d<0.5)return;
@@ -43,6 +45,5 @@ function wardenTick() {
   if(!q || G.t<q.at)return;
   s.cleave=null; // Consume before damage callbacks: re-entry cannot repeat the cleave.
   const p=G.p;
-  ring(p.x,p.z,0.5,q.radius,0.4,[1.1,0.85,0.4]);
   eachInRadius(p.x,p.z,q.radius,e=>hit(e,q.power*1.8,{aoe:1,quiet:1,noCrit:1,grave:1}));
 }

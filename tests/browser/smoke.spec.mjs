@@ -445,7 +445,7 @@ test('preview: warden visual direction and original animated GLB',async({page},t
  expect(await page.evaluate(()=>!!PM.warden&&PM.char==='reaper'&&renderer.info.render.calls>0)).toBe(true);
 });
 
-test('preview: warden special uses a unique one-shot spin and keeps progress across movement and pause',async({page},testInfo)=>{
+test('preview: warden special draws a sword trail without ground rings and preserves animation progress',async({page},testInfo)=>{
  test.setTimeout(90000);
  await page.goto('/test/#netlocal',{waitUntil:'load'});
  await expect.poll(()=>page.evaluate(()=>typeof window.__game),{timeout:45000}).toBe('object');
@@ -455,14 +455,21 @@ test('preview: warden special uses a unique one-shot spin and keeps progress acr
  await page.locator('#mPlay').click();await expect.poll(()=>page.evaluate(()=>G.state)).toBe('play');
  const result=await page.evaluate(()=>{
   G.noWaves=true;G.god=true;G.enemies=[];G.pending=0;G.picks=[];G.p.swing=0;
-  const start=G.t,now=performance.now();graveRelease(100);
+  const start=G.t,now=performance.now(),ringsBefore=G.rings.length;graveRelease(100);
   const pose=(offset,moving)=>{G.t=start+offset;G.p.moving=moving;wardenPose(PM,G.p,'scythe',true,now+offset*1000);const a=PM.warden,action=a.layered?a.upper[a.role]:a.actions[a.role];return {role:a.role,time:action.time,duration:action.getClip().duration};};
   const bash=pose(0.1,0);G.p.swing=1;
-  const moving=pose(0.3,1),standing=pose(0.45,0);
+  const moving=pose(0.3,1);
+  pose(0.33,1);pose(0.36,1);wardenTick();
+  const trail=PM.warden.trail;
+  const visible=trail.mesh.visible&&trail.mesh.geometry.drawRange.count>=12;
+  const positions=trail.mesh.geometry.attributes.position.array;
+  const movement=Math.hypot(positions[3]-positions[6],positions[4]-positions[7],positions[5]-positions[8]);
+  const standing=pose(0.45,0);
   G.state='paused';const paused=pose(0.45,0);G.state='play';
   const end=pose(0.7,0),later=pose(1,0);
-  return {bash,moving,standing,paused,end,later};
+  return {bash,moving,standing,paused,end,later,visible,movement,hidden:!trail.mesh.visible,rings:G.rings.length-ringsBefore};
  });
+ expect(result.rings).toBe(0);expect(result.visible).toBe(true);expect(result.movement).toBeGreaterThan(0.05);expect(result.hidden).toBe(true);
  expect(result.bash.role).toBe('bash');expect(result.moving.role).toBe('special');expect(result.standing.role).toBe('special');
  expect(result.standing.time).toBeGreaterThan(result.moving.time);
  expect(result.paused.time).toBeCloseTo(result.standing.time,6);
