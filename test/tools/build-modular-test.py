@@ -13,6 +13,9 @@ CFG = json.loads((TEST / 'modular-config.json').read_text())
 EXPANSIONS = CFG.get('enabledExpansions', [])
 GRAVEBOUND = 'gravebound' in EXPANSIONS
 BOSS_SPECIALS = 'boss-specials' in EXPANSIONS
+campaign_path = TEST / 'expansions' / 'boss-specials' / 'assets'
+campaign_manifest = campaign_path / 'manifest.json'
+CAMPAIGN_ACTORS = BOSS_SPECIALS and campaign_manifest.exists()
 if any(name not in {'gravebound', 'boss-specials'} for name in EXPANSIONS):
     raise SystemExit('Unknown expansion in enabledExpansions')
 def load_expansion(name):
@@ -170,8 +173,24 @@ extra = '\n;\n'.join(config_code)
 actor_runtime = (TEST / 'addons' / 'shared' / 'actor-runtime.js').read_text()
 if BOSS_SPECIALS:
     actor_runtime = boss_specials_build.apply_guardian(actor_runtime, replace_once)
+addon_hooks = (TEST / 'tools' / 'modular-runtime' / 'hooks.js').read_text()
+if CAMPAIGN_ACTORS:
+    actor_runtime = boss_specials_build.apply_campaign_actors(actor_runtime, replace_once)
+    addon_hooks = boss_specials_build.apply_campaign_intro(addon_hooks, replace_once)
+    known_assets = json.loads(campaign_manifest.read_text())
+    actor_configs = {}
+    for entry in known_assets:
+        path = campaign_path / entry['file']
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        if digest != entry['sha256']:
+            raise RuntimeError('Wrong asset SHA-256: ' + str(path))
+        actor_configs['boss' + str(entry['kind'])] = { 'file': '../../expansions/boss-specials/assets/' + entry['file'],
+            'version': digest[:12], 'height': entry['height'], 'yaw': 0, 'locomotionYaw': 0, 'groundOffset': 0,
+            'clips': { 'special': 'special' } }
+    extra += '\n;\nconst CAMPAIGN_BOSS_MODELS = ' + json.dumps(actor_configs) + ';\n'
+    extra += 'for (const asset of Object.values(CAMPAIGN_BOSS_MODELS)) asset.file = new URL(asset.file, document.currentScript.src).href;\n'
 extra += '\n;\n' + actor_runtime
-extra += '\n;\n' + (TEST / 'tools' / 'modular-runtime' / 'hooks.js').read_text()
+extra += '\n;\n' + addon_hooks
 extra += '\n;\n' + (TEST / 'tools' / 'modular-runtime' / 'shaman-healing.js').read_text()
 if GRAVEBOUND:
     for filename in ['combat.js','actor.js']:
@@ -181,6 +200,8 @@ if GRAVEBOUND:
         code = source.read_text()
         if BOSS_SPECIALS and filename == 'models.js':
             code = boss_specials_build.apply_grave_model(code, replace_once)
+            if CAMPAIGN_ACTORS:
+                code = boss_specials_build.apply_campaign_grave(code, replace_once)
         extra += '\n;\n/* gravebound/' + filename + ' */\n' + code
 if BOSS_SPECIALS:
     for filename in ['combat.js', 'visuals.js']:

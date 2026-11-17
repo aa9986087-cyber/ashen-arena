@@ -37,8 +37,8 @@
   "scope": "forest boss kind 0 body only; baseline aura/HUD/cinematic retained",
   "code": {
     "config.js": {
-      "sha256": "af46ccd885edd3d1a3719be17b5fe076ed3e075c43426f8a384a666fe16924eb",
-      "bytes": 1258
+      "sha256": "524a73f0409398f3db326fe2044af7f81f590c6680c8911d5756f7483dc6a5f8",
+      "bytes": 1316
     }
   },
   "defaultEnabled": false

@@ -1,0 +1,57 @@
+[
+  {
+    "kind": 1,
+    "file": "sand.glb",
+    "height": 3.9,
+    "triangles": 18500,
+    "bytes": 1233552,
+    "sha256": "607a60d4d2afa71250b607e56f840d0683cfa6affc259d1639a6b0fa6e544ca6",
+    "source": "https://sketchfab.com/3d-models/egyptian-falcon-guardian-a1ad4a9742da48789ca1ee856448f9d4",
+    "creator": "Pigcraft",
+    "license": "CC BY 4.0"
+  },
+  {
+    "kind": 4,
+    "file": "frost.glb",
+    "height": 3.75,
+    "triangles": 7268,
+    "bytes": 1013624,
+    "sha256": "493482abfe7d37afd6751dceefea6385fdba6ba14cc7985be8ea471dbe16dd1d",
+    "source": "https://sketchfab.com/3d-models/ice-golem-f7370eebe4cf4f81b49c83925c0d3d0c",
+    "creator": "Caboose3d",
+    "license": "CC BY 4.0"
+  },
+  {
+    "kind": 2,
+    "file": "knight.glb",
+    "height": 4.2,
+    "triangles": 18491,
+    "bytes": 1455164,
+    "sha256": "2240e1c6f5758b156909c462f772ad9df40d350a58bac91890b3c19461bde1e9",
+    "source": "https://sketchfab.com/3d-models/dark-knight-spiked-black-armored-warrior-e2447a48b07c4f7f925356dd73e63ca6",
+    "creator": "Pigcraft",
+    "license": "CC BY 4.0"
+  },
+  {
+    "kind": 5,
+    "file": "fire.glb",
+    "height": 4.05,
+    "triangles": 18496,
+    "bytes": 1313272,
+    "sha256": "09a4ddc2de759807d8686781a0286b3c351fffbcc59ea3b2290111e21e5303d0",
+    "source": "https://sketchfab.com/3d-models/charcoal-black-dark-dragon-25c51b198dd54e538f62569d52f61d8e",
+    "creator": "Pigcraft",
+    "license": "CC BY 4.0"
+  },
+  {
+    "kind": 6,
+    "file": "grave.glb",
+    "height": 3.85,
+    "triangles": 18500,
+    "bytes": 1671560,
+    "sha256": "8f81026ee1e8d41dbcf449576b6e140497e22f7cffad3904b5b5d009c00ffc7c",
+    "source": "https://sketchfab.com/3d-models/gravestone-golem-cemetery-guardian-955bcbfe310f459f8ff26d918985cd6e",
+    "creator": "Pigcraft",
+    "license": "CC BY 4.0"
+  }
+]

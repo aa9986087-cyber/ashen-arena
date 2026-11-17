@@ -9,7 +9,7 @@ import { CDN_DIR, validateFixtures } from '../helpers/cdn-fixtures.mjs';
 const rules = await globals();
 const latestNews = rules.run('NEWS[0]?.id');
 const testFiles = fileURLToPath(new URL('../../test/',import.meta.url));
-const { release, enabledExpansions = [] } = JSON.parse(await fs.readFile(path.join(testFiles, 'modular-config.json'), 'utf8'));
+const { release, enabledExpansions = [], forestDefault } = JSON.parse(await fs.readFile(path.join(testFiles, 'modular-config.json'), 'utf8'));
 const previewLatestNews = runInNewContext((await fs.readFile(path.join(testFiles, 'releases', release, 'js/data/news.js'), 'utf8')) + '\nNEWS[0]?.id');
 const fixtureProfile = { ...rules.json('defSave()'), name: 'Smoke-local', newsSeen: latestNews };
 // Low quality is an existing user setting, not a renderer replacement. Keep WebGL, actual main/frame/update.
@@ -395,9 +395,12 @@ test('preview: gravebound purchases, reaper touch special, save/resume and seven
   await page.evaluate(()=>{G.god=true;G.noWaves=true;G.enemies=[];G.picks=[];G.pending=0;G.stage=5;nextStage();spawnBoss();});
   await expect.poll(()=>page.evaluate(()=>CINE.on),{timeout:45000}).toBe(false);
   await expect(page.locator('#bossbar')).toContainText('حفّار القبور');
-  expect(await page.evaluate(()=>G.stage===6&&G.boss.kind===6&&graveBossModel.visible)).toBe(true);
+  expect(await page.evaluate(() => {
+    const body = scene.getObjectByName('ashenActor-boss6') || graveBossModel;
+    return G.stage === 6 && G.boss.kind === 6 && body?.visible;
+  })).toBe(true);
   await page.evaluate(()=>{G.boss.x=G.p.x;G.boss.z=G.p.z-4;G.boss.graveDig=9;G.boss.graveSlam=5;bannerT=0;$('banner').classList.remove('on');$('count').hidden=true;G.texts=[];});
-  await expect.poll(()=>page.evaluate(()=>Math.abs(graveBossModel.position.z-G.boss.z))).toBeLessThan(1);
+  await expect.poll(()=>page.evaluate(()=>Math.abs((scene.getObjectByName('ashenActor-boss6') || graveBossModel).position.z - G.boss.z))).toBeLessThan(1);
   await page.screenshot({path:testInfo.outputPath('gravekeeper.png')});
   await page.evaluate(()=>{G.boss.graveDig=0;});
   await expect.poll(()=>page.evaluate(()=>!!G.boss.gravePhase),{timeout:10000}).toBe(true);
@@ -585,11 +588,14 @@ test('preview: seven boss specials warn, animate, hit on cue and leave ground ma
   await page.locator('#mPlay').tap();
   await expect.poll(() => page.evaluate(() => G.state)).toBe('play');
 
-  const checks = await page.evaluate(() => {
+  const checks = await page.evaluate(async () => {
     const results = [];
     for (const stage of STAGES.filter(s => !s.abyss)) {
       const kind = stage.bk;
       newRun();
+      G.state = 'paused';
+      const actorKey = typeof bossActorKey === 'function' ? bossActorKey(kind) : null;
+      if (actorKey) await loadBossActor(kind);
       Object.assign(G, { state: 'play', stage: STAGES.indexOf(stage), noWaves: true });
       Object.assign(CINE, { on: false, pending: null });
       const p = G.p;
@@ -614,12 +620,19 @@ test('preview: seven boss specials warn, animate, hit on cue and leave ground ma
       poseBossSpecial(pose, boss);
       const poseBefore = [pose.position.y, pose.rotation.x, pose.rotation.y, pose.rotation.z];
       const safeDuringWarning = p.hp === hpBefore;
+      render(0, performance.now());
+      const model = actorKey && scene.getObjectByName('ashenActor-' + actorKey);
+      const skeleton = model && model.getObjectByProperty('isSkinnedMesh', true)?.skeleton;
+      const jointsBefore = skeleton?.bones.map(bone => bone.quaternion.toArray());
       Object.assign(p, { x: target.x, z: target.z, inv: 0 });
       while (boss.bossSpecial.elapsed < skill.wind + .045) update(step);
-      drawBossSpecialImpacts(true);
+      render(0, performance.now());
       const marks = bossImpactScar.count;
+      const clip = actorKey && ACTOR_MODELS.diagnostics()[actorKey]?.clips.special;
+      const jointShift = skeleton?.bones.some((bone, i) => bone.quaternion.toArray()
+        .some((value, axis) => Math.abs(value - jointsBefore[i][axis]) > .03));
       results.push({
-        kind, name: skill.name, health: boss.maxHp, warningDamage, safeDuringWarning, froze, poseBefore,
+        kind, actorKey, clip, jointShift, name: skill.name, health: boss.maxHp, warningDamage, safeDuringWarning, froze, poseBefore,
         hit: hpBefore > p.hp, marks, landed: kind !== 2 || boss.y < .1,
       });
       // Resume the loop with the visual on the last boss for a phone-sized screenshot.
@@ -636,12 +649,19 @@ test('preview: seven boss specials warn, animate, hit on cue and leave ground ma
     expect(row.warningDamage).toBeGreaterThan(20);
     expect(row.safeDuringWarning && row.hit && row.froze && row.landed).toBe(true);
     expect(row.marks).toBeGreaterThan(0);
+    if (row.actorKey) {
+      expect(row.clip).toBe(row.kind === 0 ? 'rootSlam' : 'special');
+      expect(row.jointShift).toBe(true);
+    }
+  }
+  if (forestDefault === 'ancient') {
+    expect(checks.filter(row => row.actorKey).map(row => row.kind)).toEqual(expect.arrayContaining([0, 1, 2, 4, 5, 6]));
   }
   await page.screenshot({ path: testInfo.outputPath('boss-special-impact.png') });
 });
 
 test('preview: ancient forest guardian raises its arms and slams on the root warning clock', async ({ page }, testInfo) => {
-  test.skip(release !== 'clean-20261117-v26', 'The ancient tree review asset is not in this build.');
+  test.skip(release !== 'clean-20261117-v26' && forestDefault !== 'ancient', 'The ancient tree review asset is not in this build.');
   test.setTimeout(90000);
   const loads = [];
   page.on('request', request => {

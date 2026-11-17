@@ -4,7 +4,7 @@
   if (!registry || typeof registry.define !== 'function') throw new Error('Load ASHEN_ADDONS registry before forest-guardian/config.js');
   const script = document.currentScript;
   if (!script || !script.src) throw new Error('guardian config requires an external classic script');
-  const ancient = typeof location !== 'undefined' && /(?:^|[?&])forest=ancient(?:&|$)/.test(location.search);
+  const ancient = window.ASHEN_TEST_RELEASE?.forestDefault === 'ancient' || typeof location !== 'undefined' && /(?:^|[?&])forest=ancient(?:&|$)/.test(location.search);
   const file = ancient ? new URL('./ancient-tree.glb', script.src).href : new URL('./model.glb', script.src).href;
   const version = ancient ? 'ancient-1' : '1.0.0-c0c1701';
   const sourceRevision = ancient ? 'sketchfab:a5dbf31a53f34fc6952b6c9b38341151' : 'c0c1701f7c35abc8766c0fd9bdac61417bb524d5';
