@@ -34,39 +34,39 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-17T10:37:56.308Z.
-- مرجع العمل: [`55a4259927b1440987475f9e4290231f95205e37`](https://github.com/aa9986087-cyber/ashen-arena/commit/55a4259927b1440987475f9e4290231f95205e37).
-- آخر تعديل: تجربة v16: رداء الحاصد الأسود الممزق ووجه مخفي ومنجل أكبر.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44066243725/attempts/1).
+- وقت التسجيل (UTC): 2026-11-17T10:47:12.109Z.
+- مرجع العمل: [`4ae6fb3884c91e535219b0c7916f1c9bd105448f`](https://github.com/aa9986087-cyber/ashen-arena/commit/4ae6fb3884c91e535219b0c7916f1c9bd105448f).
+- آخر تعديل: تجربة v17: تبسيط الحاصد وشفاء القتل والمنجل الدائري وترقيات مباشرة وحركة محسنة.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44067652303/attempts/1).
 - بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
 - مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
-- إصدار التجربة المسجل: `clean-20261117-v16`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
+- إصدار التجربة المسجل: `clean-20261117-v17`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`d54df8992db4`: 242 ملفًا.
+مقارنةً بـ`daf5f5e711c0`: 248 ملفًا.
 - `docs/HANDOFF.md`
+- `test/expansions/gravebound/README.md`
+- `test/expansions/gravebound/data.js`
+- `test/expansions/gravebound/gameplay.js`
 - `test/expansions/gravebound/models.js`
+- `test/expansions/gravebound/ui.js`
 - `test/index.html`
 - `test/modular-config.json`
-- `test/releases/clean-20261117-v16/app.js`
-- `test/releases/clean-20261117-v16/app.min.js`
-- `test/releases/clean-20261117-v16/assets/audio/duel/block0.mp3`
-- `test/releases/clean-20261117-v16/assets/audio/duel/block1.mp3`
-- `test/releases/clean-20261117-v16/assets/audio/duel/block2.mp3`
-- `test/releases/clean-20261117-v16/assets/audio/duel/break0.mp3`
-- `test/releases/clean-20261117-v16/assets/audio/duel/clash0.mp3`
-- `test/releases/clean-20261117-v16/assets/audio/duel/clash1.mp3`
-- وبقية 230 ملفًا في رابط commit أعلاه.
+- `test/releases/clean-20261117-v17/app.js`
+- `test/releases/clean-20261117-v17/app.min.js`
+- `test/releases/clean-20261117-v17/assets/audio/duel/block0.mp3`
+- `test/releases/clean-20261117-v17/assets/audio/duel/block1.mp3`
+- وبقية 236 ملفًا في رابط commit أعلاه.
 
 ### أحدث خمس دفعات على main
 
+- 4ae6fb3 تجربة v17: تبسيط الحاصد وشفاء القتل والمنجل الدائري وترقيات مباشرة وحركة محسنة
+- daf5f5e docs: تحديث آلي لملف التسليم
 - 55a4259 تجربة v16: رداء الحاصد الأسود الممزق ووجه مخفي ومنجل أكبر
 - d54df89 docs: تحديث آلي لملف التسليم
 - e5e998b تسليم إلغاء تجربة الصيانة والإبقاء على توسعة v15 للمراجعة
-- c8df783 إنهاء معاينة صيانة الصدارة وإرجاع رابطها للتجربة العادية
-- cf4661e docs: تحديث آلي لملف التسليم
 
 الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
