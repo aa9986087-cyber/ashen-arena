@@ -72,6 +72,13 @@ def patch(path, text):
             "  if (c.k === 'wnew' && G.weapons.some(x => x.id === c.id)) return;\n"
             "  if (c.k === 'pact' && G.pacts[c.id]) return;\n"
             "  G.cardPicked = true;", path)
+    if path == 'js/game/enemy-ai.js':
+        text = replace_once(text,
+            "          if ((o.x - e.x) ** 2 + (o.z - e.z) ** 2 < 49 && o.hp < o.maxHp) {\n"
+            "            o.hp = Math.min(o.maxHp, o.hp + o.maxHp * 0.3);\n"
+            "            n++;\n"
+            "          }",
+            "          if (healShamanAlly(e, o)) n++;", path)
     if path == 'js/game/combat.js':
         text = replace_once(text, '  if (crit && G.ups.vamp) heal(G.ups.vamp);\n', '', path)
         text = replace_once(text, '  p.hp = Math.min(p.maxHp, p.hp + v);\n}\n',
@@ -136,6 +143,7 @@ for addon in addons:
 extra = '\n;\n'.join(config_code)
 extra += '\n;\n' + (TEST / 'addons' / 'shared' / 'actor-runtime.js').read_text()
 extra += '\n;\n' + (TEST / 'tools' / 'modular-runtime' / 'hooks.js').read_text()
+extra += '\n;\n' + (TEST / 'tools' / 'modular-runtime' / 'shaman-healing.js').read_text()
 parts = [preamble]
 for match in SCRIPT.finditer(html):
     src = match.group(1).split('?', 1)[0]
