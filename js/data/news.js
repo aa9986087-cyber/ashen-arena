@@ -1,8 +1,22 @@
 'use strict';
 /* The news bulletin: what each update brought, newest first. A new entry (a new id) lights the news button and
    opens the bulletin once for every player. date + time (Saudi time) of the update; i: an emoji (shown as its
-   icon), t: the line. Not for here: money / gift codes, chat clean-ups, score resets. */
+   icon), t: the line. Normally excludes money / gift codes, chat clean-ups and score resets;
+   the owner explicitly requested the administrative notice dated 2026-11-17. */
 const NEWS = [
+  {
+    id: '2026-11-17-0710',
+    date: '17 نوفمبر',
+    time: '7:10 ص',
+    title: 'الواسطة العائلية خارج الخدمة 😂',
+    tag: 'قرار إداري',
+    items: [
+      { i: '⚖️', t: 'بقرار صاحب اللعبة، عوقب موسى وأبو طربي على استغلال ثغرة اللعبة، وأُلغيت نتائجهم السابقة من الصدارة' },
+      { i: '🛠️', t: 'العقوبة: تصفير العملات وسحب 4 عقد من شجرة المهارات و4 درجات من ترقيات المتجر و3 أبطال، دون تعويض. الخصم يُطبّق مرة واحدة عند دخولهم بالتحديث' },
+      { i: '😂', t: 'والمفاجأة؟ الاثنين إخوان صاحب اللعبة! حسبوا القرابة تمنحهم حصانة… طلعت تمنحهم نشرة أخبار خاصة' },
+      { i: '🏆', t: 'القرابة تفتح باب البيت، ما تفتح واسطة في قاعة المجد. ارجعوا ابنوا أمجادكم بالحلال يا شباب!' },
+    ],
+  },
   {
     id: '2026-11-16-0523',
     date: '16 نوفمبر',

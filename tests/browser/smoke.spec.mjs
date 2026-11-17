@@ -21,6 +21,16 @@ const test = base.extend({
         loadedRuntime: [],
         microphoneRequests: 0,
       };
+      // Use each targeted device in an isolated browser, never its real storage or production API.
+      const profile = structuredClone(fixtureProfile);
+      profile.pid = testInfo.project.name === 'mobile' ? 'fixture-penalty-two' : 'fixture-penalty-one';
+      profile.pkey = "local-browser-fixture-key";
+      profile.coins = 9000;
+      profile.sp = 17;
+      profile.chars = Object.fromEntries(rules.json('Object.keys(CHARS)').map(id=>[id,1]));
+      profile.tree = Object.fromEntries(rules.json('TREE.flatMap(b=>b.nodes.map(n=>n.id))').map(id=>[id,1]));
+      profile.perm = rules.json('Object.fromEntries(Object.entries(PERM).map(([k,v])=>[k,v.max]))');
+      profile.stats = {...profile.stats,bestLvl:67,kills:76650,bosses:102,bestTime:2403};
       // Routes installed before navigation; no Supabase request or write can reach any production host.
       await context.route('**/*', async route => {
         const request = route.request();
@@ -36,6 +46,13 @@ const test = base.extend({
           return;
         }
         observed.blockedHTTP.push({ url: request.url(), method: request.method() });
+        if (url.pathname === '/rest/v1/rpc/get_player_penalty') {
+          const body = request.postDataJSON();
+          await route.fulfill({status:200,contentType:'application/json',
+            body:JSON.stringify(body.p_pid === profile.pid && body.p_key === profile.pkey
+              ? {id:'2026-11-17-fair-play',skill_nodes:4,shop_levels:4,heroes:3,reset_coins:true} : null)});
+          return;
+        }
         // Deterministic offline response; this is a transport boundary, not a game/UI stub.
         if (/fonts\.googleapis\.com$/.test(url.hostname))
           await route.fulfill({ status: 200, contentType: 'text/css', body: '' });
@@ -49,7 +66,8 @@ const test = base.extend({
       page.on('pageerror', error => observed.pageErrors.push(error.stack || error.message));
       await context.addInitScript(profile => {
         localStorage.setItem('ashen_arena_v1', JSON.stringify(profile));
-        localStorage.removeItem('ashen_arena_run');
+        localStorage.setItem('ashen_arena_run', JSON.stringify({v:1,kills:1000,lvl:67}));
+        window.__prePenaltyProfile = JSON.stringify(profile);
         window.__testMicrophoneRequests = 0;
         // Never prompt for or grant microphone access, even if a future regression tries it.
         if (navigator.mediaDevices)
@@ -57,7 +75,7 @@ const test = base.extend({
             window.__testMicrophoneRequests++;
             return Promise.reject(new DOMException('Microphone forbidden in smoke tests', 'NotAllowedError'));
           };
-      }, fixtureProfile);
+      }, profile);
       await use(observed);
       observed.microphoneRequests = await page.evaluate(() => window.__testMicrophoneRequests || 0).catch(() => 0);
       await testInfo.attach('offline-boundary-and-runtime-errors', {
@@ -79,6 +97,7 @@ async function boot(page, isolated) {
       message: '__game must be exported by real js/main.js',
     })
     .toBe('object');
+  await page.evaluate(() => window.__game.ready);
   await expect(page.locator('#menu')).toBeVisible();
   await expect(page.locator('#menu')).not.toHaveClass(/boot/);
   expect(isolated.loadedRuntime).toContain('/js/main.js');
@@ -126,6 +145,41 @@ async function checkScreens(page, isolated) {
   expect(await page.evaluate(() => VC.list.map(p => p.id))).toEqual(members);
   await page.locator('#vcClose').click();
   await expect(page.locator('#voice')).toBeHidden();
+}
+
+async function checkPlayerPenalty(page) {
+  const originalShopRanks = rules.run('Object.values(PERM).reduce((sum,p)=>sum+p.max,0)');
+  const state = () => page.evaluate(() => ({
+    coins:S.coins,sp:S.sp,nodes:Object.keys(S.tree).length,heroes:Object.keys(S.chars).length,
+    shopRanks:Object.values(S.perm).reduce((sum,n)=>sum+n,0),
+    level:S.stats.bestLvl,kills:S.stats.kills,bosses:S.stats.bosses,
+    receipt:profileStats().penalty,checkpoint:localStorage.getItem('ashen_arena_run'),
+  }));
+  const expected = {coins:0,sp:17,nodes:21,heroes:4,shopRanks:originalShopRanks-4,level:67,
+    kills:0,bosses:0,receipt:'2026-11-17-fair-play',checkpoint:null};
+  expect(await state()).toEqual(expected);
+  expect(await page.evaluate(() => {S.coins=25;save();return enforcePlayerPenalty();})).toBeNull();
+  expect((await state()).coins).toBe(25);
+}
+
+async function checkOldPenaltyBackup(page) {
+  // Exercise the actual import UI: an old backup cannot restore pre-penalty wealth or upgrades.
+  const oldCode = await page.evaluate(() => 'AS1-'+b64(window.__prePenaltyProfile)+'.'+sig(window.__prePenaltyProfile+BACKUP_SALT));
+  await page.locator('#menu [data-go="settings"]').click();
+  await page.locator('#bkIn').fill(oldCode);
+  await page.locator('#bkLoad').click();
+  await page.locator('#bkLoad').click();
+  await expect(page.locator('#toast')).toContainText('رجع تقدمك');
+  expect(await page.evaluate(() => ({
+    coins:S.coins,sp:S.sp,nodes:Object.keys(S.tree).length,heroes:Object.keys(S.chars).length,
+    shopRanks:Object.values(S.perm).reduce((sum,n)=>sum+n,0),
+    level:S.stats.bestLvl,kills:S.stats.kills,bosses:S.stats.bosses,
+    receipt:profileStats().penalty,checkpoint:localStorage.getItem('ashen_arena_run'),
+  }))).toEqual({coins:0,sp:17,nodes:21,heroes:4,
+    shopRanks:rules.run('Object.values(PERM).reduce((sum,p)=>sum+p.max,0)')-4,
+    level:67,kills:0,bosses:0,receipt:'2026-11-17-fair-play',checkpoint:null});
+  await page.locator('#setBack').click();
+  await expect(page.locator('#menu')).toBeVisible();
 }
 
 async function checkRound(page, testInfo) {
@@ -197,11 +251,14 @@ async function checkRound(page, testInfo) {
 }
 
 // One actual boot per viewport, all prior assertions retained. No redundant scene/model reload between scenarios.
-test('screens, maintenance, voice and real play/movement/pause/save in one isolated journey', async ({
+test('screens, penalties, backup restore, voice and real play/movement/pause/save in one isolated journey', async ({
   page,
   isolated,
 }, testInfo) => {
+  test.setTimeout(120000); // The same boot now also verifies the targeted save migration and real backup UI.
   await boot(page, isolated);
+  await checkPlayerPenalty(page);
   await checkScreens(page, isolated);
   await checkRound(page, testInfo);
+  await checkOldPenaltyBackup(page);
 });

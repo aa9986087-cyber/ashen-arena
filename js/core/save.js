@@ -12,6 +12,7 @@ const defSave = () => ({
   weps: { sword: 1, pistol: 1 },
   char: 'knight',
   tree: {},
+  penalties: {},
   ach: {},
   /** ids of gift codes already redeemed on this device */
   gifts: {},

@@ -181,6 +181,8 @@ function mainRuntime() {
     DUEL: { on: false }, COOP: { on: false }, frameGap: () => 0,
     requestAnimationFrame: fn => frames.push(fn), setTimeout: (fn, delay) => timers.push({ fn, delay }),
     AU: { ctx: null, music: () => calls.push(['music']) }, CM: { set: key => calls.push(['track', key]), tick: () => calls.push(['cm']), prefetch: keys => calls.push(['prefetch', ...keys]) },
+    refreshPlayerPenalty() { calls.push(['refreshPlayerPenalty']); return Promise.resolve(null); },
+    $() {return {disabled:false};},
     loadModels() { calls.push(['loadModels']); throw new Error('optional models unavailable'); },
   };
   for (const name of ['initIntro','setupBloom','newRun','setStage','buildPlayer','resize','drawSet','go','warmGPU','askName','save','toast','liveTick','liveWatchStep','duelFrame','perfTick','coopFrame','update','updCount','render','startRun','chooseCard','spawnBoss','special','dash']) {
@@ -192,8 +194,8 @@ function mainRuntime() {
 
 test('cleanup core: real boot continues past optional model error and completes migration/music/export', () => {
   const g = mainRuntime();
-  assert.deepEqual(g.calls.map(c=>c[0]), ['initIntro','setupBloom','newRun','setStage','buildPlayer','resize','drawSet','go','warmGPU','loadModels','save','track']);
-  assert.deepEqual(g.calls.at(-1), ['track', 'menu']);
+  assert.deepEqual(g.calls.map(c=>c[0]), ['initIntro','setupBloom','newRun','setStage','buildPlayer','resize','drawSet','go','warmGPU','loadModels','save','track','refreshPlayerPenalty']);
+  assert.deepEqual(g.calls.at(-2), ['track', 'menu']);
   assert.equal(g.S._mig, undefined); assert.equal(g.S.name, 'فارس');
   assert.deepEqual(g.timers.map(t => t.delay), [1200, 6000]);
   g.timers[0].fn(); assert.equal(g.calls.at(-1)[0], 'toast');
