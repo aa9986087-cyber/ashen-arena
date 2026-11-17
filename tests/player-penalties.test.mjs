@@ -138,3 +138,62 @@ test('no decision or offline lookup preserves a bystander and releases the menu'
     assert.equal(g.node('mResume').disabled,false);
   }
 });
+
+test('revision 2 clears the point bank and reconciles rebuilt ranks without repeating coins, stats or hero withdrawal', async () => {
+  const g=await targeted();
+  g.run(`applyPlayerPenalty(S);S.coins=150;S.stats.kills=46;S.tree.A5=1;S.tree.D5=1;S.perm.hp=10;S.perm.dmg=10;
+    playerPenaltyDecision={pid:S.pid,id:PLAYER_PENALTY_ID,revision:2,reset_skill_points:true,skill_node_limit:21,shop_levels:4,shop_types:4};`);
+  const beforeHeroes=g.json('S.chars');
+  const receipt=g.json('applyPlayerPenalty(S)');
+  assert.equal(g.run('S.sp'),0);
+  assert.equal(g.run('Object.keys(S.tree).length'),21);
+  assert.equal(g.run('penaltyShopRanks(S.perm)'),10);
+  assert.equal(receipt.shopTypesRemoved.length,4);
+  assert.equal(g.run('S.coins'),150);
+  assert.equal(g.run('S.stats.kills'),46);
+  assert.deepEqual(g.json('S.chars'),beforeHeroes);
+  assert.equal(receipt.revision,2);
+  assert.equal(receipt.treeReconciled,2);
+  assert.equal(receipt.skillPointsCleared,17);
+  g.run('S.sp=5;S.coins=250;S.tree.A5=1;S.perm.hp=1;');
+  const after=g.json('S');
+  assert.equal(g.run('applyPlayerPenalty(S)'),null);
+  assert.deepEqual(g.json('S'),after);
+});
+
+test('revision 2 first install applies the original deductions and zero points, while complete old deductions remain intact', async () => {
+  const g=await targeted();
+  g.run(`playerPenaltyDecision={...playerPenaltyDecision,revision:2,reset_skill_points:true,skill_node_limit:21,shop_types:4}`);
+  const receipt=g.json('applyPlayerPenalty(S)');
+  assert.equal(g.run('S.sp'),0);
+  assert.equal(g.run('S.coins'),0);
+  assert.deepEqual(receipt.report,{skill_points:0,coins:0,tree_nodes:21,shop_ranks:10,shop_types:2,heroes:4});
+  const old=await targeted();
+  old.run(`applyPlayerPenalty(S);playerPenaltyDecision={...playerPenaltyDecision,revision:2,reset_skill_points:true,skill_node_limit:21,shop_types:4}`);
+  const state=old.json('[S.tree,S.chars]');
+  old.run('applyPlayerPenalty(S)');
+  assert.deepEqual(old.json('[S.tree,S.chars]'),state);
+  assert.equal(old.run('Object.keys(S.perm).length'),2);
+  assert.equal(old.run('S.sp'),0);
+});
+
+test('revision 2 acknowledgement sends the saved migration state, not a second deduction after offline play', async () => {
+  const g=await targeted();
+  g.run(`S.pkey='local-fixture-secret';playerPenaltyDecision={...playerPenaltyDecision,revision:2,reset_skill_points:true,skill_node_limit:21}`);
+  const calls=[];
+  let failAck=true;
+  g.context.api=async(path,options)=>{
+    const body=JSON.parse(options.body);calls.push({path,body});
+    if(path.endsWith('get_player_penalty'))return {id:'2026-11-17-fair-play',revision:2,reset_skill_points:true,skill_node_limit:21,skill_nodes:4,shop_levels:4,shop_types:4,heroes:3};
+    if(failAck)throw Error('offline');return true;
+  };
+  assert.ok(await g.run('refreshPlayerPenalty()'));
+  assert.equal(g.run('S.sp'),0);
+  g.run('S.sp=4;S.coins=123');failAck=false;
+  assert.equal(await g.run('refreshPlayerPenalty()'),null);
+  assert.equal(g.run('S.sp'),4);
+  assert.equal(g.run('S.coins'),123);
+  assert.equal(calls.at(-1).path,'/rest/v1/rpc/ack_player_penalty');
+  assert.equal(calls.at(-1).body.p_receipt.report.skill_points,0);
+  assert.equal(calls.at(-1).body.p_revision,2);
+});
