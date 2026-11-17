@@ -2,12 +2,15 @@ import { test as base, expect } from '@playwright/test';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { runInNewContext } from 'node:vm';
 import { globals } from '../helpers/globals.mjs';
 import { CDN_DIR, validateFixtures } from '../helpers/cdn-fixtures.mjs';
 
 const rules = await globals();
 const latestNews = rules.run('NEWS[0]?.id');
 const testFiles = fileURLToPath(new URL('../../test/',import.meta.url));
+const { release } = JSON.parse(await fs.readFile(path.join(testFiles, 'modular-config.json'), 'utf8'));
+const previewLatestNews = runInNewContext((await fs.readFile(path.join(testFiles, 'releases', release, 'js/data/news.js'), 'utf8')) + '\nNEWS[0]?.id');
 const fixtureProfile = { ...rules.json('defSave()'), name: 'Smoke-local', newsSeen: latestNews };
 // Low quality is an existing user setting, not a renderer replacement. Keep WebGL, actual main/frame/update.
 fixtureProfile.set = { ...fixtureProfile.set, sfx: 0, mus: 0, shadow: 0, qual: 0, eco: 1 };
@@ -35,6 +38,8 @@ const test = base.extend({
       profile.perm = rules.json('Object.fromEntries(Object.entries(PERM).map(([k,v])=>[k,v.max]))');
       profile.stats = {...profile.stats,bestLvl:67,kills:76650,bosses:102,bestTime:2403};
       if (testInfo.title.startsWith('preview:')) {
+        // The pinned preview can have an older bulletin than production.
+        profile.newsSeen = previewLatestNews;
         // A fresh combat profile avoids the optional U5 level card interrupting this scenario.
         profile.tree = {};
         profile.perm = {};
