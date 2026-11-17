@@ -73,7 +73,12 @@ const test = base.extend({
           const body = request.postDataJSON();
           await route.fulfill({status:200,contentType:'application/json',
             body:JSON.stringify(body.p_pid === profile.pid && body.p_key === profile.pkey
-              ? {id:'2026-11-17-fair-play',skill_nodes:4,shop_levels:4,heroes:3,reset_coins:true} : null)});
+              ? {id:'2026-11-17-fair-play',skill_nodes:4,shop_levels:4,shop_types:4,heroes:3,reset_coins:true,revision:2,reset_skill_points:true,skill_node_limit:21} : null)});
+          return;
+        }
+        if (url.pathname === '/rest/v1/rpc/ack_player_penalty') {
+          const body=request.postDataJSON();
+          await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body.p_pid===profile.pid&&body.p_key===profile.pkey&&body.p_revision===2&&body.p_receipt.report.skill_points===0)});
           return;
         }
         // Deterministic offline response; this is a transport boundary, not a game/UI stub.
@@ -172,14 +177,14 @@ async function checkScreens(page, isolated) {
 }
 
 async function checkPlayerPenalty(page) {
-  const originalShopRanks = rules.run('Object.values(PERM).reduce((sum,p)=>sum+p.max,0)');
   const state = () => page.evaluate(() => ({
     coins:S.coins,sp:S.sp,nodes:Object.keys(S.tree).length,heroes:Object.keys(S.chars).length,
     shopRanks:Object.values(S.perm).reduce((sum,n)=>sum+n,0),
+    shopTypes:Object.keys(S.perm).length,
     level:S.stats.bestLvl,kills:S.stats.kills,bosses:S.stats.bosses,
     receipt:profileStats().penalty,checkpoint:localStorage.getItem('ashen_arena_run'),
   }));
-  const expected = {coins:0,sp:17,nodes:21,heroes:4,shopRanks:originalShopRanks-4,level:67,
+  const expected = {coins:0,sp:0,nodes:21,heroes:4,shopRanks:10,shopTypes:2,level:67,
     kills:0,bosses:0,receipt:'2026-11-17-fair-play',checkpoint:null};
   expect(await state()).toEqual(expected);
   expect(await page.evaluate(() => {S.coins=25;save();return enforcePlayerPenalty();})).toBeNull();
@@ -197,10 +202,12 @@ async function checkOldPenaltyBackup(page) {
   expect(await page.evaluate(() => ({
     coins:S.coins,sp:S.sp,nodes:Object.keys(S.tree).length,heroes:Object.keys(S.chars).length,
     shopRanks:Object.values(S.perm).reduce((sum,n)=>sum+n,0),
+    shopTypes:Object.keys(S.perm).length,
     level:S.stats.bestLvl,kills:S.stats.kills,bosses:S.stats.bosses,
     receipt:profileStats().penalty,checkpoint:localStorage.getItem('ashen_arena_run'),
-  }))).toEqual({coins:0,sp:17,nodes:21,heroes:4,
-    shopRanks:rules.run('Object.values(PERM).reduce((sum,p)=>sum+p.max,0)')-4,
+  }))).toEqual({coins:0,sp:0,nodes:21,heroes:4,
+    shopRanks:10,
+    shopTypes:2,
     level:67,kills:0,bosses:0,receipt:'2026-11-17-fair-play',checkpoint:null});
   await page.locator('#setBack').click();
   await expect(page.locator('#menu')).toBeVisible();

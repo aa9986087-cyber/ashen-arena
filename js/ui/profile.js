@@ -36,6 +36,7 @@ function profileStats() {
     tr: Object.keys(S.tree || {}).length,
     ch: S.char,
     penalty: playerPenaltyReceipt(S),
+    penalty_revision: playerPenaltyReceipt(S) ? (S.penalties[PLAYER_PENALTY_ID].revision || 1) : 0,
   };
 }
 let profileBusy = false;
@@ -43,6 +44,7 @@ async function profileSync() {
   if (!playerPenaltyReady || !S.name || profileBusy || (typeof NET_LOCAL !== 'undefined' && NET_LOCAL)) return;
   profileBusy = true;
   try {
+    await acknowledgePlayerPenalty();
     await api('/rest/v1/rpc/save_profile', {
       method: 'POST',
       body: JSON.stringify({ p_pid: myPid(), p_key: profileKey(), p_name: S.name, p_stats: profileStats() }),
