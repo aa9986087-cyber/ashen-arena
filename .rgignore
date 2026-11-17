@@ -1,0 +1,7 @@
+# Search editable sources by default. Inspect a known generated file explicitly with rg --no-ignore.
+test/releases/
+test/archive/
+test/js/
+test/css/
+test/assets/
+docs/generated/
