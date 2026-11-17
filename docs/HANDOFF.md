@@ -72,40 +72,40 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-17T22:55:50.243Z.
-- مرجع العمل: [`6f863804cb8cf72b1ee83c6caf4aa887a72cee55`](https://github.com/aa9986087-cyber/ashen-arena/commit/6f863804cb8cf72b1ee83c6caf4aa887a72cee55).
-- آخر تعديل: معاينة عملاق الشجرة العتيق لحارس الغابة في v26.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44193938700/attempts/1).
-- بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
-- مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
+- وقت التسجيل (UTC): 2026-11-17T23:15:24.992Z.
+- مرجع العمل: [`8b5c4350b68a31772d12c5b71a22604ce7d08fb1`](https://github.com/aa9986087-cyber/ashen-arena/commit/8b5c4350b68a31772d12c5b71a22604ce7d08fb1).
+- آخر تعديل: تجربة v27 لمجسمات الزعماء الستة وحركاتهم الخاصة.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44196624424/attempts/1).
+- بوابة check: **فشل**؛ الاختبارات السريعة: **ناجح**.
+- مسار الفحص: mobile؛ متصفح الجوال: **فشل**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
-- إصدار التجربة المسجل: `clean-20261117-v26`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
+- إصدار التجربة المسجل: `clean-20261117-v27`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`e37203206bb4`: 250 ملفًا.
+مقارنةً بـ`94f378be5954`: 255 ملفًا.
 - `docs/HANDOFF.md`
-- `test/addons/forest-guardian/LICENSE-ancient-tree.md`
-- `test/addons/forest-guardian/ancient-tree.glb`
 - `test/addons/forest-guardian/config.js`
 - `test/addons/forest-guardian/manifest.json`
-- `test/addons/forest-guardian/prepare-ancient-tree.py`
+- `test/expansions/boss-specials/assets/LICENSE.md`
+- `test/expansions/boss-specials/assets/fire.glb`
+- `test/expansions/boss-specials/assets/frost.glb`
+- `test/expansions/boss-specials/assets/grave.glb`
+- `test/expansions/boss-specials/assets/knight.glb`
+- `test/expansions/boss-specials/assets/manifest.json`
+- `test/expansions/boss-specials/assets/sand.glb`
+- `test/expansions/boss-specials/prepare-boss.py`
 - `test/index.html`
-- `test/modular-config.json`
-- `test/releases/clean-20261117-v26/app.js`
-- `test/releases/clean-20261117-v26/app.min.js`
-- `test/releases/clean-20261117-v26/assets/audio/duel/block0.mp3`
-- `test/releases/clean-20261117-v26/assets/audio/duel/block1.mp3`
-- وبقية 238 ملفًا في رابط commit أعلاه.
+- وبقية 243 ملفًا في رابط commit أعلاه.
 
 ### أحدث خمس دفعات على main
 
+- 8b5c435 تجربة v27 لمجسمات الزعماء الستة وحركاتهم الخاصة
+- 94f378b docs: تحديث آلي لملف التسليم
 - 6f86380 معاينة عملاق الشجرة العتيق لحارس الغابة في v26
 - e372032 docs: تحديث آلي لملف التسليم
 - 97437f1 تحميل ملف ضربات الزعماء في فحص المقبرة
-- 94f89e3 docs: تحديث آلي لملف التسليم
-- 0a2aff5 تجربة v25 لضربات الزعماء الخاصة وتقوية الفردي
 
-الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
+ابدأ بمراجعة سجل الفحوص لهذا المرجع؛ لا تفترض نجاح التعديل أو نشره.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
 <!-- AUTO-HANDOFF:END -->
