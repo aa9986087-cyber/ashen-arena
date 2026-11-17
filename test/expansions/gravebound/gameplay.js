@@ -13,7 +13,7 @@ function graveEnabled() {
   return S.char === 'reaper' || graveState().relic === 'lantern' || Object.keys(GRAVE_TRAINING).some(id => G.ups[id]);
 }
 function graveCollect(amount) {
-  if (!graveEnabled() || G.state !== 'play' || G.p.dead || choosingCards()) return;
+  if (S.char === 'reaper' || !graveEnabled() || G.state !== 'play' || G.p.dead || choosingCards()) return;
   const g = graveState();
   g.souls = Math.min(graveCapacity(), g.souls + amount);
 }
@@ -28,17 +28,7 @@ function reaperHeal() {
 }
 function graveRelease(power) {
   if (S.char === 'reaper') {
-    const g = graveState(), p = G.p;
-    const radius = 6 * p.area * (1 + 0.08 * reaperRank('soulcourt'));
-    g.lastSweepAt = G.t;
-    ring(p.x, p.z, 0.5, radius, 0.45, [0.35, 1.1, 0.75]);
-    const points = [];
-    for (let i = 0; i <= 24; i++) { const a = i * TAU / 24; points.push([p.x + Math.cos(a) * radius, 0.8, p.z + Math.sin(a) * radius]); }
-    vfxBolt(points, {w:0.3,life:0.35,rough:0.03,col:[0.35,1.1,0.75]});
-    eachInRadius(p.x, p.z, radius, e => hit(e, power * 1.1 * (1 + 0.15 * reaperRank('soulflame')), {aoe:1,quiet:1,noCrit:1,grave:1}));
-    // The standard special handler sets its timer before calling this function.
-    G.specCd = Math.max(0, G.specCd - reaperRank('soulguard'));
-    text(p.x, p.z - 1, 'حصاد دائري', '#8ae8c1', true);
+    if(wardenSpecial(power,reaperRank('soulflame'),reaperRank('soulcourt')))G.specCd=Math.max(0,G.specCd-reaperRank('soulguard'));
     return;
   }
   if (!graveEnabled()) return;
@@ -68,6 +58,7 @@ function graveRelease(power) {
 }
 function graveTick(dt) {
   if (G.state !== 'play' || G.p.dead || choosingCards()) return;
+  wardenTick();
   const g = graveState(), p = G.p;
   if (G.t >= g.barrierUntil) g.barrier = 0;
   for (const e of G.enemies) if (!e.dead && e.graveBurn > 0) {
@@ -91,7 +82,8 @@ function graveTick(dt) {
   }
   g.ghosts = g.ghosts.filter(q => q.life > 0);
 }
-function graveAbsorb(damage) {
+function graveAbsorb(damage, source) {
+  damage=wardenBlockDamage(damage,source);
   const g = graveState();
   if (g.barrierUntil <= G.t) g.barrier = 0;
   const absorbed = Math.min(g.barrier, damage);
@@ -132,7 +124,7 @@ function graveBossAI(e, p, dt) {
   if (!(e.graveSwingUntil > G.t) && d > 3.4) {
     e.x += (p.x - e.x) / d * 1.8 * dt; e.z += (p.z - e.z) / d * 1.8 * dt;
   }
-  if (d < e.r + p.r && e.hitCd <= 0) { e.hitCd = 1; hurt(e.dmg * 0.5); }
+  if (d < e.r + p.r && e.hitCd <= 0) { e.hitCd = 1; hurt(e.dmg * 0.5, e); }
   pushOutOfObstacles(e, e.r * 0.8);
 }
 const graveBaseNewRun = newRun;
@@ -148,8 +140,7 @@ kill = function (e) {
   if (e.dead) return;
   graveBaseKill(e);
   if (COOP.remoteKill) return;
-  if (S.char === 'reaper') reaperHeal();
-  else graveCollect(e.boss ? 5 : e.elite ? 3 : 1);
+  if (S.char !== 'reaper') graveCollect(e.boss ? 5 : e.elite ? 3 : 1);
   const g = graveState();
   if (e.elite && g.relic === 'hunter' && G.t - g.eliteAt >= 3) {
     g.eliteAt = G.t; G.specCd = Math.max(0, G.specCd - (1 + g.rank));
@@ -182,7 +173,7 @@ makeBoss = function (kind, x, z) {
 function graveSaveRun() {
   const g = graveState();
   return { souls: g.souls, barrier: g.barrier, barrierUntil: g.barrierUntil, relic: g.relic, rank: g.rank,
-    scytheCount: g.scytheCount, lastSweepAt: g.lastSweepAt, training: {...g.training}, healAt:g.healAt, healed:g.healed,
+    scytheCount: g.scytheCount, lastSweepAt: g.lastSweepAt, training: {...g.training}, healAt:g.healAt, healed:g.healed, warden:g.warden ? JSON.parse(JSON.stringify(g.warden)) : null,
     eliteAt: g.eliteAt, bossSoulAt: g.bossSoulAt, ghosts: g.ghosts.map(q => ({ ...q })) };
 }
 function graveRestoreRun(raw) {
@@ -203,5 +194,14 @@ function graveRestoreRun(raw) {
   g.ghosts = (Array.isArray(raw.ghosts) ? raw.ghosts : []).slice(0, 3).map(q => ({
     x: G.p.x, z: G.p.z, a: number(q?.a, TAU), life: number(q?.life, (S.char === 'reaper' ? 8 : 6) + 2 * (G.ups.soulcourt || 0)), cd: number(q?.cd, 1),
   }));
+  if (S.char === 'reaper') {
+    g.ghosts=[];g.souls=0;
+    const q=raw.warden;
+    if(q&&typeof q==='object'){
+      const pending=q.cleave;
+      g.warden={guardReadyAt:number(q.guardReadyAt,G.t+1.2),wardUntil:number(q.wardUntil,G.t+3),specialAt:Number.isFinite(q.specialAt)?Math.min(q.specialAt,G.t):-10,
+       cleave:pending&&Number.isFinite(pending.at)&&pending.at>=G.t-0.3?{at:number(pending.at,G.t+0.28),power:number(pending.power,100000),radius:number(pending.radius,30)}:null};
+    }
+  }
   recalc();
 }

@@ -55,68 +55,17 @@ function graveScythe(t = 0, evolved = false) {
 }
 const graveBaseWeaponModel = weaponModel;
 weaponModel = function (id, t, ev, tc) { return id === 'scythe' ? graveScythe(t, ev) : graveBaseWeaponModel(id, t, ev, tc); };
-const graveBaseRig = buildRig;
-buildRig = function (R, id, wep) {
-  if (id !== 'reaper') return graveBaseRig(R, id, wep);
-  if (typeof actorReleaseRig === 'function') actorReleaseRig(R);
-  else if (R.g) scene.remove(R.g);
-  const g = new THREE.Group();
-  R.char = id; R.actor = null; R.g = g; R.hm = R.anim = null; R.wpHand = false;
-  const cloth = 0x14151c, bone = 0x8b9186;
-  gravePart(g, 'reaperRobe', cloth, 0, 0.98, 0, 1, 1, 0.85);
-  // Heavy mantle and deep hood; no exposed skull, teeth or rib cage.
-  gravePart(g, 'head', 0x1c1e28, 0, 1.68, -0.03, 0.58, 0.36, 0.35);
-  gravePart(g, 'head', cloth, 0, 2.08, -0.06, 0.39, 0.49, 0.36);
-  gravePart(g, 'head', 0x030507, 0, 2.08, 0.24, 0.27, 0.33, 0.09);
-  for (const sign of [-1, 1]) {
-    const edge = gravePart(g, 'bone', 0x20232d, sign * 0.28, 2.03, 0.2, 0.42, 0.65, 0.48);
-    edge.rotation.z = sign * -0.18;
-    gravePart(g, 'head', 0x99ffd3, sign * 0.095, 2.12, 0.327, 0.04, 0.014, 0.009, 0x54c994);
-  }
-  gravePart(g, 'stone', 0x414a47, 0, 1.28, 0.31, 0.55, 0.07, 0.06);
-  // Narrow trailing strips make the ragged cloak readable on a phone.
-  R.cloak = [];
-  for (let i = 0; i < 7; i++) {
-    const flap = gravePart(g, 'reaperRobe', i % 2 ? 0x20212b : cloth,
-      (i - 3) * 0.13, 0.88, -0.29, 0.19, 0.85 + (i % 3) * 0.12, 0.17);
-    flap.rotation.x = -0.17; R.cloak.push(flap);
-  }
-  const limb = (x, y, length, leg) => {
-    const p = new THREE.Group(); p.position.set(x, y, 0); g.add(p);
-    gravePart(p, leg ? 'bone' : 'reaperRobe', leg ? 0x101218 : cloth, 0, -length / 2, 0, leg ? 0.9 : 0.48, leg ? length : length * 0.55, leg ? 1 : 0.48);
-    gravePart(p, 'stone', leg ? 0x283a31 : bone, 0, -length, 0.03, leg ? 0.22 : 0.16, 0.16, leg ? 0.35 : 0.15);
-    return p;
-  };
-  R.lL = limb(-0.21, 0.65, 0.5, true); R.lR = limb(0.21, 0.65, 0.5, true);
-  R.aL = limb(-0.51, 1.76, 0.7, false); R.aR = limb(0.51, 1.76, 0.7, false);
-  R.wp = new THREE.Group(); R.wp.position.y = -0.7; R.wp.scale.setScalar(1.3); R.aR.add(R.wp); R.aR.rotation.x = -1.2;
-  scene.add(g); buildWeapon(R, wep);
+const graveBaseRig=buildRig;
+buildRig=function(R,id,wep){
+ if(id==='reaper'){
+  if(wardenBuildRig(R,wep))return;
+  graveBaseRig(R,'knight',wep);R.char='reaper';return;
+ }
+ if(R.warden){wardenRelease();R.warden=null;R.g=null;R.actor=null;R.wp=null;}
+ return graveBaseRig(R,id,wep);
 };
-/* Dedicated portrait scene avoids the live menu's fog/objects obscuring the new hero. */
-const graveBasePortrait = heroPortrait;
-heroPortrait = function (id) {
-  if (id !== 'reaper') return graveBasePortrait(id);
-  if (PORTRAITS.reaper) return PORTRAITS.reaper;
-  const rig = {}, portrait = new THREE.Scene(), target = new THREE.WebGLRenderTarget(220, 220);
-  const previous = renderer.getRenderTarget();
-  try {
-    buildRig(rig, 'reaper', {id:'scythe',lvl:3});
-    portrait.add(rig.g); rig.g.rotation.y = -0.22;
-    rig.aR.rotation.x=0;rig.aR.rotation.z=-0.05;rig.wp.rotation.z=Math.PI;
-    portrait.background = new THREE.Color(0x252b34);
-    portrait.add(new THREE.HemisphereLight(0xd5e9dc, 0x25382d, 1.25));
-    const light = new THREE.DirectionalLight(0xffe8c5, 1.6); light.position.set(3,5,4); portrait.add(light);
-    const cam = new THREE.PerspectiveCamera(34, 1, 0.1, 30);
-    cam.position.set(0.8,2.1,5.6); cam.lookAt(0.15,1.2,0);
-    renderer.setRenderTarget(target); renderer.render(portrait,cam);
-    const bytes = new Uint8Array(220*220*4);renderer.readRenderTargetPixels(target,0,0,220,220,bytes);
-    const canvas = document.createElement('canvas');canvas.width=canvas.height=220;
-    const ctx=canvas.getContext('2d'), pixels=ctx.createImageData(220,220);
-    for(let y=0;y<220;y++)pixels.data.set(bytes.subarray((219-y)*880,(220-y)*880),y*880);
-    ctx.putImageData(pixels,0,0);
-    return PORTRAITS.reaper=canvas.toDataURL('image/jpeg',0.9);
-  } finally { renderer.setRenderTarget(previous);target.dispose();if(rig.g)portrait.remove(rig.g); }
-};
+const graveBasePortrait=heroPortrait;
+heroPortrait=function(id){return id==='reaper'?(wardenPortrait()||graveBasePortrait('knight')):graveBasePortrait(id);};
 function gravekeeperModel() {
   const g = new THREE.Group(), stone = 0x65736a, dark = 0x303d35;
   gravePart(g, 'robe', dark, 0, 1.2, 0, 1.6, 1.5, 1.2);
@@ -165,32 +114,8 @@ for (let i = 0; i < 3; i++) {
 }
 const graveBaseRender = render;
 const graveBasePoseRig = poseRig;
-poseRig = function (R,p,wepId,playing,now) {
-  graveBasePoseRig(R,p,wepId,playing,now);
-  if (R.char !== 'reaper') return;
-  const moving = p.moving || 0, time = now * 0.001;
-  // Cloth follows the stride; shoulders and both arms finish the same cut.
-  (R.cloak || []).forEach((flap,i)=>{
-    flap.rotation.x = -0.17 - moving * 0.2 + Math.sin(time * 3 + i * 0.7) * (0.035 + moving * 0.07);
-    flap.rotation.z = Math.sin(time * 2.5 + i) * 0.035;
-  });
-  R.g.rotation.z = Math.sin(p.walk) * 0.035 * moving;
-  if (p.swing > 0) {
-    const cut = Math.sin((1-p.swing)*Math.PI);
-    R.aL.rotation.x = -0.55-cut*0.65;
-    R.aL.rotation.z = -0.2-cut*0.35;
-    R.aR.rotation.x = -1.05-cut*0.35;
-    R.g.rotation.y += Math.sin((1-p.swing)*Math.PI*2)*0.18;
-  } else { R.aL.rotation.z = -0.08; }
-  const t = G.grave ? G.t-G.grave.lastSweepAt : 10;
-  if (R === PM && playing && t>=0 && t<0.45) {
-    const phase=t/0.45, eased=phase*phase*(3-2*phase);
-    R.g.rotation.y += eased*TAU;
-    R.aR.rotation.x=-1.4; R.aR.rotation.z=-0.8;
-    R.aL.rotation.x=-1; R.aL.rotation.z=0.45;
-  }
+poseRig=function(R,p,wepId,playing,now){if(wardenPose(R,p,wepId,playing,now))return;graveBasePoseRig(R,p,wepId,playing,now);};
 
-};
 render = function (dt, now) {
   const playing = G && ['play', 'cards', 'paused', 'count', 'ending'].includes(G.state);
   if (graveBossModel && (!playing || !G.boss || G.boss.kind !== 6 || G.boss.dead)) graveBossModel.visible = false;

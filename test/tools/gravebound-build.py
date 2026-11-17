@@ -4,6 +4,7 @@ def apply(path, text, replace):
         nonlocal text
         text = replace(text, before, after, 'gravebound:' + path)
     if path == 'js/game/enemy-ai.js':
+        sub('hurt(e.dmg);','hurt(e.dmg, e);')
         sub('    if (e.boss) {\n', '    if (e.boss && e.kind === 6) { graveBossAI(e, p, dt); continue; }\n    if (e.boss) {\n')
     if path == 'js/game/progression.js':
         sub('else if (G.stage >= 5)', 'else if (G.stage >= STAGES.findIndex(s => s.abyss) - 1)')
@@ -13,8 +14,12 @@ def apply(path, text, replace):
         sub('        char: S.char,', '        char: S.char,\n        grave: graveSaveRun(),')
         sub('    stage: o.stage | 0,', '    stage: o.abyss ? STAGES.length - 1 : o.stage | 0,')
         sub('  G.need = xpNeed(G.lvl);', '  graveRestoreRun(o.grave);\n  G.need = xpNeed(G.lvl);')
+    if path == 'js/game/update.js':
+        sub('hurt(s.dmg);','hurt(s.dmg, s);')
+        sub('hurt(z.dmg);','hurt(z.dmg, z);')
     if path == 'js/game/combat.js':
-        sub('  p.shieldRe = 5;', '  d = graveAbsorb(d);\n  if (d <= 0) { p.inv = 0.2; return; }\n  p.shieldRe = 5;')
+        sub('function hurt(d) {','function hurt(d, source) {')
+        sub('  p.shieldRe = 5;', '  d = graveAbsorb(d, source);\n  if (d <= 0) { p.inv = 0.2; return; }\n  p.shieldRe = 5;')
     if path == 'js/ui/profile.js':
         sub("if ((s.mb | 0) >= 6) return 'أنهى المراحل الست'", "if ((s.mb | 0) >= STAGES.length - 1) return 'أنهى المراحل السبع'")
         sub('const i = Math.min(5, s.mb | 0);', 'const i = Math.min(STAGES.length - 2, s.mb | 0);')

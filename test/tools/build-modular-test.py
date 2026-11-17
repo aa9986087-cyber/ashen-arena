@@ -161,6 +161,8 @@ extra += '\n;\n' + (TEST / 'addons' / 'shared' / 'actor-runtime.js').read_text()
 extra += '\n;\n' + (TEST / 'tools' / 'modular-runtime' / 'hooks.js').read_text()
 extra += '\n;\n' + (TEST / 'tools' / 'modular-runtime' / 'shaman-healing.js').read_text()
 if GRAVEBOUND:
+    for filename in ['combat.js','actor.js']:
+        extra += '\n;\n' + (TEST / 'expansions/oath-warden' / filename).read_text()
     for filename in ['data.js', 'gameplay.js', 'models.js', 'ui.js']:
         source = TEST / 'expansions' / 'gravebound' / filename
         extra += '\n;\n/* gravebound/' + filename + ' */\n' + source.read_text()
@@ -186,7 +188,7 @@ html = '\n'.join(line.rstrip() for line in html.splitlines()) + '\n'
 manifest = {**CFG, 'baseRevision': REV, 'baseHashes': source_hashes, 'sourceKind': 'production-root', 'legacySourcesUsed': False}
 if GRAVEBOUND:
     manifest['expansionHashes'] = {str(p.relative_to(TEST)): hashlib.sha256(p.read_bytes()).hexdigest()
-        for p in sorted((TEST / 'expansions' / 'gravebound').iterdir()) if p.suffix in ['.js', '.css', '.json']}
+        for folder in ['gravebound','oath-warden'] for p in sorted((TEST / 'expansions' / folder).iterdir()) if p.suffix in ['.js', '.css', '.json', '.glb']}
 (OUT / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 # Keep the previously served page, but never keep editing its sources.
 archive = TEST / 'archive' / 'pre-modular-index.html'

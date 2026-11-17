@@ -21,6 +21,7 @@ async function fixture() {
   g.node('bossbar').querySelector = () => ({ textContent: '' });
   for (const name of ['spawning', 'boss-ults', 'progression', 'update', 'enemy-ai'])
     new vm.Script(await fs.readFile(new URL(release + `js/game/${name}.js`, root), 'utf8')).runInContext(g.context);
+  new vm.Script(await fs.readFile(new URL('test/expansions/oath-warden/combat.js',root),'utf8')).runInContext(g.context);
   for (const name of ['data', 'gameplay'])
     new vm.Script(await fs.readFile(new URL(`test/expansions/gravebound/${name}.js`, root), 'utf8')).runInContext(g.context);
   g.run(`S.coins=60000; S.sp=150; S.char='reaper'; S.chars.reaper=1; newRun(); Math.random=()=>0.5;`);
@@ -113,19 +114,18 @@ graveTest('preview backup round-trips but the actual production importer rejects
   assert.equal(prod.run('readBackup(code)'), null);
 });
 
-graveTest('reaper heals only real kills within a saved one-second budget and shop ranks apply directly', async()=>{
-  const g=await fixture();
-  g.run(`graveBuy('training','soulvessel',0);newRun();G.state='play';G.p.hp=10;var before=G.p.hp;for(let i=0;i<20;i++){var e=spawn('grunt',1,0);kill(e);kill(e);}`);
-  assert.ok(g.run('G.p.hp-before')>0);
-  assert.ok(g.run('G.p.hp-before<=G.p.maxHp*0.05+1e-8'));
-  g.run('saveRun();resumeRun();G.state="play";var hp=G.p.hp;reaperHeal()');
-  assert.equal(g.run('G.p.hp'),g.run('hp'));
-  g.run('G.t+=1.1;reaperHeal()');assert.ok(g.run('G.p.hp>hp'));
+graveTest('warden preserves prior ownership and purchase ranks; guard and pending special survive resume',async()=>{
+ const g=await fixture();
+ g.run(`graveBuy('training','soulvessel',0);newRun();G.state='play';G.t=20;G.p.face=0;var d=wardenBlockDamage(100,{x:0,z:3});graveRelease(100);saveRun();resumeRun();G.state='play'`);
+ assert.equal(g.run('S.char'),'reaper');assert.equal(g.run('CHARS.reaper.n'),'حارس العهد');
+ assert.equal(g.run('reaperRank("soulvessel")'),1);assert.equal(g.run('d'),35);
+ assert.equal(g.run('G.grave.warden.guardReadyAt'),21.2);
+ assert.ok(g.run('G.grave.warden.cleave.power')>0);
 });
-graveTest('reaper circle hits both sides without stored souls, pulls or ghost requirements', async()=>{
-  const g=await fixture();
-  g.run(`G.state='play';var left=spawn('grunt',-4,0),right=spawn('grunt',4,0);left.hp=right.hp=10000;graveRelease(100)`);
-  assert.ok(Math.abs(g.run('10000-left.hp')-110)<1e-8);
-  assert.ok(g.run('right.hp<10000&&left.x===-4&&right.x===4'));
-  assert.equal(g.run('G.grave.ghosts.length'),0);
+graveTest('warden special hits front immediately and both sides once after delay without soul requirements',async()=>{
+ const g=await fixture();
+ g.run(`G.state='play';G.p.face=0;var front=spawn('grunt',0,3),back=spawn('grunt',0,-3);front.hp=back.hp=10000;graveRelease(100)`);
+ assert.equal(g.run('back.hp'),10000);assert.ok(g.run('front.hp')<10000);
+ g.run('G.t+=0.3;wardenTick();wardenTick()');
+ assert.ok(g.run('back.hp')<10000);assert.equal(g.run('G.grave.warden.cleave'),null);
 });

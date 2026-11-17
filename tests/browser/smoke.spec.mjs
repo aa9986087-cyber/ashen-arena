@@ -332,9 +332,11 @@ test('preview: gravebound purchases, reaper touch special, save/resume and seven
   await expect(page.locator('#menu')).toBeVisible();
   await expect(page.locator('#menu')).not.toHaveClass(/boot/);
   await page.locator('#menu [data-go="chars"]').click();
-  const hero = page.locator('#charGrid .item').filter({has:page.locator('img[alt="حاصد الأرواح"]')});
+  await page.evaluate(async()=>{await wardenLoadModel();drawChars();});
+  const hero = page.locator('#charGrid .item').filter({has:page.locator('img[alt="حارس العهد"]')});
   await expect(hero.locator('img')).toHaveAttribute('src', /^data:image\/jpeg/);
-  expect(await hero.locator('img').evaluate(img=>{
+  await hero.locator('img').screenshot({path:testInfo.outputPath('warden-portrait.png')});
+ expect(await hero.locator('img').evaluate(img=>{
     const c=document.createElement('canvas');c.width=c.height=220;const x=c.getContext('2d');x.drawImage(img,0,0,220,220);
     const p=x.getImageData(0,0,220,220).data;let bright=0;for(let i=0;i<p.length;i+=4)if(p[i]+p[i+1]+p[i+2]>280)bright++;
     return bright;
@@ -366,8 +368,8 @@ test('preview: gravebound purchases, reaper touch special, save/resume and seven
     window.__circleTargets=G.enemies.slice();
   });
   const healing=await page.evaluate(()=>window.__reaperHeal);
-  expect(healing.gain).toBeGreaterThan(0);expect(healing.gain).toBeLessThanOrEqual(healing.cap+0.001);
-  await expect(page.locator('#graveMeter')).toContainText('القتل يشفيك');
+  expect(healing.gain).toBe(0);expect(healing.gain).toBeLessThanOrEqual(healing.cap+0.001);
+  await expect(page.locator('#graveMeter')).toContainText('صد أمامي');
   const start = await page.evaluate(()=>({x:G.p.x,z:G.p.z}));
   if (testInfo.project.name==='mobile') {
     const cdp=await page.context().newCDPSession(page);
@@ -377,16 +379,16 @@ test('preview: gravebound purchases, reaper touch special, save/resume and seven
     await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await cdp.detach();
     await page.locator('#bSpec').tap();
   } else { await page.keyboard.press('KeyQ'); }
-  expect(await page.evaluate(()=>window.__circleTargets.every(e=>e.hp<e.maxHp))).toBe(true);
+  await expect.poll(()=>page.evaluate(()=>window.__circleTargets.every(e=>e.hp<e.maxHp))).toBe(true);
   expect(await page.evaluate(()=>G.grave.ghosts.length)).toBe(0);
-  await expect(page.locator('#graveMeter')).toContainText('منجل دائري');
-  expect(await page.evaluate(()=>PM.char==='reaper'&&PM.g.children.length>15&&renderer.info.render.calls>0)).toBe(true);
+  await expect(page.locator('#graveMeter')).toContainText('صدمة وقطع');
+  expect(await page.evaluate(()=>PM.char==='reaper'&&!!PM.warden&&WARDEN_ACTOR.asset.clips.bash&&renderer.info.render.calls>0)).toBe(true);
   await page.evaluate(()=>graveCollect(5));
   await page.evaluate(()=>{bannerT=0;$('banner').classList.remove('on');G.texts=[];});
   await page.screenshot({path:testInfo.outputPath('grave-reaper.png')});
   await page.locator('#pauseBtn').click();await page.locator('#pSave').click();
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ashen_arena_modular_test_run_v1')));
-  expect(saved.char).toBe('reaper');expect(saved.grave.souls).toBe(5);expect(saved.grave.relic).toBe('lantern');
+  expect(saved.char).toBe('reaper');expect(saved.grave.souls).toBe(0);expect(saved.grave.relic).toBe('lantern');
   await page.locator('#mResume').click();
   await expect.poll(()=>page.evaluate(()=>G.state),{timeout:15000}).toBe('play');
   expect(await page.evaluate(()=>G.grave.relic)).toBe('lantern');
@@ -413,9 +415,32 @@ test('preview: reaper starts without hidden aerial attacks', async ({page})=>{
     zone=function(...args){zones.push({friendly:args[5],kind:args[6],stack:new Error().stack});return old(...args);};
     for(let i=0;i<4;i++){const e=spawn('grunt',G.p.x+Math.cos(i)*2,G.p.z+Math.sin(i)*2);e.hp=e.maxHp=100000;}
     for(let i=0;i<600;i++){G.pending=0;G.picks=[];G.cardsOpen=false;update(0.05);}
-    SPECIALS.reap.f(G.p,100);
+    SPECIALS.reap.f(G.p,100);G.t+=0.3;wardenTick();
     return {zones,ups:G.ups,special:heroSpecial().n,hp:G.p.hp};
   });
   console.log('REAPER_AERIAL_PROBE',JSON.stringify(result));
   expect(result.zones).toEqual([]);
+});
+
+test('preview: warden visual direction and original animated GLB',async({page},testInfo)=>{
+ test.setTimeout(90000);
+ await page.goto('/test/#netlocal',{waitUntil:'load'});
+ await expect.poll(()=>page.evaluate(()=>typeof window.__game),{timeout:45000}).toBe('object');
+ await page.evaluate(()=>window.__game.ready);
+ await page.evaluate(async()=>{S.char='reaper';S.chars.reaper=1;newRun();await wardenLoadModel();buildPlayer();});
+ await expect(page.locator('#menu')).not.toHaveClass(/boot/);
+ await page.locator('#menu [data-go="chars"]').click();
+ const hero=page.locator('#charGrid .item').filter({has:page.locator('img[alt="حارس العهد"]')});
+ await expect(hero.locator('img')).toHaveAttribute('src',/^data:image\/jpeg/);
+ await hero.locator('img').evaluate(img=>img.decode());
+ await hero.locator('img').screenshot({path:testInfo.outputPath('warden-portrait.png')});
+ expect(await hero.locator('img').evaluate(img=>{const c=document.createElement('canvas');c.width=c.height=260;const x=c.getContext('2d');x.drawImage(img,0,0,260,260);const p=x.getImageData(0,0,260,260).data;let n=0;for(let i=0;i<p.length;i+=4)if(p[i]+p[i+1]+p[i+2]>300)n++;return n;})).toBeGreaterThan(50);
+ await hero.locator('img').screenshot({path:testInfo.outputPath('warden-portrait.png')});
+ expect(await page.evaluate(()=>Object.keys(WARDEN_ACTOR.asset.clips).sort())).toEqual(['attack','attack2','bash','block','fall','hurt','idle','run','walk']);
+ await page.locator('#chars [data-go="menu"]').click();await page.locator('#mPlay').click();
+ await expect.poll(()=>page.evaluate(()=>G.state)).toBe('play');
+ await page.evaluate(()=>{G.noWaves=true;G.god=true;G.enemies=[];bannerT=0;$('banner').classList.remove('on');$('count').hidden=true;G.texts=[];G.p.face=0;G.p.moving=0;});
+ await expect.poll(()=>page.evaluate(()=>G.t)).toBeGreaterThan(1.2);
+ await page.screenshot({path:testInfo.outputPath('warden-in-game.png')});
+ expect(await page.evaluate(()=>!!PM.warden&&PM.char==='reaper'&&renderer.info.render.calls>0)).toBe(true);
 });
