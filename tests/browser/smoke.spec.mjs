@@ -401,3 +401,21 @@ test('preview: gravebound purchases, reaper touch special, save/resume and seven
   await expect.poll(()=>page.evaluate(()=>!!G.boss.gravePhase),{timeout:10000}).toBe(true);
   expect(await page.evaluate(()=>G.zones.some(z=>!z.f&&z.r===3.6))).toBe(true);
 });
+
+test('preview: reaper starts without hidden aerial attacks', async ({page})=>{
+  test.setTimeout(90000);
+  await page.goto('/test/#netlocal',{waitUntil:'load'});
+  await expect.poll(()=>page.evaluate(()=>typeof window.__game),{timeout:45000}).toBe('object');
+  await page.evaluate(()=>window.__game.ready);
+  const result=await page.evaluate(()=>{
+    S.char='reaper';S.chars.reaper=1;S.tree={};S.perm={};newRun();G.state='play';G.god=true;G.noWaves=true;
+    const zones=[],old=zone;
+    zone=function(...args){zones.push({friendly:args[5],kind:args[6],stack:new Error().stack});return old(...args);};
+    for(let i=0;i<4;i++){const e=spawn('grunt',G.p.x+Math.cos(i)*2,G.p.z+Math.sin(i)*2);e.hp=e.maxHp=100000;}
+    for(let i=0;i<600;i++){G.pending=0;G.picks=[];G.cardsOpen=false;update(0.05);}
+    SPECIALS.reap.f(G.p,100);
+    return {zones,ups:G.ups,special:heroSpecial().n,hp:G.p.hp};
+  });
+  console.log('REAPER_AERIAL_PROBE',JSON.stringify(result));
+  expect(result.zones).toEqual([]);
+});
