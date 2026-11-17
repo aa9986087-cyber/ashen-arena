@@ -58,39 +58,39 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-17T21:35:09.056Z.
-- مرجع العمل: [`2b1bfd9ed162b62cb0873d8ae3a612b0991e6c8a`](https://github.com/aa9986087-cyber/ashen-arena/commit/2b1bfd9ed162b62cb0873d8ae3a612b0991e6c8a).
-- آخر تعديل: تجربة v23 بقفزة حارس العهد وشقوق تتركها ضربة الأرض.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44180767696/attempts/1).
+- وقت التسجيل (UTC): 2026-11-17T22:02:01.478Z.
+- مرجع العمل: [`217ca8d52f2e4eaaa541d14b33faed563bbbbbb3`](https://github.com/aa9986087-cyber/ashen-arena/commit/217ca8d52f2e4eaaa541d14b33faed563bbbbbb3).
+- آخر تعديل: تجربة v24 لاتجاه حارس العهد مع عصا الحركة.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44184992816/attempts/1).
 - بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
 - مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
-- إصدار التجربة المسجل: `clean-20261117-v23`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
+- إصدار التجربة المسجل: `clean-20261117-v24`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`191f98ded79a`: 250 ملفًا.
+مقارنةً بـ`60257b6f8ea9`: 244 ملفًا.
 - `docs/HANDOFF.md`
-- `test/expansions/gravebound/data.js`
-- `test/expansions/gravebound/gameplay.js`
-- `test/expansions/gravebound/models.js`
-- `test/expansions/gravebound/ui.js`
 - `test/expansions/oath-warden/actor.js`
-- `test/expansions/oath-warden/combat.js`
 - `test/index.html`
 - `test/modular-config.json`
-- `test/releases/clean-20261117-v23/app.js`
-- `test/releases/clean-20261117-v23/app.min.js`
-- `test/releases/clean-20261117-v23/assets/audio/duel/block0.mp3`
-- وبقية 238 ملفًا في رابط commit أعلاه.
+- `test/releases/clean-20261117-v24/app.js`
+- `test/releases/clean-20261117-v24/app.min.js`
+- `test/releases/clean-20261117-v24/assets/audio/duel/block0.mp3`
+- `test/releases/clean-20261117-v24/assets/audio/duel/block1.mp3`
+- `test/releases/clean-20261117-v24/assets/audio/duel/block2.mp3`
+- `test/releases/clean-20261117-v24/assets/audio/duel/break0.mp3`
+- `test/releases/clean-20261117-v24/assets/audio/duel/clash0.mp3`
+- `test/releases/clean-20261117-v24/assets/audio/duel/clash1.mp3`
+- وبقية 232 ملفًا في رابط commit أعلاه.
 
 ### أحدث خمس دفعات على main
 
+- 217ca8d تجربة v24 لاتجاه حارس العهد مع عصا الحركة
+- 60257b6 docs: تحديث آلي لملف التسليم
 - 2b1bfd9 تجربة v23 بقفزة حارس العهد وشقوق تتركها ضربة الأرض
 - 191f98d docs: تحديث آلي لملف التسليم
 - c6f41a9 تجربة v22 بضربة سيف من فوق لحارس العهد
-- be0504f docs: تحديث آلي لملف التسليم
-- f0485d4 تجربة v21: أثر نصل وشرر درع بدلا من حلقات حكم العهد
 
 الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
