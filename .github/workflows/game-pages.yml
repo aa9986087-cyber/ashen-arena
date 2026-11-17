@@ -24,6 +24,10 @@ jobs:
     name: check
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      profile: ${{ steps.scope.outputs.profile }}
+      fast: ${{ steps.fast.outcome }}
+      mobile: ${{ steps.mobile.outcome }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -41,6 +45,7 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: node tools/change-scope.mjs --base "$BASE_SHA" --head "$HEAD_SHA" --github-output "$GITHUB_OUTPUT"
       - name: Fast rules, structure and packaging tests
+        id: fast
         run: npm test
       - name: Analyze classic shared globals
         if: steps.scope.outputs.analyze == 'true' || github.event_name == 'workflow_dispatch'
@@ -59,6 +64,7 @@ jobs:
           npm run test:fixtures
           npx playwright install --with-deps chromium
       - name: Real mobile touch smoke (desktop optional; production stays offline)
+        id: mobile
         if: steps.scope.outputs.browser == 'true' || github.event_name == 'workflow_dispatch'
         env:
           ALSO_DESKTOP: ${{ github.event_name == 'workflow_dispatch' && inputs.desktop }}
@@ -122,3 +128,52 @@ jobs:
       - name: Deploy the artifact produced by check in this run
         id: deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+
+  handoff:
+    name: Update handoff on main
+    needs: [check, pages, deploy]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 6
+      - name: Avoid replacing a newer main handoff
+        id: freshness
+        run: |
+          handoff_remote_sha=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [ "$handoff_remote_sha" = "$GITHUB_SHA" ]; then
+            echo 'current=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'Newer main exists; its run owns the handoff.'
+          fi
+      - name: Record actual revision, changed files and check outcomes
+        if: steps.freshness.outputs.current == 'true'
+        env:
+          HANDOFF_BEFORE: ${{ github.event.before }}
+          HANDOFF_CHECK: ${{ needs.check.result }}
+          HANDOFF_FAST: ${{ needs.check.outputs.fast }}
+          HANDOFF_MOBILE: ${{ needs.check.outputs.mobile }}
+          HANDOFF_PROFILE: ${{ needs.check.outputs.profile }}
+          HANDOFF_DEPLOY: ${{ needs.deploy.result }}
+        run: node tools/update-handoff.mjs
+      - name: Save only the handoff (GITHUB_TOKEN pushes do not trigger another run)
+        if: steps.freshness.outputs.current == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/HANDOFF.md
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'docs: تحديث آلي لملف التسليم'
+          if ! git push origin HEAD:refs/heads/main; then
+            handoff_remote_sha=$(git ls-remote origin refs/heads/main | cut -f1)
+            if [ "$handoff_remote_sha" != "$GITHUB_SHA" ]; then
+              echo 'Main advanced during the update; keep the newer run.'
+              exit 0
+            fi
+            exit 1
+          fi

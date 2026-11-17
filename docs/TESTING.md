@@ -55,6 +55,8 @@ npm run test:fixtures -- --refresh-lock
 
 في deploy تستخدم `configure-pages@v5` مع `enablement: false` لقراءة configuration فقط؛ ليست محاولة تفعيل Pages. رفع Pages artifact عبر `upload-pages-artifact@v4` يقتصر على main غير PR؛ PR يرفع تقارير check فقط.
 
+job `handoff` يعمل بعد check/pages/deploy حتى لو فشل الفحص، على push إلى main فقط. له `contents: write` لكتابة `docs/HANDOFF.md` وحده، بينما check يبقى للقراءة. يسجل outcomes الفعلية ويميّز الفشل والتخطي والنتائج غير المتاحة؛ لا يعلن نجاح نشر legacy. يحافظ على الملاحظات اليدوية، ويرفض markers مكررة/مكسورة، ويتجاوز التشغيل القديم إذا تقدم main، ولا يستخدم force push. يحفظ عبر GITHUB_TOKEN الذي لا يولد push workflow جديدًا؛ يوجد كذلك استثناء للفاعل github-actions[bot]. لا تغيير لإعدادات حماية main؛ لو رفضت كتابة البوت يظهر فشل job صريح بدل ادعاء حفظ السجل.
+
 **Pages الحالية legacy من main: هذا workflow لا يحمي نشرها الآن.** بعد المعاينة ثم الموافقة فقط، يلزم تغيير Settings → Pages → Source إلى **GitHub Actions**، وإعداد required status check باسم **check** على main (branch protection/ruleset ومنع bypass المباشر حسب الصلاحيات). لإبقاء موافقة بشرية قبل كل نشر، أضف required reviewer لبيئة `github-pages` بعد الموافقة على هذا الإعداد. لم يُغيّر أي من هذه Settings هنا. مجرد رفع workflow أو نجاح check لا يمنع Pages legacy من نشر main.
 
 تقارير CI محفوظة كـ`check-reports-<SHA>` سبعة أيام. artifact Pages هو `dist/game` فقط، يتضمن index/css/js/assets و`.nojekyll`؛ لا tools/tests/docs/SQL/.git/node_modules أو CDN fixtures. التغليف يضيف `rev=<commit>-<content SHA256>` إلى local JS/CSS في **index داخل artifact فقط**، ولا يغير index المصدر. يبقي `?v=` الرقمي وآلية BUILD الموجودة؛ rev يعالج cache للملفات، وليس بديلًا عن bump source build عند تحديث إشعار النسخة.
