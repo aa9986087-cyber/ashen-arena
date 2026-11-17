@@ -17,6 +17,10 @@ def apply(path, text, replace):
     if path == 'js/game/update.js':
         sub('hurt(s.dmg);','hurt(s.dmg, s);')
         sub('hurt(z.dmg);','hurt(z.dmg, z);')
+        sub('  else if (tgt) fa = Math.atan2(tgt.x - p.x, tgt.z - p.z);',
+            "  else if (S.char === 'reaper' && p.dashT > 0) fa = Math.atan2(p.dx, p.dz);\n"
+            "  else if (S.char === 'reaper' && p.moving) fa = Math.atan2(mx, mz);\n"
+            "  else if (tgt) fa = Math.atan2(tgt.x - p.x, tgt.z - p.z);")
     if path == 'js/game/specials.js':
         sub("  shake(0.7);\n  sp.f", "  if (S.char !== 'reaper') shake(0.7);\n  sp.f")
     if path == 'js/game/combat.js':

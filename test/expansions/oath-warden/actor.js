@@ -92,21 +92,30 @@ function wardenPose(R,p,wepId,playing,now){
  // Auto-attacks cannot restart or replace the special, even when movement changes.
  if(!specialActive&&p.swing>a.swing+0.1){a.attackAt=clock;a.attackIndex=((a.attackIndex??-1)+1)%3;a.variant=['attack','attack2','attack3'][a.attackIndex];}
  a.swing=p.swing;
- let role=p.dead?'fall':specialActive?'special':clock-a.attackAt<0.6?(a.variant||'attack'):(playing&&p.moving?'run':'idle');
+ const moving = playing && (p.moving || p.dashT > 0) && !p.dead;
+ let role=p.dead?'fall':specialActive?'special':clock-a.attackAt<0.6?(a.variant||'attack'):(moving?'run':'idle');
  if(!a.actions[role])role='idle';
- const moving=playing&&p.moving&&!p.dead;
  const upper=moving&&!specialActive&&a.upper[role],lower=upper&&a.lower.run;
  const changed=role!==a.role||!!upper!==a.layered;
  if(changed){
+  const strideTime = a.layered ? a.lower.run.time : a.role === 'run' ? a.actions.run.time : 0;
   for(const action of [...Object.values(a.actions),...Object.values(a.upper),...Object.values(a.lower)])action.stop();
   const active=upper||a.actions[role];active.reset();
   if(!['idle','run','walk'].includes(role)){active.setLoop(THREE.LoopOnce,1);active.clampWhenFinished=true;}
-  active.play();if(lower)lower.reset().play();a.role=role;a.layered=!!upper;
+  active.play();
+  if (lower) {
+   lower.reset().play();
+   lower.time = strideTime;
+  } else if (role === 'run') active.time = strideTime;
+  a.role=role;a.layered=!!upper;
  }
  const active=upper||a.actions[role];
  const duration=role==='special'?WARDEN_SLAM_DURATION:['attack','attack2','attack3'].includes(role)?0.6:role==='fall'?0.8:null;
  if(duration)active.timeScale=active.getClip().duration/duration;else active.timeScale=moving?1.05:1;
- a.fit.rotation.y += ((role==='run'||role==='walk'?0:Math.PI/2)-a.fit.rotation.y)*Math.min(1,dt*16);
+ // A running lower body keeps its authored alignment even during a sword swing.
+ const runningPose = role === 'run' || role === 'walk' || !!lower;
+ const fitYaw = runningPose ? 0 : Math.PI / 2;
+ a.fit.rotation.y += (fitYaw - a.fit.rotation.y) * Math.min(1,dt*16);
  if (specialActive && role === 'special') {
   active.paused = true;
   active.time = Math.min(active.getClip().duration, wardenSlamFrame(special) / 30);

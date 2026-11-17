@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "release": "clean-20261117-v23",
+  "release": "clean-20261117-v24",
   "baseRevision": "ab6798e6a4ed2cfd7f71a77e0e00f10505d393d3",
   "addonSourceRevision": "c0c1701",
   "enabledAddons": [
@@ -8,7 +8,7 @@
     "ranger",
     "forest-guardian"
   ],
-  "notes": "حُكم العهد بقفزة وضربة أرضية تصيب الوحوش حول الهبوط وتخلّف شقوقًا واضحة.",
+  "notes": "حارس العهد يواجه اتجاه العصا عند الجري حتى لو استهدف سيفه عدوًا خلفه.",
   "enabledExpansions": [
     "gravebound"
   ]

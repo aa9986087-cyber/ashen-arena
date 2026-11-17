@@ -532,3 +532,46 @@ test('preview: warden normal attacks cycle three heavy clips without movement re
  expect(result.cd).toBe(0.85);expect(result.damage).toBe(30);
  await page.screenshot({path:testInfo.outputPath('warden-heavy-attacks.png')});
 });
+
+test('preview: warden faces the touch joystick while attacking an enemy behind', async ({page,context}, testInfo) => {
+ test.skip(testInfo.project.name !== 'mobile');
+ test.setTimeout(90000);
+ await page.goto('/test/#netlocal',{waitUntil:'load'});
+ await expect.poll(()=>page.evaluate(()=>typeof window.__game),{timeout:45000}).toBe('object');
+ await page.evaluate(()=>window.__game.ready);
+ await page.evaluate(async()=>{S.char='reaper';S.chars.reaper=1;newRun();await wardenLoadModel();buildPlayer();});
+ await expect(page.locator('#menu')).not.toHaveClass(/boot/);
+ await page.locator('#mPlay').click();
+ await expect.poll(()=>page.evaluate(()=>G.state)).toBe('play');
+ await page.evaluate(()=>{
+  G.noWaves=true;G.god=true;G.enemies=[];G.picks=[];G.pending=0;
+  const p=G.p;
+  p.face=-Math.PI/2;p.speed=1.8;
+  const enemy=spawn('grunt',p.x-1.4,p.z);
+  enemy.hp=enemy.maxHp=10000;enemy.spd=0;
+  G.weapons[0].cd=5;
+  window.wardenFacingProbe={enemy,startX:p.x};
+ });
+ const touch=await context.newCDPSession(page);
+ try {
+  await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:120,y:620,id:1}]});
+  await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:180,y:620,id:1}]});
+  await expect.poll(()=>page.evaluate(()=>{
+   const {enemy,startX}=window.wardenFacingProbe;
+   return G.p.x>startX && enemy.x<G.p.x && IN.mvx>0.5 && Math.sin(PM.g.rotation.y)>0.95;
+  })).toBe(true);
+  await page.evaluate(()=>{
+   const {enemy}=window.wardenFacingProbe;
+   enemy.x=G.p.x-1.4;enemy.z=G.p.z;
+   G.weapons[0].cd=0;
+  });
+  await expect.poll(()=>page.evaluate(()=>{
+   const {enemy}=window.wardenFacingProbe;
+   return enemy.hp<enemy.maxHp && PM.warden.layered && Math.sin(PM.g.rotation.y)>0.95 &&
+    Math.abs(PM.warden.fit.rotation.y)<0.2;
+  })).toBe(true);
+ } finally {
+  await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await touch.detach();
+ }
+});
