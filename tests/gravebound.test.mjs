@@ -122,10 +122,12 @@ graveTest('warden preserves prior ownership and purchase ranks; guard and pendin
  assert.equal(g.run('G.grave.warden.guardReadyAt'),21.2);
  assert.ok(g.run('G.grave.warden.cleave.power')>0);
 });
-graveTest('warden overhead strike hits both sides only on impact with extra damage in front',async()=>{
+graveTest('warden jump strike hits both sides only on impact with extra damage in front',async()=>{
  const g=await fixture();
  g.run(`G.state='play';G.p.face=0;var front=spawn('grunt',0,3),back=spawn('grunt',0,-3);front.hp=back.hp=10000;graveRelease(100)`);
  assert.equal(g.run('back.hp'),10000);assert.equal(g.run('front.hp'),10000);
- g.run('G.t+=0.3;wardenTick();wardenTick()');
+ g.run('G.t+=0.6;wardenTick();wardenTick()');
  assert.ok(g.run('front.hp<back.hp && back.hp<10000'));assert.equal(g.run('G.grave.warden.cleave'),null);
+ g.run('saveRun();resumeRun()');
+ assert.equal(g.run('G.grave.warden.scar.radius'),7);
 });

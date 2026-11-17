@@ -381,7 +381,7 @@ test('preview: gravebound purchases, reaper touch special, save/resume and seven
   } else { await page.keyboard.press('KeyQ'); }
   await expect.poll(()=>page.evaluate(()=>window.__circleTargets.every(e=>e.hp<e.maxHp))).toBe(true);
   expect(await page.evaluate(()=>G.grave.ghosts.length)).toBe(0);
-  await expect(page.locator('#graveMeter')).toContainText('ضربة من فوق');
+  await expect(page.locator('#graveMeter')).toContainText('قفزة وضربة أرضية');
   expect(await page.evaluate(()=>PM.char==='reaper'&&!!PM.warden&&WARDEN_ACTOR.asset.clips.bash&&renderer.info.render.calls>0)).toBe(true);
   await page.evaluate(()=>graveCollect(5));
   await page.evaluate(()=>{bannerT=0;$('banner').classList.remove('on');G.texts=[];});
@@ -415,7 +415,7 @@ test('preview: reaper starts without hidden aerial attacks', async ({page})=>{
     zone=function(...args){zones.push({friendly:args[5],kind:args[6],stack:new Error().stack});return old(...args);};
     for(let i=0;i<4;i++){const e=spawn('grunt',G.p.x+Math.cos(i)*2,G.p.z+Math.sin(i)*2);e.hp=e.maxHp=100000;}
     for(let i=0;i<600;i++){G.pending=0;G.picks=[];G.cardsOpen=false;update(0.05);}
-    SPECIALS.reap.f(G.p,100);G.t+=0.3;wardenTick();
+    SPECIALS.reap.f(G.p,100);G.t+=0.6;wardenTick();
     return {zones,ups:G.ups,special:heroSpecial().n,hp:G.p.hp};
   });
   console.log('REAPER_AERIAL_PROBE',JSON.stringify(result));
@@ -445,7 +445,7 @@ test('preview: warden visual direction and original animated GLB',async({page},t
  expect(await page.evaluate(()=>!!PM.warden&&PM.char==='reaper'&&renderer.info.render.calls>0)).toBe(true);
 });
 
-test('preview: warden overhead sword lands with sparks and dust', async ({page},testInfo) => {
+test('preview: warden jump deals area damage on landing and leaves visible ground cracks', async ({page},testInfo) => {
  test.setTimeout(90000);
  await page.goto('/test/#netlocal',{waitUntil:'load'});
  await expect.poll(()=>page.evaluate(()=>typeof window.__game),{timeout:45000}).toBe('object');
@@ -468,21 +468,35 @@ test('preview: warden overhead sword lands with sparks and dust', async ({page},
    wardenPose(PM,p,'scythe',true,now+offset*1000);
    sword.updateWorldMatrix(true,false);
    const tip=new THREE.Vector3(0,0,sword.geometry.boundingBox.min.z).applyMatrix4(sword.matrixWorld);
-   return {height:tip.y,role:PM.warden.role};
+   return {height:tip.y,bodyY:PM.g.position.y,role:PM.warden.role};
   };
-  const raised=pose(0.19,1);wardenTick();
+  const raised=pose(0.28,1);wardenTick();
   const before=[front.hp,rear.hp];
-  const landed=pose(0.29,0);wardenTick();
+  const landed=pose(0.54,0);wardenTick();
   const damage=[10000-front.hp,10000-rear.hp];
   wardenTick();
   const duplicate=10000-front.hp!==damage[0];
+  renderWardenScar(true);
+  const origin = wardenScarMesh.position.clone();
+  const visible = wardenScarMesh.visible && wardenScarMesh.children[0].geometry.attributes.position.count > 200;
+  p.x += 4;
+  pose(2,0);renderWardenScar(true);
+  const staysOnGround = wardenScarMesh.visible && wardenScarMesh.position.equals(origin);
+  pose(5.1,0);renderWardenScar(true);
+  const expired = !wardenScarMesh.visible;
+  p.x = origin.x;
   G.state='paused';
-  const paused=pose(0.29,0);
+  const paused=pose(0.54,0);
   bannerT=0;$('banner').classList.remove('on');$('count').hidden=true;G.texts=[];
   render(0,now);
-  return {raised,landed,paused,before,damage,duplicate,rings:G.rings.length-ringsBefore};
+  return {raised,landed,paused,before,damage,duplicate,visible,staysOnGround,expired,rings:G.rings.length-ringsBefore};
  });
  expect(result.before).toEqual([10000,10000]);
+ expect(result.visible).toBe(true);
+ expect(result.staysOnGround).toBe(true);
+ expect(result.expired).toBe(true);
+ expect(result.raised.bodyY).toBeGreaterThan(2.5);
+ expect(result.landed.bodyY).toBe(0);
  expect(result.raised.role).toBe('special');
  expect(result.landed.role).toBe('special');
  expect(result.raised.height-result.landed.height).toBeGreaterThan(1);
@@ -491,7 +505,7 @@ test('preview: warden overhead sword lands with sparks and dust', async ({page},
  expect(result.damage[1]).toBeGreaterThan(0);
  expect(result.duplicate).toBe(false);
  expect(result.rings).toBe(0);
- await page.screenshot({path:testInfo.outputPath('warden-overhead-impact.png')});
+ await page.screenshot({path:testInfo.outputPath('warden-jump-impact.png')});
 });
 
 test('preview: warden normal attacks cycle three heavy clips without movement restarting them',async({page},testInfo)=>{

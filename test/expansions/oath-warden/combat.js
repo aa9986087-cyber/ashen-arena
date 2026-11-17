@@ -1,8 +1,9 @@
 'use strict';
 /* Oath Warden combat; legacy reaper save key preserves ownership and purchases. */
 const OATH_WARDEN = Object.freeze({hp:165,spd:6.5,dmg:1.2,cost:6500,guardReduction:0.6,guardCooldown:1.2,specialCooldown:18});
-const WARDEN_SLAM_IMPACT = 0.28;
-const WARDEN_SLAM_DURATION = 0.72;
+const WARDEN_SLAM_IMPACT = 0.52;
+const WARDEN_SLAM_DURATION = 0.88;
+const WARDEN_SCAR_DURATION = 4.5;
 function wardenState() {
   if (!G.grave) G.grave = {};
   return G.grave.warden || (G.grave.warden = {guardReadyAt:0,wardUntil:0,cleave:null,specialAt:-10});
@@ -44,10 +45,9 @@ function wardenTick() {
   if(!q || G.t<q.at)return;
   s.cleave=null; // Consume before damage callbacks: re-entry cannot repeat the cleave.
   const p = G.p, forwardX = Math.sin(p.face), forwardZ = Math.cos(p.face);
-  const impactX = p.x + forwardX * 2.5 + forwardZ * 0.6;
-  const impactZ = p.z + forwardZ * 2.5 - forwardX * 0.6;
-  vfxSparks(impactX, 0.24, impactZ, 16, [1.5, 0.83, 0.35], 10, 0.14, 0.3);
-  vfxSmoke(impactX, 0.12, impactZ, 7, [0.56, 0.47, 0.36, 0.42], 1.0, 0.95, 0.38, 0.55);
+  s.scar = { x: p.x, z: p.z, radius: q.radius, angle: p.face, at: G.t };
+  vfxSparks(p.x, 0.25, p.z, 22, [1.5, 0.83, 0.35], 14, 0.17, 0.32);
+  vfxSmoke(p.x, 0.12, p.z, 10, [0.56, 0.47, 0.36, 0.42], 2, 1.1, 0.45, 0.5);
   AU.play('boom');
   shake(0.7);
   // Saves from earlier releases have already applied the frontal hit.

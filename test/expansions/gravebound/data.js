@@ -13,7 +13,7 @@ const GRAVE_RELICS = {
 };
 const GRAVE_TRAIN_COST = [1200, 2400, 4200], GRAVE_TRAIN_SP = [3, 6, 10];
 const GRAVE_RELIC_COST = [1800, 3600, 6500], GRAVE_RELIC_SP = [2, 4, 7];
-CHARS.reaper = { n: 'حارس العهد', i: '🛡️', d: 'محارب ثقيل بسيف ودرع. يصد الهجمات الأمامية، وخاصته ضربة سيف ثقيلة من فوق وحماية مؤقتة.', hp:165,spd:6.5,wep:'scythe',cost:6500,col:0x596678,cape:0x202735,dmg:1.2,crit:0.05,sp:'reap' };
+CHARS.reaper = { n: 'حارس العهد', i: '🛡️', d: 'محارب ثقيل بسيف ودرع. يصد الهجمات الأمامية، وخاصته قفزة يضرب بعدها الأرض بالسيف وتحميه مؤقتًا.', hp:165,spd:6.5,wep:'scythe',cost:6500,col:0x596678,cape:0x202735,dmg:1.2,crit:0.05,sp:'reap' };
 WEP.scythe = { ...WEP.sword, n: 'سيف العهد', i: '⚔️', d: 'سيف ثقيل بضربات واسعة، مع درع حارس العهد',
   dmg: 30, cd: 0.85, range: 3.5, arc: [2.7, 3.8, TAU], kb: 1.8, cost: 0, evo: ['نصل العهد المنقوش', 'سيف العهد المتوهج'] };
 EVO.scythe = { up: 'fire', n: 'سيف العبور', i: '🌙', d: 'ضرر +50% وموجات إضافية عند التطور' };
@@ -28,7 +28,7 @@ STAGES.splice(STAGES.findIndex(s => s.abyss), 0, {
 BOSS_ULTS.push({ n: 'مسيرة القبور', col: [0.55, 1.05, 0.75], f() {} });
 TAUNTS[0] = 'سبعة زعماء طاحوا، وباقي الهاوية. {k} عدو… كم تقدر تصمد أكثر؟';
 SPECIALS.reap = { n: 'حُكم العهد', i: '⚔️', cd: 18,
-  d: 'ينزل بالسيف من فوق بعد تمهيد قصير ويصيب القريبين. الضربة أقوى أمامه وتوقف الخصم لحظة، وتمنحه حماية 40% لمدة 3 ثوانٍ.', f(p, power) { graveRelease(power); } };
+  d: 'يقفز ويضرب الأرض بالسيف، فيصيب الوحوش حول مكان هبوطه ويترك شقوقًا لعدة ثوانٍ. الضربة أقوى أمامه، ويحصل على حماية 40% لمدة 3 ثوانٍ.', f(p, power) { graveRelease(power); } };
 
 function graveProfile() {
   const old = S.grave && typeof S.grave === 'object' ? S.grave : {};

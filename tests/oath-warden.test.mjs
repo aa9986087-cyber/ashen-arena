@@ -16,15 +16,15 @@ test('guard distinguishes front, rear and unknown sources and respects its recov
  assert.equal(run('G.t=1.2;wardenBlockDamage(100,{x:0,z:3})'),40);
  assert.equal(run("S.char='knight';wardenBlockDamage(100,{x:0,z:3})"),100);
 });
-test('overhead strike lands once after its windup and waits through pause',()=>{
+test('jump strike lands once after its windup and waits through pause',()=>{
  const {c,run}=setup();const front={x:0,z:3,hp:1000},rear={x:0,z:-3,hp:1000};c.G.enemies=[front,rear];
  assert.equal(run('wardenSpecial(100)'),true);assert.equal(front.hp,1000);assert.equal(rear.hp,1000);
  assert.equal(run('wardenSpecial(100)'),false);
- run("G.t=0.3;G.state='paused';wardenTick()");assert.equal(front.hp,1000);assert.equal(rear.hp,1000);
+ run("G.t=0.6;G.state='paused';wardenTick()");assert.equal(front.hp,1000);assert.equal(rear.hp,1000);
  run("G.state='play';wardenTick();wardenTick()");assert.equal(front.hp,765);assert.equal(rear.hp,820);
 });
 test('boss stun is short; temporary ward has an expiry and never multiplies guard reduction',()=>{
- const {c,run}=setup();c.G.enemies=[{x:0,z:2,hp:1000,boss:true}];run('wardenSpecial(100);G.t=0.3;wardenTick()');assert.equal(c.G.enemies[0].frz,0.2);
+ const {c,run}=setup();c.G.enemies=[{x:0,z:2,hp:1000,boss:true}];run('wardenSpecial(100);G.t=0.6;wardenTick()');assert.equal(c.G.enemies[0].frz,0.2);
  assert.equal(run('wardenBlockDamage(100,{x:0,z:2})'),40);
  assert.equal(run('wardenBlockDamage(100,null)'),60);
  assert.equal(run('G.t=3;wardenBlockDamage(100,null)'),100);

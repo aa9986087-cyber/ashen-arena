@@ -199,8 +199,14 @@ function graveRestoreRun(raw) {
     const q=raw.warden;
     if(q&&typeof q==='object'){
       const pending=q.cleave;
+      const scar=q.scar;
       g.warden={guardReadyAt:number(q.guardReadyAt,G.t+1.2),wardUntil:number(q.wardUntil,G.t+3),specialAt:Number.isFinite(q.specialAt)?Math.min(q.specialAt,G.t):-10,
-       cleave:pending&&Number.isFinite(pending.at)&&pending.at>=G.t-0.3?{at:number(pending.at,G.t+0.28),power:number(pending.power,100000),frontPower:number(pending.frontPower,100000),radius:number(pending.radius,30)}:null};
+       cleave:pending&&Number.isFinite(pending.at)&&pending.at>=G.t-0.3?{at:number(pending.at,G.t+WARDEN_SLAM_IMPACT),power:number(pending.power,100000),frontPower:number(pending.frontPower,100000),radius:number(pending.radius,30)}:null};
+      if (scar && Number.isFinite(scar.x) && Number.isFinite(scar.z) && Number.isFinite(scar.at)
+        && G.t >= scar.at && G.t - scar.at < WARDEN_SCAR_DURATION && number(scar.radius,30) > 0) {
+        g.warden.scar = { x: clamp(scar.x,-ARENA-4,ARENA+4), z: clamp(scar.z,-ARENA-4,ARENA+4),
+          at: scar.at, radius: number(scar.radius,30), angle: Number.isFinite(scar.angle) ? scar.angle % TAU : 0 };
+      }
     }
   }
   recalc();

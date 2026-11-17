@@ -71,9 +71,10 @@ function wardenBuildRig(R,wep){
 }
 function wardenSlamFrame(elapsed) {
  // Source frames 36 and 49 are the raised sword and the ground contact.
- if (elapsed < 0.19) return 13 * elapsed / 0.19;
+ const apex = 0.31;
+ if (elapsed < apex) return 13 * elapsed / apex;
  if (elapsed < WARDEN_SLAM_IMPACT) {
-  return 13 + 13 * (elapsed - 0.19) / (WARDEN_SLAM_IMPACT - 0.19);
+  return 13 + 13 * ((elapsed - apex) / (WARDEN_SLAM_IMPACT - apex)) ** 1.7;
  }
  return 26 + 26 * (elapsed - WARDEN_SLAM_IMPACT) / (WARDEN_SLAM_DURATION - WARDEN_SLAM_IMPACT);
 }
@@ -84,13 +85,17 @@ function wardenPose(R,p,wepId,playing,now){
  a.g.position.set(p.x,0,p.z);a.g.rotation.y=playing?p.face:Math.sin(now*0.0005)*0.3;
  const state=G.grave?.warden,special=state&&state.specialAt!==undefined?clock-state.specialAt:10;
  const specialActive=playing&&special>=0&&special<WARDEN_SLAM_DURATION&&!p.dead;
+ if (specialActive && special < WARDEN_SLAM_IMPACT) {
+  const progress = special / WARDEN_SLAM_IMPACT;
+  a.g.position.y = 3.4 * Math.sin(Math.PI * progress) ** 0.82;
+ }
  // Auto-attacks cannot restart or replace the special, even when movement changes.
  if(!specialActive&&p.swing>a.swing+0.1){a.attackAt=clock;a.attackIndex=((a.attackIndex??-1)+1)%3;a.variant=['attack','attack2','attack3'][a.attackIndex];}
  a.swing=p.swing;
  let role=p.dead?'fall':specialActive?'special':clock-a.attackAt<0.6?(a.variant||'attack'):(playing&&p.moving?'run':'idle');
  if(!a.actions[role])role='idle';
  const moving=playing&&p.moving&&!p.dead;
- const upper=moving&&a.upper[role],lower=upper&&a.lower.run;
+ const upper=moving&&!specialActive&&a.upper[role],lower=upper&&a.lower.run;
  const changed=role!==a.role||!!upper!==a.layered;
  if(changed){
   for(const action of [...Object.values(a.actions),...Object.values(a.upper),...Object.values(a.lower)])action.stop();
@@ -113,6 +118,75 @@ function wardenPose(R,p,wepId,playing,now){
  a.mixer.update(dt);
  // Root position tracks are pinned; locomotion never pulls the actor away from its hitbox.
  return true;
+}
+let wardenScarMesh = null;
+function buildWardenScar() {
+ // Each crack is a tapered jagged strip. Branches spread unevenly from the impact
+ // so the affected area reads as broken ground rather than a targeting circle.
+ const dark = [], embers = [];
+ function strip(vertices, points, width, y) {
+  const edges = points.map(([x, z, taper], i) => {
+   const prev = points[Math.max(0, i - 1)], next = points[Math.min(points.length - 1, i + 1)];
+   const dx = next[0] - prev[0], dz = next[1] - prev[1];
+   const offset = width * taper / (Math.hypot(dx, dz) || 1);
+   return [[x - dz * offset, y, z + dx * offset], [x + dz * offset, y, z - dx * offset]];
+  });
+  for (let i = 1; i < edges.length; i++) {
+   const [a, b] = edges[i - 1], [c, d] = edges[i];
+   vertices.push(...a, ...b, ...c, ...c, ...b, ...d);
+  }
+ }
+ function crack(points, width) {
+  strip(dark, points, width, 0);
+  strip(embers, points, width * 0.3, 0.012);
+ }
+ for (let i = 0; i < 7; i++) {
+  const angle = i * TAU / 7;
+  const radius = [0.97, 0.75, 0.91, 0.69, 0.88, 0.8, 0.96][i];
+  const points = [0, 0.19, 0.37, 0.55, 0.77, 1].map((distance, j) => {
+   const bend = angle + (j % 2 ? 0.1 : -0.12) * (i % 2 ? -1 : 1);
+   const reach = radius * distance;
+   return [Math.cos(bend) * reach, Math.sin(bend) * reach, 1 - distance];
+  });
+  crack(points, 0.041);
+  for (const j of [2, 3]) {
+   const [x, z, taper] = points[j];
+   const branch = angle + (j === 2 ? -0.68 : 0.62);
+   crack([[x, z, taper], [x + Math.cos(branch) * 0.13, z + Math.sin(branch) * 0.13, taper * 0.6],
+    [x + Math.cos(branch + 0.18) * 0.26, z + Math.sin(branch + 0.18) * 0.26, 0]], 0.023);
+  }
+ }
+ const group = new THREE.Group();
+ for (const [vertices, color] of [[dark, 0x100b08], [embers, 0xffa042]]) {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  const material = new THREE.MeshBasicMaterial({
+   color, transparent: true, side: THREE.DoubleSide, depthWrite: false, toneMapped: false,
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.renderOrder = vertices === dark ? 1 : 2;
+  group.add(mesh);
+ }
+ group.visible = false;
+ scene.add(group);
+ return group;
+}
+function renderWardenScar(playing) {
+ const scar = playing && S.char === 'reaper' && G.grave?.warden?.scar;
+ const age = scar ? G.t - scar.at : WARDEN_SCAR_DURATION;
+ const visible = age >= 0 && age < WARDEN_SCAR_DURATION;
+ if (!visible) {
+  if (wardenScarMesh) wardenScarMesh.visible = false;
+  return;
+ }
+ const mesh = wardenScarMesh || (wardenScarMesh = buildWardenScar());
+ mesh.visible = true;
+ mesh.position.set(scar.x, 0.065, scar.z);
+ mesh.scale.set(scar.radius, 1, scar.radius);
+ mesh.rotation.y = scar.angle;
+ const fade = Math.min(1, (WARDEN_SCAR_DURATION - age) / 1.25);
+ mesh.children[0].material.opacity = fade * 0.96;
+ mesh.children[1].material.opacity = fade * (0.25 + 0.75 * Math.max(0, 1 - age / 0.85));
 }
 function wardenPortrait(){
  if(PORTRAITS.reaper)return PORTRAITS.reaper;

@@ -121,6 +121,7 @@ render = function (dt, now) {
   if (graveBossModel && (!playing || !G.boss || G.boss.kind !== 6 || G.boss.dead)) graveBossModel.visible = false;
   const ghosts = playing ? G.grave?.ghosts || [] : [];
   GRAVE_SPIRITS.forEach((m, i) => { m.visible = !!ghosts[i]; if (ghosts[i]) m.position.set(ghosts[i].x, 1.7 + Math.sin(now * 0.003 + i) * 0.18, ghosts[i].z); });
+  renderWardenScar(playing);
   graveBaseRender(dt, now);
   graveMeter();
 };
