@@ -575,3 +575,67 @@ test('preview: warden faces the touch joystick while attacking an enemy behind',
   await touch.detach();
  }
 });
+
+test('preview: seven boss specials warn, animate, hit on cue and leave ground marks', async ({ page }, testInfo) => {
+  test.skip(!enabledExpansions.includes('boss-specials'), 'Campaign boss specials are disabled.');
+  test.setTimeout(90000);
+  await page.goto('/test/#lab', { waitUntil: 'load' });
+  await expect.poll(() => page.evaluate(() => typeof window.__game), { timeout: 45000 }).toBe('object');
+  await page.evaluate(() => window.__game.ready);
+  await page.locator('#mPlay').tap();
+  await expect.poll(() => page.evaluate(() => G.state)).toBe('play');
+
+  const checks = await page.evaluate(() => {
+    const results = [];
+    for (const stage of STAGES.filter(s => !s.abyss)) {
+      const kind = stage.bk;
+      newRun();
+      Object.assign(G, { state: 'play', stage: STAGES.indexOf(stage), noWaves: true });
+      Object.assign(CINE, { on: false, pending: null });
+      const p = G.p;
+      Object.assign(p, { x: 0, z: 8, inv: 0, hp: 1000, maxHp: 1000, shield: 0 });
+      G.bossName = stage.boss;
+      const boss = makeBoss(kind, 0, 0);
+      boss.bossSpecialCd = 0;
+      const step = 1 / 60;
+      update(step);
+      const skill = BOSS_SPECIALS[kind], pose = new THREE.Object3D();
+      const warnings = G.zones.filter(z => z.kind === 'boss-special');
+      if (!warnings.length) throw Error('Missing warning for ' + stage.boss);
+      const target = warnings.find(z => z.d === skill.wind);
+      const hpBefore = p.hp;
+      const warningDamage = target.dmg;
+      const moveBefore = boss.bossSpecial.elapsed;
+      boss.frz = .13;
+      update(step);
+      const froze = boss.bossSpecial.elapsed === moveBefore && target.l === moveBefore;
+      boss.frz = 0;
+      while (boss.bossSpecial.elapsed < skill.wind * .8) update(step);
+      poseBossSpecial(pose, boss);
+      const poseBefore = [pose.position.y, pose.rotation.x, pose.rotation.y, pose.rotation.z];
+      const safeDuringWarning = p.hp === hpBefore;
+      Object.assign(p, { x: target.x, z: target.z, inv: 0 });
+      while (boss.bossSpecial.elapsed < skill.wind + .045) update(step);
+      drawBossSpecialImpacts(true);
+      const marks = bossImpactScar.count;
+      results.push({
+        kind, name: skill.name, health: boss.maxHp, warningDamage, safeDuringWarning, froze, poseBefore,
+        hit: hpBefore > p.hp, marks, landed: kind !== 2 || boss.y < .1,
+      });
+      // Resume the loop with the visual on the last boss for a phone-sized screenshot.
+      G.state = 'paused';
+      render(0, performance.now());
+    }
+    return results;
+  });
+  expect(checks).toHaveLength(7);
+  expect(new Set(checks.map(x => x.name)).size).toBe(7);
+  expect(new Set(checks.map(x => x.poseBefore.join(','))).size).toBe(7);
+  for (const row of checks) {
+    expect(row.health).toBeGreaterThan(2500);
+    expect(row.warningDamage).toBeGreaterThan(20);
+    expect(row.safeDuringWarning && row.hit && row.froze && row.landed).toBe(true);
+    expect(row.marks).toBeGreaterThan(0);
+  }
+  await page.screenshot({ path: testInfo.outputPath('boss-special-impact.png') });
+});

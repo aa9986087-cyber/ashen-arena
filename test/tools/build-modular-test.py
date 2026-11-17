@@ -10,13 +10,21 @@ import hashlib, json, re, shutil, subprocess, tempfile, importlib.util
 ROOT = Path(__file__).resolve().parents[2]
 TEST = ROOT / 'test'
 CFG = json.loads((TEST / 'modular-config.json').read_text())
-GRAVEBOUND = 'gravebound' in CFG.get('enabledExpansions', [])
-if any(name != 'gravebound' for name in CFG.get('enabledExpansions', [])):
+EXPANSIONS = CFG.get('enabledExpansions', [])
+GRAVEBOUND = 'gravebound' in EXPANSIONS
+BOSS_SPECIALS = 'boss-specials' in EXPANSIONS
+if any(name not in {'gravebound', 'boss-specials'} for name in EXPANSIONS):
     raise SystemExit('Unknown expansion in enabledExpansions')
+def load_expansion(name):
+    spec = importlib.util.spec_from_file_location(name, TEST / 'tools' / (name + '-build.py'))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
 if GRAVEBOUND:
-    spec = importlib.util.spec_from_file_location('gravebound_build', TEST / 'tools' / 'gravebound-build.py')
-    gravebound_build = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(gravebound_build)
+    gravebound_build = load_expansion('gravebound')
+if BOSS_SPECIALS:
+    boss_specials_build = load_expansion('boss-specials')
 RELEASE = CFG['release']
 if not re.fullmatch(r'clean-[a-zA-Z0-9-]+', RELEASE):
     raise SystemExit('Invalid release id')
@@ -112,6 +120,8 @@ def patch(path, text):
         text = text[:begin] + '  if (d.melee) {\n    ASHEN_ADDONS.queueMelee(() => {\n      AU.play(w.id);' + original + '\n    });\n' + text[end:]
         text = replace_once(text, '  p.swing = 1;\n  AU.play(w.id);',
             "  p.swing = 1;\n  p.swingT = (p.swingT || 0) + 1;\n  if (typeof actorNotify === 'function') actorNotify(p, 'attack');\n  if (!d.melee) AU.play(w.id);", path)
+    if BOSS_SPECIALS:
+        text = boss_specials_build.apply(path, text, replace_once)
     if GRAVEBOUND:
         text = gravebound_build.apply(path, text, replace_once)
         if path == 'js/data/news.js':
@@ -157,7 +167,10 @@ for addon in addons:
         code = code.replace("new URL('./" + asset + "', script.src)", "new URL('../../addons/" + addon + "/" + asset + "', script.src)")
     config_code.append(code)
 extra = '\n;\n'.join(config_code)
-extra += '\n;\n' + (TEST / 'addons' / 'shared' / 'actor-runtime.js').read_text()
+actor_runtime = (TEST / 'addons' / 'shared' / 'actor-runtime.js').read_text()
+if BOSS_SPECIALS:
+    actor_runtime = boss_specials_build.apply_guardian(actor_runtime, replace_once)
+extra += '\n;\n' + actor_runtime
 extra += '\n;\n' + (TEST / 'tools' / 'modular-runtime' / 'hooks.js').read_text()
 extra += '\n;\n' + (TEST / 'tools' / 'modular-runtime' / 'shaman-healing.js').read_text()
 if GRAVEBOUND:
@@ -165,7 +178,14 @@ if GRAVEBOUND:
         extra += '\n;\n' + (TEST / 'expansions/oath-warden' / filename).read_text()
     for filename in ['data.js', 'gameplay.js', 'models.js', 'ui.js']:
         source = TEST / 'expansions' / 'gravebound' / filename
-        extra += '\n;\n/* gravebound/' + filename + ' */\n' + source.read_text()
+        code = source.read_text()
+        if BOSS_SPECIALS and filename == 'models.js':
+            code = boss_specials_build.apply_grave_model(code, replace_once)
+        extra += '\n;\n/* gravebound/' + filename + ' */\n' + code
+if BOSS_SPECIALS:
+    for filename in ['combat.js', 'visuals.js']:
+        source = TEST / 'expansions' / 'boss-specials' / filename
+        extra += '\n;\n/* boss-specials/' + filename + ' */\n' + source.read_text()
 parts = [preamble]
 for match in SCRIPT.finditer(html):
     src = match.group(1).split('?', 1)[0]
@@ -180,15 +200,19 @@ html = SCRIPT.sub('', html)
 if GRAVEBOUND:
     (OUT / 'gravebound.css').write_text((TEST / 'expansions/gravebound/style.css').read_text())
     html = html.replace('</head>', f'<link rel="stylesheet" href="gravebound.css?v={RELEASE}">\n</head>')
+if BOSS_SPECIALS:
+    (OUT / 'boss-specials.css').write_text((TEST / 'expansions/boss-specials/style.css').read_text())
+    html = html.replace('</head>', f'<link rel="stylesheet" href="boss-specials.css?v={RELEASE}">\n</head>')
 html = html.replace('<head>', '<head>\n    <meta name="robots" content="noindex, nofollow">\n    <meta http-equiv="Content-Security-Policy" content="connect-src \'self\' data: blob:">', 1)
 html = re.sub(r'href="(css/[^"?]+)(?:\?[^\"]*)?"', lambda m: f'href="{m.group(1)}?v={RELEASE}"', html)
 html = html.replace('</body>', f'    <script src="vendor.js?v={RELEASE}"></script>\n    <script src="app.min.js?v={RELEASE}"></script>\n  </body>')
 html = '\n'.join(line.rstrip() for line in html.splitlines()) + '\n'
 (OUT / 'index.html').write_text(html)
 manifest = {**CFG, 'baseRevision': REV, 'baseHashes': source_hashes, 'sourceKind': 'production-root', 'legacySourcesUsed': False}
-if GRAVEBOUND:
+if EXPANSIONS:
+    folders = [*EXPANSIONS, *(['oath-warden'] if GRAVEBOUND else [])]
     manifest['expansionHashes'] = {str(p.relative_to(TEST)): hashlib.sha256(p.read_bytes()).hexdigest()
-        for folder in ['gravebound','oath-warden'] for p in sorted((TEST / 'expansions' / folder).iterdir()) if p.suffix in ['.js', '.css', '.json', '.glb']}
+        for folder in folders for p in sorted((TEST / 'expansions' / folder).iterdir()) if p.suffix in ['.js', '.css', '.json', '.glb']}
 (OUT / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 # Keep the previously served page, but never keep editing its sources.
 archive = TEST / 'archive' / 'pre-modular-index.html'
