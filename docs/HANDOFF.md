@@ -63,40 +63,28 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-17T22:23:51.205Z.
-- مرجع العمل: [`0a2aff5833b24bf3c4a4ceb87f8e6229aee91e6c`](https://github.com/aa9986087-cyber/ashen-arena/commit/0a2aff5833b24bf3c4a4ceb87f8e6229aee91e6c).
-- آخر تعديل: تجربة v25 لضربات الزعماء الخاصة وتقوية الفردي.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44189571387/attempts/1).
-- بوابة check: **فشل**؛ الاختبارات السريعة: **فشل**.
-- مسار الفحص: mobile؛ متصفح الجوال: **لم يُشغّل**.
+- وقت التسجيل (UTC): 2026-11-17T22:32:20.140Z.
+- مرجع العمل: [`97437f1ad1d5898ad273e29c7f0596e0e71498c4`](https://github.com/aa9986087-cyber/ashen-arena/commit/97437f1ad1d5898ad273e29c7f0596e0e71498c4).
+- آخر تعديل: تحميل ملف ضربات الزعماء في فحص المقبرة.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44190039659/attempts/1).
+- بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
+- مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
 - إصدار التجربة المسجل: `clean-20261117-v25`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`cc63f70e21e7`: 248 ملفًا.
-- `docs/HANDOFF.md`
-- `test/expansions/boss-specials/combat.js`
-- `test/expansions/boss-specials/style.css`
-- `test/expansions/boss-specials/visuals.js`
-- `test/index.html`
-- `test/modular-config.json`
-- `test/releases/clean-20261117-v25/app.js`
-- `test/releases/clean-20261117-v25/app.min.js`
-- `test/releases/clean-20261117-v25/assets/audio/duel/block0.mp3`
-- `test/releases/clean-20261117-v25/assets/audio/duel/block1.mp3`
-- `test/releases/clean-20261117-v25/assets/audio/duel/block2.mp3`
-- `test/releases/clean-20261117-v25/assets/audio/duel/break0.mp3`
-- وبقية 236 ملفًا في رابط commit أعلاه.
+مقارنةً بـ`94f89e39e73c`: 1 ملفًا.
+- `tests/gravebound.test.mjs`
 
 ### أحدث خمس دفعات على main
 
+- 97437f1 تحميل ملف ضربات الزعماء في فحص المقبرة
+- 94f89e3 docs: تحديث آلي لملف التسليم
 - 0a2aff5 تجربة v25 لضربات الزعماء الخاصة وتقوية الفردي
 - cc63f70 docs: تحديث آلي لملف التسليم
 - 217ca8d تجربة v24 لاتجاه حارس العهد مع عصا الحركة
-- 60257b6 docs: تحديث آلي لملف التسليم
-- 2b1bfd9 تجربة v23 بقفزة حارس العهد وشقوق تتركها ضربة الأرض
 
-ابدأ بمراجعة سجل الفحوص لهذا المرجع؛ لا تفترض نجاح التعديل أو نشره.
+الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
 <!-- AUTO-HANDOFF:END -->
