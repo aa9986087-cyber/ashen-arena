@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "release": "clean-20261117-v5",
-  "baseRevision": "dfb093f",
+  "release": "clean-20261117-v6",
+  "baseRevision": "3d7d60ef432f2339d71ffb649c3fd51877ffb8e7",
   "addonSourceRevision": "c0c1701",
   "enabledAddons": ["knight", "ranger", "forest-guardian"],
-  "notes": "النسخة الجديدة مع الإضافات الثلاث وإصلاح ثغرة الشفاء اللانهائي في بطاقة مصاص الدماء."
+  "notes": "إصلاح تكديس شفاء الشامان الذي يمنع موت الأعداء في الجولات الطويلة، مع إبقاء الإضافات الثلاث وإصلاح مصاص الدماء."
 }

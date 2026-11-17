@@ -1,10 +1,13 @@
 import { test as base, expect } from '@playwright/test';
 import path from 'node:path';
+import fs from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { globals } from '../helpers/globals.mjs';
 import { CDN_DIR, validateFixtures } from '../helpers/cdn-fixtures.mjs';
 
 const rules = await globals();
 const latestNews = rules.run('NEWS[0]?.id');
+const testFiles = fileURLToPath(new URL('../../test/',import.meta.url));
 const fixtureProfile = { ...rules.json('defSave()'), name: 'Smoke-local', newsSeen: latestNews };
 // Low quality is an existing user setting, not a renderer replacement. Keep WebGL, actual main/frame/update.
 fixtureProfile.set = { ...fixtureProfile.set, sfx: 0, mus: 0, shadow: 0, qual: 0, eco: 1 };
@@ -31,6 +34,11 @@ const test = base.extend({
       profile.tree = Object.fromEntries(rules.json('TREE.flatMap(b=>b.nodes.map(n=>n.id))').map(id=>[id,1]));
       profile.perm = rules.json('Object.fromEntries(Object.entries(PERM).map(([k,v])=>[k,v.max]))');
       profile.stats = {...profile.stats,bestLvl:67,kills:76650,bosses:102,bestTime:2403};
+      if (testInfo.title.startsWith('preview:')) {
+        // A fresh combat profile avoids the optional U5 level card interrupting this scenario.
+        profile.tree = {};
+        profile.perm = {};
+      }
       // Routes installed before navigation; no Supabase request or write can reach any production host.
       await context.route('**/*', async route => {
         const request = route.request();
@@ -41,6 +49,15 @@ const test = base.extend({
           return;
         }
         if (url.origin === new URL(baseURL).origin && ['GET', 'HEAD'].includes(request.method())) {
+          // Serve the real generated preview from a transport fixture; the production-only server stays restricted.
+          if (url.pathname.startsWith('/test/')) {
+            const relative = url.pathname === '/test/' ? 'index.html' : url.pathname.slice('/test/'.length);
+            const file = path.resolve(testFiles,relative);
+            if (!file.startsWith(testFiles)) return route.fulfill({status:404,body:''});
+            try {await fs.access(file); await route.fulfill({path:file});}
+            catch {await route.fulfill({status:404,body:''});}
+            return;
+          }
           if (/\/js\/.*\.js$/.test(url.pathname)) observed.loadedRuntime.push(url.pathname);
           await route.continue();
           return;
@@ -66,6 +83,7 @@ const test = base.extend({
       page.on('pageerror', error => observed.pageErrors.push(error.stack || error.message));
       await context.addInitScript(profile => {
         localStorage.setItem('ashen_arena_v1', JSON.stringify(profile));
+        localStorage.setItem('ashen_arena_modular_test_v1', JSON.stringify(profile));
         localStorage.setItem('ashen_arena_run', JSON.stringify({v:1,kills:1000,lvl:67}));
         window.__prePenaltyProfile = JSON.stringify(profile);
         window.__testMicrophoneRequests = 0;
@@ -261,4 +279,40 @@ test('screens, penalties, backup restore, voice and real play/movement/pause/sav
   await checkScreens(page, isolated);
   await checkRound(page, testInfo);
   await checkOldPenaltyBackup(page);
+});
+
+// Controlled combat fixture, real preview bundle/AI/damage/rendering; every production request remains blocked.
+test('preview: overlapping shamans remain killable in a long solo run and after save/resume', async ({page}) => {
+  test.setTimeout(120000);
+  await page.goto('/test/#netlocal',{waitUntil:'load'});
+  await expect.poll(()=>page.evaluate(()=>typeof window.__game),{timeout:30000}).toBe('object');
+  await page.evaluate(()=>window.__game.ready);
+  await expect(page.locator('#menu')).toBeVisible();
+  await expect(page.locator('#menu')).not.toHaveClass(/boot/);
+  await page.locator('#mPlay').click();
+  await expect.poll(()=>page.evaluate(()=>G.state)).toBe('play');
+  const sustain = () => page.evaluate(() => {
+    G.noWaves=true; G.god=true; G.enemies=[]; G.weapons=[]; G.p.crit=0; G.ups={};
+    const victim=spawn('grunt',G.p.x,G.p.z+2);
+    victim.hp=victim.maxHp=500;victim.spd=0;
+    for(let i=0;i<8;i++) {const e=spawn('shaman',G.p.x+3,G.p.z+2);e.spd=0;e.cd=0;}
+    const start=G.t, kills=G.kills;
+    for(let frame=0;frame<600&&!victim.dead;frame++) {
+      G.t+=0.05;hit(victim,5,{noCrit:1,quiet:1,aoe:1});updEnemies(0.05);
+    }
+    return {dead:victim.dead,killDelta:G.kills-kills,elapsed:G.t-start,hp:victim.hp};
+  });
+  await page.evaluate(()=>{G.t=7200;});
+  const first=await sustain();
+  expect(first.dead).toBe(true);
+  expect(first.killDelta).toBe(1);
+  expect(first.elapsed).toBeLessThan(10);
+  expect(Number.isFinite(first.hp)).toBe(true);
+  await page.locator('#pauseBtn').click();
+  await page.locator('#pSave').click();
+  await expect(page.locator('#mResume')).toBeVisible();
+  await page.locator('#mResume').click();
+  await expect.poll(()=>page.evaluate(()=>G.state),{timeout:10000}).toBe('play');
+  expect((await sustain()).dead).toBe(true);
+  expect(await page.evaluate(()=>renderer.info.render.calls)).toBeGreaterThan(0);
 });
