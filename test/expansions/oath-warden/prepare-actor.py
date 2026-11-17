@@ -4,7 +4,7 @@ from pathlib import Path
 args=sys.argv[sys.argv.index('--')+1:];src=Path(args[0]);out=Path(args[1]);out.mkdir(parents=True,exist_ok=True)
 if bpy.context.object and bpy.context.object.mode!='OBJECT': bpy.ops.object.mode_set(mode='OBJECT')
 rig=next(o for o in bpy.data.objects if o.type=='ARMATURE')
-keep={'Stand_Idle_0':'idle','Run':'run','Walk':'walk','Stand_Attack_1':'attack','Stand_Attack_3':'attack2','Stand_Shield_Attack':'bash','Stand_Block_0':'block','Stand_Damage_0':'hurt','Fall':'fall','Run_To_Spin_Attack':'special'}
+keep={'Stand_Idle_0':'idle','Run':'run','Walk':'walk','Stand_Attack_4':'attack','Stand_Attack_6':'attack2','Stand_Attack_8':'attack3','Stand_Shield_Attack':'bash','Stand_Block_0':'block','Stand_Damage_0':'hurt','Fall':'fall','Run_To_Spin_Attack':'special'}
 print('BLOCKS',[a.name for a in bpy.data.actions if 'Block' in a.name])
 for a in list(bpy.data.actions):
  if a.name in keep:a.name=keep[a.name];a.use_fake_user=True

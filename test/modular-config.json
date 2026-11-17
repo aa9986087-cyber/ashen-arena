@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "release": "clean-20261117-v19",
+  "release": "clean-20261117-v20",
   "baseRevision": "ab6798e6a4ed2cfd7f71a77e0e00f10505d393d3",
   "addonSourceRevision": "c0c1701",
   "enabledAddons": [
@@ -8,7 +8,7 @@
     "ranger",
     "forest-guardian"
   ],
-  "notes": "خاصة حارس العهد: صدمة درع ثم التفافة سيف أصلية فريدة، دون إعادة الضربة العادية أو إعادة الحركة عند تغيير المشي؛ لا تغيير للضرر أو الأسعار.",
+  "notes": "ضرب الحارس العادي: ثلاث حركات أصلية ثقيلة بتدرج تمهيد/قطع/استعادة، دون تغيير الضرر أو معدل الهجوم أو الخاصة.",
   "enabledExpansions": [
     "gravebound"
   ]

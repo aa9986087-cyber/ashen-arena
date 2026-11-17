@@ -436,7 +436,7 @@ test('preview: warden visual direction and original animated GLB',async({page},t
  await hero.locator('img').screenshot({path:testInfo.outputPath('warden-portrait.png')});
  expect(await hero.locator('img').evaluate(img=>{const c=document.createElement('canvas');c.width=c.height=260;const x=c.getContext('2d');x.drawImage(img,0,0,260,260);const p=x.getImageData(0,0,260,260).data;let n=0;for(let i=0;i<p.length;i+=4)if(p[i]+p[i+1]+p[i+2]>300)n++;return n;})).toBeGreaterThan(50);
  await hero.locator('img').screenshot({path:testInfo.outputPath('warden-portrait.png')});
- expect(await page.evaluate(()=>Object.keys(WARDEN_ACTOR.asset.clips).sort())).toEqual(['attack','attack2','bash','block','fall','hurt','idle','run','special','walk']);
+ expect(await page.evaluate(()=>Object.keys(WARDEN_ACTOR.asset.clips).sort())).toEqual(['attack','attack2','attack3','bash','block','fall','hurt','idle','run','special','walk']);
  await page.locator('#chars [data-go="menu"]').click();await page.locator('#mPlay').click();
  await expect.poll(()=>page.evaluate(()=>G.state)).toBe('play');
  await page.evaluate(()=>{G.noWaves=true;G.god=true;G.enemies=[];bannerT=0;$('banner').classList.remove('on');$('count').hidden=true;G.texts=[];G.p.face=0;G.p.moving=0;});
@@ -468,4 +468,29 @@ test('preview: warden special uses a unique one-shot spin and keeps progress acr
  expect(result.paused.time).toBeCloseTo(result.standing.time,6);
  expect(result.end.role).toBe('idle');expect(result.later.role).toBe('idle');
  await page.screenshot({path:testInfo.outputPath('warden-special-finished.png')});
+});
+
+test('preview: warden normal attacks cycle three heavy clips without movement restarting them',async({page},testInfo)=>{
+ test.setTimeout(90000);
+ await page.goto('/test/#netlocal',{waitUntil:'load'});
+ await expect.poll(()=>page.evaluate(()=>typeof window.__game),{timeout:45000}).toBe('object');
+ await page.evaluate(()=>window.__game.ready);
+ await page.evaluate(async()=>{S.char='reaper';S.chars.reaper=1;newRun();await wardenLoadModel();buildPlayer();});
+ await expect(page.locator('#menu')).not.toHaveClass(/boot/);
+ await page.locator('#mPlay').click();await expect.poll(()=>page.evaluate(()=>G.state)).toBe('play');
+ const result=await page.evaluate(()=>{
+  G.noWaves=true;G.god=true;G.enemies=[];G.pending=0;G.picks=[];const p=G.p,a=PM.warden,start=G.t,results=[];
+  const pose=(t,moving)=>{G.t=t;p.moving=moving;wardenPose(PM,p,'scythe',true,performance.now());};
+  for(let i=0;i<3;i++){
+   const t=start+i;p.swing=0;pose(t,0);fire(G.weapons[0],0);pose(t,0);const role=a.role;
+   pose(t+0.2,1);const first=a.upper[role].time;
+   pose(t+0.4,0);const after=a.actions[role].time;
+   results.push({role,first,after});pose(t+0.7,0);
+  }
+  G.state='paused';return {results,cd:WEP.scythe.cd,damage:WEP.scythe.dmg};
+ });
+ expect(result.results.map(x=>x.role)).toEqual(['attack','attack2','attack3']);
+ for(const r of result.results)expect(r.after).toBeGreaterThan(r.first);
+ expect(result.cd).toBe(0.85);expect(result.damage).toBe(30);
+ await page.screenshot({path:testInfo.outputPath('warden-heavy-attacks.png')});
 });

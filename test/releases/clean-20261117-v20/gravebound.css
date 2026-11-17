@@ -1,0 +1,8 @@
+.graveShop{margin:20px 0;padding:16px;border:1px solid #597765;border-radius:14px;background:linear-gradient(145deg,#182c25e8,#131b1ae8)}
+.graveShop>h2{color:#b8dbc1;font-size:19px}.graveShop>p{color:#b5c4b8;line-height:1.7;font-size:13px}
+.graveGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px;margin:12px 0 22px}
+.graveCard{position:relative;min-width:0}.graveCard .btn{min-height:44px;white-space:normal;line-height:1.5;margin-top:8px}
+.graveIcon{display:block;width:58px;height:58px;margin:10px auto;border:1px solid #738b75;border-radius:50%;padding:10px;background:radial-gradient(#426750,#15221b);box-shadow:inset 0 0 12px #0008;color:#d6d9b2}
+.graveIcon svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}
+.graveMeter{position:absolute;left:12px;bottom:calc(env(safe-area-inset-bottom) + 142px);padding:6px 10px;border:1px solid #6a9e7c;border-radius:16px;background:#10251fdb;color:#c0ebcb;font-size:12px;pointer-events:none;max-width:calc(100vw - 24px)}
+@media(max-height:500px){.graveMeter{bottom:108px;left:8px;font-size:10px}}
