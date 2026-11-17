@@ -67,27 +67,39 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-17T22:32:20.140Z.
-- مرجع العمل: [`97437f1ad1d5898ad273e29c7f0596e0e71498c4`](https://github.com/aa9986087-cyber/ashen-arena/commit/97437f1ad1d5898ad273e29c7f0596e0e71498c4).
-- آخر تعديل: تحميل ملف ضربات الزعماء في فحص المقبرة.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44190039659/attempts/1).
+- وقت التسجيل (UTC): 2026-11-17T22:55:50.243Z.
+- مرجع العمل: [`6f863804cb8cf72b1ee83c6caf4aa887a72cee55`](https://github.com/aa9986087-cyber/ashen-arena/commit/6f863804cb8cf72b1ee83c6caf4aa887a72cee55).
+- آخر تعديل: معاينة عملاق الشجرة العتيق لحارس الغابة في v26.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44193938700/attempts/1).
 - بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
 - مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
-- إصدار التجربة المسجل: `clean-20261117-v25`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
+- إصدار التجربة المسجل: `clean-20261117-v26`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`94f89e39e73c`: 1 ملفًا.
-- `tests/gravebound.test.mjs`
+مقارنةً بـ`e37203206bb4`: 250 ملفًا.
+- `docs/HANDOFF.md`
+- `test/addons/forest-guardian/LICENSE-ancient-tree.md`
+- `test/addons/forest-guardian/ancient-tree.glb`
+- `test/addons/forest-guardian/config.js`
+- `test/addons/forest-guardian/manifest.json`
+- `test/addons/forest-guardian/prepare-ancient-tree.py`
+- `test/index.html`
+- `test/modular-config.json`
+- `test/releases/clean-20261117-v26/app.js`
+- `test/releases/clean-20261117-v26/app.min.js`
+- `test/releases/clean-20261117-v26/assets/audio/duel/block0.mp3`
+- `test/releases/clean-20261117-v26/assets/audio/duel/block1.mp3`
+- وبقية 238 ملفًا في رابط commit أعلاه.
 
 ### أحدث خمس دفعات على main
 
+- 6f86380 معاينة عملاق الشجرة العتيق لحارس الغابة في v26
+- e372032 docs: تحديث آلي لملف التسليم
 - 97437f1 تحميل ملف ضربات الزعماء في فحص المقبرة
 - 94f89e3 docs: تحديث آلي لملف التسليم
 - 0a2aff5 تجربة v25 لضربات الزعماء الخاصة وتقوية الفردي
-- cc63f70 docs: تحديث آلي لملف التسليم
-- 217ca8d تجربة v24 لاتجاه حارس العهد مع عصا الحركة
 
 الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
