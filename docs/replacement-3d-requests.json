@@ -1,0 +1,38 @@
+{
+  "status": "not_started_billing_block",
+  "note": "No jobs were submitted. After the owner adds credits check account readiness, then retry these exact requests with the same keys. Rigging and animation remain a separate required step; output quality is unverified.",
+  "requests": [
+    {
+      "index": 0,
+      "submission_key": "ashen-oath-warden-20261117-3d-01",
+      "endpoint_id": "tripo3d/h3.1/text-to-3d",
+      "decision_id": "f75ce0ed-806d-4ed3-b271-5c9c086846cd",
+      "input": {
+        "prompt": "Full-body dark fantasy human Oath Warden game character, realistic stylized premium game art. Athletic adult male warrior in layered weathered steel plate armor, restrained antique brass edging, dark navy tabard and short split cloak, closed angular helmet with narrow visible eye slit. Strong readable heroic silhouette, articulated pauldrons, leather belts, armored gauntlets and boots. Neutral symmetrical A-pose, feet apart, elbows and hands separated from torso, open empty hands ready to grip a spear and shield later. Single character only, no weapons, no ground, no base. Detailed physically based metal and worn cloth textures. Human proportions with clear limbs and joints suitable for humanoid skeletal rigging. Front facing, head upright. Grim medieval fantasy, no science fiction.",
+        "negative_prompt": "background, pedestal, multiple characters, fused limbs, arms touching torso, held weapons, sphere body, blocks, cartoon, chibi, modern technology, text",
+        "face_limit": 30000,
+        "texture": true,
+        "pbr": true,
+        "texture_quality": "standard",
+        "geometry_quality": "standard",
+        "quad": false
+      }
+    },
+    {
+      "index": 1,
+      "submission_key": "ashen-crypt-king-20261117-3d-01",
+      "endpoint_id": "tripo3d/h3.1/text-to-3d",
+      "decision_id": "f75ce0ed-806d-4ed3-b271-5c9c086846cd",
+      "input": {
+        "prompt": "Full-body Crypt King dark fantasy humanoid boss, realistic stylized premium 3D game art. Towering broad-shouldered ancient armored king, heavy eroded dark steel plate over stone-like body, broken bronze crown integrated into helmet, deep hollow face with subtle pale amber eyes, heavy articulated pauldrons with stone funerary reliefs, torn charcoal waistcloth, armored boots and huge gauntlets. Regal menacing silhouette distinct from a forest creature. Neutral symmetrical A-pose, both arms and hands separated clearly from torso, legs apart, empty hands, no sword or props. Detailed PBR weathered armor and carved stone, readable anatomical joints for humanoid rigging. Single character only, no terrain or pedestal. No lava, no neon, no cartoon skull, no technology.",
+        "negative_prompt": "background, pedestal, multiple characters, fused limbs, arms touching torso, held weapons, sphere body, blocks, cartoon, chibi, modern technology, text",
+        "face_limit": 30000,
+        "texture": true,
+        "pbr": true,
+        "texture_quality": "standard",
+        "geometry_quality": "standard",
+        "quad": false
+      }
+    }
+  ]
+}
