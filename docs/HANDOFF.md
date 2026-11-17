@@ -25,34 +25,39 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-17T06:03:24.314Z.
-- مرجع العمل: [`5c68436fd64ad488d730091768da4452a82924a8`](https://github.com/aa9986087-cyber/ashen-arena/commit/5c68436fd64ad488d730091768da4452a82924a8).
-- آخر تعديل: حفظ نقطة التسليم تلقائيًا من Git ونتائج الفحوص.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44028187928/attempts/1).
+- وقت التسجيل (UTC): 2026-11-17T09:22:58.661Z.
+- مرجع العمل: [`1c0a6625aff048acabb57d33f599f40ce83fc75a`](https://github.com/aa9986087-cyber/ashen-arena/commit/1c0a6625aff048acabb57d33f599f40ce83fc75a).
+- آخر تعديل: تجربة عهود المقبرة: زعيم سابع وحاصد الأرواح والتدريب والآثار.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44054636158/attempts/1).
 - بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
 - مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
-- إصدار التجربة المسجل: `clean-20261117-v6`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
+- إصدار التجربة المسجل: `clean-20261117-v12`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`777aba861c7a`: 8 ملفًا.
-- `.github/workflows/game-pages.yml`
-- `AGENTS.md`
+مقارنةً بـ`ab6798e6a4ed`: 255 ملفًا.
 - `docs/HANDOFF.md`
 - `docs/PROJECT-MAP.md`
-- `docs/TESTING.md`
-- `tests/handoff.test.mjs`
-- `tools/check-workflow.mjs`
-- `tools/update-handoff.mjs`
+- `test/AGENTS.md`
+- `test/expansions/gravebound/README.md`
+- `test/expansions/gravebound/data.js`
+- `test/expansions/gravebound/gameplay.js`
+- `test/expansions/gravebound/models.js`
+- `test/expansions/gravebound/news.json`
+- `test/expansions/gravebound/style.css`
+- `test/expansions/gravebound/ui.js`
+- `test/index.html`
+- `test/modular-config.json`
+- وبقية 243 ملفًا في رابط commit أعلاه.
 
 ### أحدث خمس دفعات على main
 
+- 1c0a662 تجربة عهود المقبرة: زعيم سابع وحاصد الأرواح والتدريب والآثار
+- ab6798e docs: تحديث آلي لملف التسليم
 - 5c68436 حفظ نقطة التسليم تلقائيًا من Git ونتائج الفحوص
 - 777aba8 اعتماد مسار تطوير أسرع بأولوية الجوال وتسليم واضح
 - 48b0ba3 توثيق التحسينات في النشرة وإعلان إصلاح الشامان التجريبي
-- 6d8928b تجربة: إصلاح تراكم شفاء الشامان
-- 3d7d60e نشر قرار الإنصاف والتصحيح المحلي مرة واحدة
 
 الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
