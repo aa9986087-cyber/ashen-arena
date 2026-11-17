@@ -50,18 +50,18 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-17T20:51:23.677Z.
-- مرجع العمل: [`b13ef069fc392a2ce8f065cdb45b73bfcdeb3e42`](https://github.com/aa9986087-cyber/ashen-arena/commit/b13ef069fc392a2ce8f065cdb45b73bfcdeb3e42).
-- آخر تعديل: تجربة v19: حركة خاصة مستقلة للحارس بلا تكرار عند تبديل المشي.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44172999755/attempts/1).
+- وقت التسجيل (UTC): 2026-11-17T21:06:41.048Z.
+- مرجع العمل: [`f6296ba0bda2809718fe8692a86be86dd8667ec6`](https://github.com/aa9986087-cyber/ashen-arena/commit/f6296ba0bda2809718fe8692a86be86dd8667ec6).
+- آخر تعديل: تجربة v20: ثلاث ضربات سيف ثقيلة ومتنوعة لحارس العهد دون تغيير القتال.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44175479915/attempts/1).
 - بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
 - مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
-- إصدار التجربة المسجل: `clean-20261117-v19`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
+- إصدار التجربة المسجل: `clean-20261117-v20`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`65828c428d56`: 246 ملفًا.
+مقارنةً بـ`a09ae4b67d13`: 246 ملفًا.
 - `docs/HANDOFF.md`
 - `test/expansions/oath-warden/README.md`
 - `test/expansions/oath-warden/actor.js`
@@ -69,20 +69,20 @@
 - `test/expansions/oath-warden/prepare-actor.py`
 - `test/index.html`
 - `test/modular-config.json`
-- `test/releases/clean-20261117-v19/app.js`
-- `test/releases/clean-20261117-v19/app.min.js`
-- `test/releases/clean-20261117-v19/assets/audio/duel/block0.mp3`
-- `test/releases/clean-20261117-v19/assets/audio/duel/block1.mp3`
-- `test/releases/clean-20261117-v19/assets/audio/duel/block2.mp3`
+- `test/releases/clean-20261117-v20/app.js`
+- `test/releases/clean-20261117-v20/app.min.js`
+- `test/releases/clean-20261117-v20/assets/audio/duel/block0.mp3`
+- `test/releases/clean-20261117-v20/assets/audio/duel/block1.mp3`
+- `test/releases/clean-20261117-v20/assets/audio/duel/block2.mp3`
 - وبقية 234 ملفًا في رابط commit أعلاه.
 
 ### أحدث خمس دفعات على main
 
+- f6296ba تجربة v20: ثلاث ضربات سيف ثقيلة ومتنوعة لحارس العهد دون تغيير القتال
+- a09ae4b docs: تحديث آلي لملف التسليم
 - b13ef06 تجربة v19: حركة خاصة مستقلة للحارس بلا تكرار عند تبديل المشي
 - 65828c4 docs: تحديث آلي لملف التسليم
 - dbc2270 تجربة v18: حارس العهد بالموديل الأصلي وحركات السيف والدرع وقدرة الصد والقطع
-- 6c5b9de مسودة قدرة حارس العهد واختبارها وتوثيق تصريح المالك وعائق تنزيل الموديل
-- 6dd6433 حفظ بحث البدائل المجانية وتراخيصها وحدود جاهزية الحركة
 
 الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
