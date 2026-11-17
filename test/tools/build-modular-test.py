@@ -115,10 +115,12 @@ def patch(path, text):
     if GRAVEBOUND:
         text = gravebound_build.apply(path, text, replace_once)
         if path == 'js/data/news.js':
-            announcement = json.loads((TEST / 'expansions/gravebound/news.json').read_text())
-            # The pinned production snapshot may already contain the announcement on later builds.
-            if announcement['id'] not in text:
-                text = replace_once(text, 'const NEWS = [', 'const NEWS = [\n  ' + json.dumps(announcement, ensure_ascii=False) + ',', 'gravebound:news')
+            announcements = json.loads((TEST / 'expansions/gravebound/news.json').read_text())
+            if isinstance(announcements, dict): announcements = [announcements]
+            # Preserve preview bulletin history, newest first; pinned roots may already contain entries.
+            for announcement in reversed(announcements):
+                if announcement['id'] not in text:
+                    text = replace_once(text, 'const NEWS = [', 'const NEWS = [\n  ' + json.dumps(announcement, ensure_ascii=False) + ',', 'gravebound:news')
     return text
 
 html = git_text('index.html')

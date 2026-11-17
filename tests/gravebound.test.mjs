@@ -15,7 +15,9 @@ async function fixture() {
   Object.assign(g.context, { COOP: { on: false, host: true, hpMul: 1, cntMul: 1, bossMul: 1 },
     OBST: [], eSrc: 0, coopDmgF: () => 1, bossMesh: { visible: false }, GEO: { boss0: {} }, MUS: {}, CM: { el: null },
     parts: noop, text: noop, ring: noop, vfxKill: noop, shake: noop, cine: noop, banner: noop, vfxHit: noop,
-    vfxHeal: noop, vfxSparks: noop, enterArena: noop, buildPlayer: noop, setStage: noop });
+    vfxHeal: noop, vfxSparks: noop, vfxBolt: noop, r1:value=>Math.round(value*10)/10,
+    ASHEN_ADDONS:{queueMelee:fn=>fn()},
+    enterArena: noop, buildPlayer: noop, setStage: noop });
   g.node('bossbar').querySelector = () => ({ textContent: '' });
   for (const name of ['spawning', 'boss-ults', 'progression', 'update', 'enemy-ai'])
     new vm.Script(await fs.readFile(new URL(release + `js/game/${name}.js`, root), 'utf8')).runInContext(g.context);
@@ -66,7 +68,7 @@ graveTest('souls and ghosts are bounded; special consumes souls and shield expir
   assert.equal(g.run('graveState().barrier'), shield);
   g.run('G.t+=9;graveTick(0.05)');
   assert.equal(g.run('graveState().barrier'), 0);
-  g.run('graveTick(13)');
+  g.run('graveTick(15)');
   assert.equal(g.run('graveState().ghosts.length'), 0);
 });
 graveTest('real save/resume retains the run relic, resources and ghost lifetime; old abyss checkpoints migrate', async () => {
@@ -75,7 +77,7 @@ graveTest('real save/resume retains the run relic, resources and ghost lifetime;
   const snap = g.json('loadRun()');
   assert.equal(snap.grave.souls, 5); assert.equal(snap.grave.ghosts.length, 1);
   g.run(`G.state='menu';graveEquip('warden');resumeRun()`);
-  assert.deepEqual(g.json('[S.char,G.grave.relic,G.grave.rank,G.grave.souls,G.grave.ghosts[0].life]'), ['reaper','lantern',1,5,6]);
+  assert.deepEqual(g.json('[S.char,G.grave.relic,G.grave.rank,G.grave.souls,G.grave.ghosts[0].life]'), ['reaper','lantern',1,5,8]);
   g.run(`var old=loadRun();old.abyss=true;old.stage=6;delete old.grave;localStorage.setItem(RUN_KEY,JSON.stringify(old));resumeRun()`);
   assert.equal(g.run('STAGES[G.stage].abyss'), true);
 });
@@ -108,4 +110,53 @@ graveTest('preview backup round-trips but the actual production importer rejects
   assert.equal(prod.run('readBackup(code)'), null);
   prod.context.code = code.replace('AT1-','AS1-');
   assert.equal(prod.run('readBackup(code)'), null);
+});
+
+graveTest('reaper competes with the starter weapon and has useful untrained harvest and lasting ghost; other heroes keep their harvest', async () => {
+  const g = await fixture();
+  assert.ok(g.run('WEP.scythe.dmg/WEP.scythe.cd >= 0.9*WEP.sword.dmg/WEP.sword.cd'));
+  assert.ok(g.run('WEP.scythe.dmg/WEP.scythe.cd <= 1.15*WEP.sword.dmg/WEP.sword.cd'));
+  assert.ok(g.run('CHARS.reaper.hp>=105 && CHARS.reaper.hp<CHARS.knight.hp'));
+  g.run(`G.state='play';var target=spawn('grunt',0,2);target.hp=target.maxHp=10000;SPECIALS.reap.f(G.p,100)`);
+  const damage = 10000-g.run('target.hp');
+  assert.ok(damage >= 80 && damage <= 100);
+  g.run('G.t+=6.5;graveTick(6.5)');
+  assert.equal(g.run('G.grave.ghosts.length'),1);
+  assert.ok(g.run('G.shots[0].dmg')>=13);
+  g.run('graveTick(2)');
+  assert.equal(g.run('G.grave.ghosts.length'),0);
+  g.run(`S.char='knight';newRun();G.state='play';G.ups.soulcourt=1;var other=spawn('grunt',0,2);other.hp=other.maxHp=10000;graveRelease(100)`);
+  assert.equal(10000-g.run('other.hp'),60);
+});
+
+graveTest('reaper third landed scythe swing pulls safely and harvests; empty swings and other heroes do not trigger it', async () => {
+  const g=await fixture();
+  g.run(`G.state='play';G.p.crit=0;var w={id:'scythe',lvl:1};fire(w,0);fire(w,0);fire(w,0)`);
+  assert.equal(g.run('G.grave.scytheCount'),0);
+  assert.equal(g.run('G.grave.souls'),0);
+  g.run(`var victim=spawn('grunt',3.7,0);victim.hp=victim.maxHp=10000;fire(w,0);fire(w,0)`);
+  assert.equal(g.run('G.grave.scytheCount'),2);
+  assert.equal(g.run('victim.x'),3.7);
+  g.run('fire(w,0)');
+  assert.equal(g.run('G.grave.scytheCount'),0);
+  assert.ok(g.run('victim.x')<3.7);
+  assert.ok(g.run('Math.hypot(victim.x,victim.z)>=2.4+victim.r-1e-8'));
+  assert.ok(g.run('G.grave.souls')>0);
+  g.run(`S.char='knight';newRun();G.state='play';G.p.crit=0;var other=spawn('grunt',3.7,0);other.hp=10000;fire(w,0);fire(w,0);fire(w,0)`);
+  assert.equal(g.run('other.x'),3.7);
+  assert.equal(g.run('G.grave.souls'),0);
+});
+
+graveTest('boss cannot be pulled and the third-swing meter survives actual save/resume', async () => {
+  const g=await fixture();
+  g.run(`G.state='play';G.p.crit=0;var boss=makeBoss(6,3.7,0);var w={id:'scythe',lvl:1};fire(w,0);fire(w,0);saveRun();resumeRun();G.state='play';G.bossOn=false;G.enemies=[boss];fire(w,0)`);
+  assert.equal(g.run('boss.x'),3.7);
+  assert.equal(g.run('G.grave.scytheCount'),0);
+  assert.ok(g.run('G.grave.lastSweepAt')>=0);
+});
+
+graveTest('obstacle correction cannot push a harvested enemy into the player', async () => {
+  const g=await fixture();
+  g.run(`G.state='play';var victim=spawn('grunt',5.5,0);victim.hp=10000;OBST.push({x:3.5,z:0,r:1});G.grave.scytheCount=2;graveScytheSweep({lvl:1},0)`);
+  assert.ok(g.run('Math.hypot(victim.x,victim.z)>=2.4+victim.r'));
 });

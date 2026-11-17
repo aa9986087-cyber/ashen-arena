@@ -1,6 +1,7 @@
 'use strict';
 function graveState() {
   if (!G.grave) G.grave = { souls: 0, barrier: 0, barrierUntil: 0, ghosts: [], eliteAt: -10, bossSoulAt: -10,
+    scytheCount: 0, lastSweepAt: -10,
     relic: S.grave?.active || '', rank: S.grave?.relics?.[S.grave?.active] || 0 };
   return G.grave;
 }
@@ -16,11 +17,42 @@ function graveCollect(amount) {
   const g = graveState();
   g.souls = Math.min(graveCapacity(), g.souls + amount);
 }
+let graveScytheContext = null;
+function graveScytheSweep(w, ang) {
+  const g = graveState(), p = G.p;
+  g.scytheCount = (g.scytheCount + 1) % 3;
+  if (g.scytheCount || G.t - g.lastSweepAt < 0.65) return;
+  g.lastSweepAt = G.t;
+  const R = 5.5 * p.area, arc = 2.8, points = [];
+  for (let i=0;i<=8;i++) {
+    const a = ang-arc/2+arc*i/8;
+    points.push([p.x+Math.cos(a)*R,0.55,p.z+Math.sin(a)*R]);
+  }
+  vfxBolt(points,{w:0.35,life:0.3,rough:0.08,col:[0.35,1.15,0.72]});
+  let caught = 0;
+  eachInRadius(p.x,p.z,R,e=>{
+    const dx=e.x-p.x,dz=e.z-p.z,d=Math.hypot(dx,dz);
+    if(angDiff(Math.atan2(dz,dx),ang)>arc/2)return;
+    if(!e.boss) {
+      const distance=Math.max(2.4+e.r,d-2.2);
+      if(distance<d) {
+        const oldX=e.x,oldZ=e.z;
+        e.x=p.x+dx/d*distance;e.z=p.z+dz/d*distance;e.kx=e.kz=0;pushOutOfObstacles(e,e.r*0.8);
+        if(Math.hypot(e.x-p.x,e.z-p.z)<2.4+e.r){e.x=oldX;e.z=oldZ;}
+      }
+    }
+    hit(e,(8+3*w.lvl)*p.dmgMul,{aoe:1,quiet:1,noCrit:1,grave:1});
+    caught++;
+  });
+  graveCollect(Math.max(1,Math.min(3,caught)));
+  text(p.x,p.z-1,'اقتلاع الروح','#8ae8c1',true);
+}
 function graveRelease(power) {
   if (!graveEnabled()) return;
   const g = graveState(), souls = Math.min(graveCapacity(), g.souls), p = G.p;
   g.souls = 0;
-  const R = 5.2 * p.area, damage = power * (0.6 + souls * 0.055);
+  const reaper = S.char === 'reaper';
+  const R = (reaper ? 6 : 5.2) * p.area, damage = power * ((reaper ? 0.85 : 0.6) + souls * 0.055);
   ring(p.x, p.z, 0.5, R, 0.55, [0.4, 1.05, 0.78]);
   eachInRadius(p.x, p.z, R, e => {
     hit(e, damage, { aoe: 1, quiet: 1, noCrit: 1 });
@@ -37,7 +69,7 @@ function graveRelease(power) {
   const count = Math.min(3, (S.char === 'reaper' ? 1 : 0) + (souls && level ? Math.ceil(level / 2) : 0));
   for (let i = 0; i < count; i++) {
     if (g.ghosts.length >= 3) g.ghosts.shift();
-    g.ghosts.push({ life: 6 + 2 * level, cd: 0.3 + i * 0.12, x: p.x, z: p.z, a: i * TAU / count });
+    g.ghosts.push({ life: (reaper ? 8 : 6) + 2 * level, cd: 0.3 + i * 0.12, x: p.x, z: p.z, a: i * TAU / count });
   }
   text(p.x, p.z - 1, 'حصاد ' + souls + ' روح', '#8ae8c1', true);
 }
@@ -60,7 +92,7 @@ function graveTick(dt) {
       ghost.cd = 0.85;
       const e = nearest(ghost.x, ghost.z, 12);
       if (e) shot(ghost.x, ghost.z, Math.atan2(e.z - ghost.z, e.x - ghost.x), {
-        spd: 15, dmg: (10 + 5 * (G.ups.soulcourt || 0)) * p.dmgMul,
+        spd: 15, dmg: ((S.char === 'reaper' ? 14 : 10) + 5 * (G.ups.soulcourt || 0)) * p.dmgMul,
         size: 0.2, range: 13, homing: 1, pierce: 0, kind: 2, col: [0.4, 1.1, 0.8] });
     }
   }
@@ -133,9 +165,18 @@ const graveBaseHit = hit;
 hit = function (e, dmg, options) {
   const alive = !e.dead, hp = e.hp;
   graveBaseHit(e, dmg, options);
+  if (graveScytheContext?.game === G && alive && e.hp < hp && !options?.grave) graveScytheContext.landed = true;
   if (alive && e.boss && e.hp < hp && !options?.grave && G.t - graveState().bossSoulAt >= 2) {
     graveState().bossSoulAt = G.t; graveCollect(1);
   }
+};
+const graveBaseFire = fire;
+fire = function (w, ang) {
+  if (S.char !== 'reaper' || w.id !== 'scythe' || G.state !== 'play' || G.p.dead || choosingCards()) return graveBaseFire(w,ang);
+  const previous=graveScytheContext, attack={game:G,landed:false};
+  graveScytheContext=attack;
+  try { graveBaseFire(w,ang); } finally { graveScytheContext=previous; }
+  if(attack.landed)graveScytheSweep(w,ang);
 };
 const graveBaseUpdate = update;
 update = function (dt) {
@@ -156,6 +197,7 @@ makeBoss = function (kind, x, z) {
 function graveSaveRun() {
   const g = graveState();
   return { souls: g.souls, barrier: g.barrier, barrierUntil: g.barrierUntil, relic: g.relic, rank: g.rank,
+    scytheCount: g.scytheCount, lastSweepAt: g.lastSweepAt,
     eliteAt: g.eliteAt, bossSoulAt: g.bossSoulAt, ghosts: g.ghosts.map(q => ({ ...q })) };
 }
 function graveRestoreRun(raw) {
@@ -167,8 +209,10 @@ function graveRestoreRun(raw) {
   g.barrier = number(raw.barrier, G.p.maxHp * 0.25); g.barrierUntil = number(raw.barrierUntil, G.t + 8);
   g.eliteAt = Number.isFinite(raw.eliteAt) ? raw.eliteAt : G.t;
   g.bossSoulAt = Number.isFinite(raw.bossSoulAt) ? raw.bossSoulAt : G.t;
+  g.scytheCount = number(raw.scytheCount,2) | 0;
+  g.lastSweepAt = Number.isFinite(raw.lastSweepAt) ? clamp(raw.lastSweepAt,-10,G.t) : G.t;
   g.ghosts = (Array.isArray(raw.ghosts) ? raw.ghosts : []).slice(0, 3).map(q => ({
-    x: G.p.x, z: G.p.z, a: number(q?.a, TAU), life: number(q?.life, 12), cd: number(q?.cd, 1),
+    x: G.p.x, z: G.p.z, a: number(q?.a, TAU), life: number(q?.life, (S.char === 'reaper' ? 8 : 6) + 2 * (G.ups.soulcourt || 0)), cd: number(q?.cd, 1),
   }));
   recalc();
 }

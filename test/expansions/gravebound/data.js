@@ -13,10 +13,10 @@ const GRAVE_RELICS = {
 };
 const GRAVE_TRAIN_COST = [1200, 2400, 4200], GRAVE_TRAIN_SP = [3, 6, 10];
 const GRAVE_RELIC_COST = [1800, 3600, 6500], GRAVE_RELIC_SP = [2, 4, 7];
-CHARS.reaper = { n: 'حاصد الأرواح', i: '💀', d: 'يجمع الأرواح، ويصرفها بضربة منجل وموكب طيفي. يبدأ بمنجل العهود.',
-  hp: 98, spd: 7.3, wep: 'scythe', cost: 6500, col: 0x263b39, cape: 0x152324, dmg: 1.02, crit: 0.05, sp: 'reap' };
+CHARS.reaper = { n: 'حاصد الأرواح', i: '💀', d: 'كل ثالث ضربة منجل ناجحة تقتلع الأرواح وتسحب الوحوش لمسافة آمنة. يصرف الأرواح بالحصاد والموكب الطيفي.',
+  hp: 110, spd: 7.3, wep: 'scythe', cost: 6500, col: 0x263b39, cape: 0x152324, dmg: 1.02, crit: 0.05, sp: 'reap' };
 WEP.scythe = { ...WEP.sword, n: 'منجل العهود', i: '⚰️', d: 'قوس قطع واسع بإيقاع ثقيل، مميز لحاصد الأرواح',
-  dmg: 25, cd: 1.05, range: 3.1, cost: 0, evo: ['نصل العهد المنقوش', 'منجل الأرواح المتوهج'] };
+  dmg: 30, cd: 0.85, range: 3.5, arc: [2.7, 3.8, TAU], kb: 1.8, cost: 0, evo: ['نصل العهد المنقوش', 'منجل الأرواح المتوهج'] };
 EVO.scythe = { up: 'soulvessel', n: 'منجل العبور', i: '🌙', d: 'ضرر +50%، وموجة المنجل أوسع عند التطور' };
 for (const [id, u] of Object.entries(GRAVE_TRAINING)) UP[id] = { ...u, max: 3, off: 1 };
 const gravePath = { id: 'gravebound', n: 'العهد', i: '🌙', steps: Object.keys(GRAVE_TRAINING) };
@@ -29,7 +29,7 @@ STAGES.splice(STAGES.findIndex(s => s.abyss), 0, {
 BOSS_ULTS.push({ n: 'مسيرة القبور', col: [0.55, 1.05, 0.75], f() {} });
 TAUNTS[0] = 'سبعة زعماء طاحوا، وباقي الهاوية. {k} عدو… كم تقدر تصمد أكثر؟';
 SPECIALS.reap = { n: 'حصاد العهود', i: '🌙', cd: 17,
-  d: 'قوس حصاد حولك يقوى بالأرواح المخزنة، ويستدعي روحًا تقاتل بجانبك 6 ثوانٍ.', f(p, power) { graveRelease(power); } };
+  d: 'قوس حصاد حولك يقوى بالأرواح المخزنة، ويستدعي روحًا تقاتل بجانبك 8 ثوانٍ.', f(p, power) { graveRelease(power); } };
 
 function graveProfile() {
   const old = S.grave && typeof S.grave === 'object' ? S.grave : {};

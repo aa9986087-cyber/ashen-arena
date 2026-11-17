@@ -156,6 +156,13 @@ for (let i = 0; i < 3; i++) {
   g.visible = false; scene.add(g); GRAVE_SPIRITS.push(g);
 }
 const graveBaseRender = render;
+const graveBasePoseRig = poseRig;
+poseRig = function (R,p,wepId,playing,now) {
+  graveBasePoseRig(R,p,wepId,playing,now);
+  if(R !== PM || R.char !== 'reaper' || !playing || wepId !== 'scythe' || !G.grave)return;
+  const t=G.t-G.grave.lastSweepAt;
+  if(t>=0&&t<0.3) {R.aR.rotation.z=-1.5+3*t/0.3;R.aL.rotation.x=-0.65;}
+};
 render = function (dt, now) {
   const playing = G && ['play', 'cards', 'paused', 'count', 'ending'].includes(G.state);
   if (graveBossModel && (!playing || !G.boss || G.boss.kind !== 6 || G.boss.dead)) graveBossModel.visible = false;

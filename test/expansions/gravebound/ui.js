@@ -64,6 +64,8 @@ function graveMeter() {
   graveHud.hidden = !on;
   if (!on) return;
   const g = graveState();
-  const value = 'الأرواح ' + Math.floor(g.souls) + ' من ' + graveCapacity() + (g.barrier > 0 ? ' · حاجز ' + Math.ceil(g.barrier) : '');
+  const value = 'الأرواح ' + Math.floor(g.souls) + ' من ' + graveCapacity() +
+    (S.char === 'reaper' ? ' · اقتلاع ' + g.scytheCount + ' من 3' : '') +
+    (g.barrier > 0 ? ' · حاجز ' + Math.ceil(g.barrier) : '');
   if (value !== graveHudText) { graveHud.textContent = value; graveHudText = value; }
 }
