@@ -16,6 +16,15 @@
       "bytes": 2177132,
       "sourcePath": "test/assets/models/overhaul/guardian-lite.glb",
       "sourceRevision": "c0c1701f7c35abc8766c0fd9bdac61417bb524d5"
+    },
+    "ancient-tree.glb": {
+      "sha256": "50de25741f45dcbde98867354dbc0d2757b5a684aac9983ed5490df45599bd89",
+      "bytes": 1477716,
+      "sourcePath": "Sketchfab a5dbf31a53f34fc6952b6c9b38341151 original FBX",
+      "license": "CC BY 4.0",
+      "optIn": "?forest=ancient",
+      "triangles": 17969,
+      "textureEdge": 1024
     }
   },
   "dependencies": [
@@ -28,8 +37,8 @@
   "scope": "forest boss kind 0 body only; baseline aura/HUD/cinematic retained",
   "code": {
     "config.js": {
-      "sha256": "af217013ee119a6d60b9db99fe7139a71a610de9e438beb74eb0016984cd44cc",
-      "bytes": 854
+      "sha256": "af46ccd885edd3d1a3719be17b5fe076ed3e075c43426f8a384a666fe16924eb",
+      "bytes": 1258
     }
   },
   "defaultEnabled": false

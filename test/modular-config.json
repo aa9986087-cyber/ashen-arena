@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "release": "clean-20261117-v25",
+  "release": "clean-20261117-v26",
   "baseRevision": "ab6798e6a4ed2cfd7f71a77e0e00f10505d393d3",
   "addonSourceRevision": "c0c1701",
   "enabledAddons": [
@@ -8,7 +8,7 @@
     "ranger",
     "forest-guardian"
   ],
-  "notes": "سبع ضربات خاصة للزعماء وتقوية تدريجية في مراحل الفردي.",
+  "notes": "حارس الغابة: تجربة عملاق الشجرة العتيق بالاختيار forest=ancient.",
   "enabledExpansions": [
     "gravebound",
     "boss-specials"

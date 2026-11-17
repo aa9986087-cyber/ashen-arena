@@ -639,3 +639,65 @@ test('preview: seven boss specials warn, animate, hit on cue and leave ground ma
   }
   await page.screenshot({ path: testInfo.outputPath('boss-special-impact.png') });
 });
+
+test('preview: ancient forest guardian raises its arms and slams on the root warning clock', async ({ page }, testInfo) => {
+  test.skip(release !== 'clean-20261117-v26', 'The ancient tree review asset is not in this build.');
+  test.setTimeout(90000);
+  const loads = [];
+  page.on('request', request => {
+    if (/\/forest-guardian\/[^/?]+\.glb/.test(request.url())) loads.push(request.url());
+  });
+  await page.goto('/test/?forest=ancient#lab', { waitUntil: 'load' });
+  await expect.poll(() => page.evaluate(() => typeof window.__game), { timeout: 45000 }).toBe('object');
+  await page.evaluate(() => window.__game.ready);
+  const selection = await page.evaluate(() => ({
+    alternative: ACTOR_CONFIG.guardian.file.endsWith('/ancient-tree.glb'),
+    sameHeight: ACTOR_CONFIG.guardian.height === null,
+  }));
+  expect(selection.alternative).toBe(true);
+  expect(selection.sameHeight).toBe(true);
+  expect(loads).toEqual([]);
+  await page.locator('#mLab').tap();
+  await page.locator('#labBtn').tap();
+  await page.locator('#labBoss').getByRole('button', { name: 'حارس الغابة' }).tap();
+  await expect.poll(() => page.evaluate(() => ACTOR_MODELS.diagnostics().guardian?.clips.special), {
+    timeout: 20000,
+  }).toBe('rootSlam');
+
+  const result = await page.evaluate(() => {
+    bossIntroEnd();
+    const boss = G.boss, p = G.p;
+    G.enemies = [boss];
+    Object.assign(boss, { x: p.x, z: p.z - 6, st: 0, bossSpecialCd: 0 });
+    const step = 1 / 60;
+    update(step);
+    const measure = () => {
+      render(0, performance.now());
+      const body = scene.getObjectByName('ashenActor-guardian');
+      const skinned = body.getObjectByProperty('isSkinnedMesh', true);
+      const hand = skinned.skeleton.bones.find(bone => bone.name.startsWith('Hand') && bone.name.endsWith('R'));
+      const hips = skinned.skeleton.bones.find(bone => bone.name === 'Hips');
+      return hand.getWorldPosition(new THREE.Vector3()).y - hips.getWorldPosition(new THREE.Vector3()).y;
+    };
+    const armed = measure();
+    while (boss.bossSpecial.elapsed < .92) update(step);
+    const raised = measure();
+    const warningsBeforeHit = G.zones.filter(z => z.kind === 'boss-special').length;
+    while (boss.bossSpecial.elapsed < 1.05) update(step);
+    const landed = measure();
+    const marks = bossImpactScar.count;
+    const clock = boss.bossSpecial.elapsed;
+    G.state = 'paused';
+    const paused = measure();
+    return { armed, raised, landed, paused, warningsBeforeHit, marks, clock };
+  });
+  expect(loads).toHaveLength(1);
+  expect(loads[0]).toContain('/ancient-tree.glb');
+  expect(result.raised - result.armed).toBeGreaterThan(1.5);
+  expect(result.raised - result.landed).toBeGreaterThan(1);
+  expect(result.paused).toBeCloseTo(result.landed, 4);
+  expect(result.warningsBeforeHit).toBeGreaterThan(0);
+  expect(result.marks).toBeGreaterThan(0);
+  expect(result.clock).toBeLessThan(1.08);
+  await page.screenshot({ path: testInfo.outputPath('ancient-tree-root-slam.png') });
+});

@@ -40,9 +40,26 @@ def apply(path, text, replace):
 
 
 def apply_guardian(text, replace):
-    # The forest addon remains independent; the optional pose is attached only in the built preview.
-    return replace(text, '    // Preserve original aura/bar in renderer/HUD;',
-                   '    poseBossSpecial(a.g, e);\n    // Preserve original aura/bar in renderer/HUD;', 'boss-specials:guardian')
+    text = replace(text, "    hurt: ['hurt'", "    special: ['rootslam'],\n    hurt: ['hurt'", 'boss-specials:clip role')
+    animate = "    animate(a, s, moving ? (e.st === 2 ? 'run' : 'walk') : 'idle', e.frz > 0 ? 0 : dt, Math.max(0.08, e.stT || 0.5), 0);"
+    return replace(text, animate, '''    const special = e.bossSpecial && a.actions.special;
+    if (special) {
+      if (a.role !== 'special') {
+        a.mixer.stopAllAction();
+        a.current = null;
+        change(a, 'special');
+      }
+      // A terrain warning and the skeletal slam share the same simulation clock.
+      special.time = Math.min(e.bossSpecial.elapsed, special.getClip().duration - 0.001);
+      a.mixer.update(0);
+    } else {
+      if (a.role === 'special') {
+        a.current.stop();
+        a.current = a.role = null;
+      }
+      animate(a, s, moving ? (e.st === 2 ? 'run' : 'walk') : 'idle', e.frz > 0 ? 0 : dt, Math.max(0.08, e.stT || 0.5), 0);
+      poseBossSpecial(a.g, e);
+    }''', 'boss-specials:guardian')
 
 
 def apply_grave_model(text, replace):

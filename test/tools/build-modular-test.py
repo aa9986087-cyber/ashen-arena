@@ -163,7 +163,7 @@ for addon in addons:
         if f.exists(): config_code.append(f.read_text())
     code = (TEST / 'addons' / addon / 'config.js').read_text()
     # Preserve standalone configs and adapt only the generated bundle to its release directory.
-    for asset in ['model.glb', 'portrait.jpg']:
+    for asset in ['model.glb', 'portrait.jpg', 'ancient-tree.glb']:
         code = code.replace("new URL('./" + asset + "', script.src)", "new URL('../../addons/" + addon + "/" + asset + "', script.src)")
     config_code.append(code)
 extra = '\n;\n'.join(config_code)
