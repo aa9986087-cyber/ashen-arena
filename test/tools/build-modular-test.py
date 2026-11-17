@@ -5,11 +5,18 @@ Usage: python3 test/tools/build-modular-test.py
 Change modular-config.json release before a later delivery to invalidate mobile caches.
 """
 from pathlib import Path
-import hashlib, json, re, shutil, subprocess, tempfile
+import hashlib, json, re, shutil, subprocess, tempfile, importlib.util
 
 ROOT = Path(__file__).resolve().parents[2]
 TEST = ROOT / 'test'
 CFG = json.loads((TEST / 'modular-config.json').read_text())
+GRAVEBOUND = 'gravebound' in CFG.get('enabledExpansions', [])
+if any(name != 'gravebound' for name in CFG.get('enabledExpansions', [])):
+    raise SystemExit('Unknown expansion in enabledExpansions')
+if GRAVEBOUND:
+    spec = importlib.util.spec_from_file_location('gravebound_build', TEST / 'tools' / 'gravebound-build.py')
+    gravebound_build = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gravebound_build)
 RELEASE = CFG['release']
 if not re.fullmatch(r'clean-[a-zA-Z0-9-]+', RELEASE):
     raise SystemExit('Invalid release id')
@@ -105,6 +112,13 @@ def patch(path, text):
         text = text[:begin] + '  if (d.melee) {\n    ASHEN_ADDONS.queueMelee(() => {\n      AU.play(w.id);' + original + '\n    });\n' + text[end:]
         text = replace_once(text, '  p.swing = 1;\n  AU.play(w.id);',
             "  p.swing = 1;\n  p.swingT = (p.swingT || 0) + 1;\n  if (typeof actorNotify === 'function') actorNotify(p, 'attack');\n  if (!d.melee) AU.play(w.id);", path)
+    if GRAVEBOUND:
+        text = gravebound_build.apply(path, text, replace_once)
+        if path == 'js/data/news.js':
+            announcement = json.loads((TEST / 'expansions/gravebound/news.json').read_text())
+            # The pinned production snapshot may already contain the announcement on later builds.
+            if announcement['id'] not in text:
+                text = replace_once(text, 'const NEWS = [', 'const NEWS = [\n  ' + json.dumps(announcement, ensure_ascii=False) + ',', 'gravebound:news')
     return text
 
 html = git_text('index.html')
@@ -144,6 +158,10 @@ extra = '\n;\n'.join(config_code)
 extra += '\n;\n' + (TEST / 'addons' / 'shared' / 'actor-runtime.js').read_text()
 extra += '\n;\n' + (TEST / 'tools' / 'modular-runtime' / 'hooks.js').read_text()
 extra += '\n;\n' + (TEST / 'tools' / 'modular-runtime' / 'shaman-healing.js').read_text()
+if GRAVEBOUND:
+    for filename in ['data.js', 'gameplay.js', 'models.js', 'ui.js']:
+        source = TEST / 'expansions' / 'gravebound' / filename
+        extra += '\n;\n/* gravebound/' + filename + ' */\n' + source.read_text()
 parts = [preamble]
 for match in SCRIPT.finditer(html):
     src = match.group(1).split('?', 1)[0]
@@ -155,12 +173,18 @@ for match in SCRIPT.finditer(html):
 # minify without top-level mangling: all inline event/global references remain callable.
 subprocess.run(['npx', '--yes', 'terser@5', str(OUT / 'app.js'), '--compress', 'passes=2', '--mangle', '--keep-fnames', '--comments', 'false', '--output', str(OUT / 'app.min.js')], cwd=ROOT, check=True)
 html = SCRIPT.sub('', html)
+if GRAVEBOUND:
+    (OUT / 'gravebound.css').write_text((TEST / 'expansions/gravebound/style.css').read_text())
+    html = html.replace('</head>', f'<link rel="stylesheet" href="gravebound.css?v={RELEASE}">\n</head>')
 html = html.replace('<head>', '<head>\n    <meta name="robots" content="noindex, nofollow">\n    <meta http-equiv="Content-Security-Policy" content="connect-src \'self\' data: blob:">', 1)
 html = re.sub(r'href="(css/[^"?]+)(?:\?[^\"]*)?"', lambda m: f'href="{m.group(1)}?v={RELEASE}"', html)
 html = html.replace('</body>', f'    <script src="vendor.js?v={RELEASE}"></script>\n    <script src="app.min.js?v={RELEASE}"></script>\n  </body>')
 html = '\n'.join(line.rstrip() for line in html.splitlines()) + '\n'
 (OUT / 'index.html').write_text(html)
 manifest = {**CFG, 'baseRevision': REV, 'baseHashes': source_hashes, 'sourceKind': 'production-root', 'legacySourcesUsed': False}
+if GRAVEBOUND:
+    manifest['expansionHashes'] = {str(p.relative_to(TEST)): hashlib.sha256(p.read_bytes()).hexdigest()
+        for p in sorted((TEST / 'expansions' / 'gravebound').iterdir()) if p.suffix in ['.js', '.css', '.json']}
 (OUT / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 # Keep the previously served page, but never keep editing its sources.
 archive = TEST / 'archive' / 'pre-modular-index.html'

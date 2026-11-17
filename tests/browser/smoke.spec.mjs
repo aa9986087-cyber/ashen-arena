@@ -9,7 +9,7 @@ import { CDN_DIR, validateFixtures } from '../helpers/cdn-fixtures.mjs';
 const rules = await globals();
 const latestNews = rules.run('NEWS[0]?.id');
 const testFiles = fileURLToPath(new URL('../../test/',import.meta.url));
-const { release } = JSON.parse(await fs.readFile(path.join(testFiles, 'modular-config.json'), 'utf8'));
+const { release, enabledExpansions = [] } = JSON.parse(await fs.readFile(path.join(testFiles, 'modular-config.json'), 'utf8'));
 const previewLatestNews = runInNewContext((await fs.readFile(path.join(testFiles, 'releases', release, 'js/data/news.js'), 'utf8')) + '\nNEWS[0]?.id');
 const fixtureProfile = { ...rules.json('defSave()'), name: 'Smoke-local', newsSeen: latestNews };
 // Low quality is an existing user setting, not a renderer replacement. Keep WebGL, actual main/frame/update.
@@ -43,6 +43,7 @@ const test = base.extend({
         // A fresh combat profile avoids the optional U5 level card interrupting this scenario.
         profile.tree = {};
         profile.perm = {};
+        if (testInfo.title.includes('gravebound')) { profile.coins = 60000; profile.sp = 150; }
       }
       // Routes installed before navigation; no Supabase request or write can reach any production host.
       await context.route('**/*', async route => {
@@ -320,4 +321,74 @@ test('preview: overlapping shamans remain killable in a long solo run and after 
   await expect.poll(()=>page.evaluate(()=>G.state),{timeout:10000}).toBe('play');
   expect((await sustain()).dead).toBe(true);
   expect(await page.evaluate(()=>renderer.info.render.calls)).toBeGreaterThan(0);
+});
+
+test('preview: gravebound purchases, reaper touch special, save/resume and seventh boss use the real bundle', async ({page}, testInfo) => {
+  test.skip(!enabledExpansions.includes('gravebound'), 'Gravebound is disabled in this preview configuration.');
+  test.setTimeout(180000);
+  await page.goto('/test/#netlocal', {waitUntil:'load'});
+  await expect.poll(()=>page.evaluate(()=>typeof window.__game), {timeout:45000}).toBe('object');
+  await page.evaluate(()=>window.__game.ready);
+  await expect(page.locator('#menu')).toBeVisible();
+  await expect(page.locator('#menu')).not.toHaveClass(/boot/);
+  await page.locator('#menu [data-go="chars"]').click();
+  const hero = page.locator('#charGrid .item').filter({has:page.locator('img[alt="حاصد الأرواح"]')});
+  await expect(hero.locator('img')).toHaveAttribute('src', /^data:image\/jpeg/);
+  expect(await hero.locator('img').evaluate(img=>{
+    const c=document.createElement('canvas');c.width=c.height=220;const x=c.getContext('2d');x.drawImage(img,0,0,220,220);
+    const p=x.getImageData(0,0,220,220).data;let bright=0;for(let i=0;i<p.length;i+=4)if(p[i]+p[i+1]+p[i+2]>280)bright++;
+    return bright;
+  })).toBeGreaterThan(30);
+  await hero.locator('img').screenshot({path:testInfo.outputPath('reaper-portrait.png')});
+  await hero.getByRole('button', {name:/افتح/}).click();
+  expect(await page.evaluate(()=>S.char)).toBe('reaper');
+  // Existing achievements may reward this veteran profile when a new hero is bought.
+  const funds = await page.evaluate(()=>[S.coins,S.sp]);
+  await page.locator('#chars [data-go="menu"]').click();
+  await page.locator('#menu [data-go="shop"]').click();
+  await page.locator('#graveDemo').click();
+  await expect(page.locator('#graveDemo')).toHaveCount(0);
+  for (const id of ['soulvessel','soulcourt','soulguard','lantern']) {
+    await page.locator(`#graveShop [data-grave="${id}"]`).getByRole('button', {name:/طوّر/}).click();
+  }
+  expect(await page.evaluate(()=>[S.coins,S.sp,S.grave.active])).toEqual([funds[0]+25000-5400,funds[1]+50-11,'lantern']);
+  await page.locator('#shop [data-go="menu"]').click();
+  await page.locator('#mPlay').click();
+  await expect.poll(()=>page.evaluate(()=>G.state)).toBe('play');
+  await page.evaluate(()=>{
+    G.noWaves=true;G.god=true;G.enemies=[];G.ups={soulcourt:1,soulguard:1,soulvessel:1};recalc();
+    for(let i=0;i<6;i++){const e=spawn('grunt',G.p.x+1,G.p.z);e.hp=1;hit(e,10,{quiet:1,noCrit:1});}
+    G.picks=[];G.pending=0;
+  });
+  const start = await page.evaluate(()=>({x:G.p.x,z:G.p.z}));
+  if (testInfo.project.name==='mobile') {
+    const cdp=await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:120,y:620,id:1}]});
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:180,y:620,id:1}]});
+    await expect.poll(()=>page.evaluate(s=>Math.hypot(G.p.x-s.x,G.p.z-s.z),start)).toBeGreaterThan(0.1);
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await cdp.detach();
+    await page.locator('#bSpec').tap();
+  } else { await page.keyboard.press('KeyQ'); }
+  expect(await page.evaluate(()=>G.grave.ghosts.length)).toBe(2);
+  await expect(page.locator('#graveMeter')).toContainText('الأرواح');
+  expect(await page.evaluate(()=>PM.char==='reaper'&&PM.g.children.length>15&&renderer.info.render.calls>0)).toBe(true);
+  await page.evaluate(()=>graveCollect(5));
+  await page.evaluate(()=>{bannerT=0;$('banner').classList.remove('on');G.texts=[];});
+  await page.screenshot({path:testInfo.outputPath('grave-reaper.png')});
+  await page.locator('#pauseBtn').click();await page.locator('#pSave').click();
+  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ashen_arena_modular_test_run_v1')));
+  expect(saved.char).toBe('reaper');expect(saved.grave.souls).toBe(5);expect(saved.grave.relic).toBe('lantern');
+  await page.locator('#mResume').click();
+  await expect.poll(()=>page.evaluate(()=>G.state),{timeout:15000}).toBe('play');
+  expect(await page.evaluate(()=>G.grave.relic)).toBe('lantern');
+  await page.evaluate(()=>{G.god=true;G.noWaves=true;G.enemies=[];G.picks=[];G.pending=0;G.stage=5;nextStage();spawnBoss();});
+  await expect.poll(()=>page.evaluate(()=>CINE.on),{timeout:45000}).toBe(false);
+  await expect(page.locator('#bossbar')).toContainText('حفّار القبور');
+  expect(await page.evaluate(()=>G.stage===6&&G.boss.kind===6&&graveBossModel.visible)).toBe(true);
+  await page.evaluate(()=>{G.boss.x=G.p.x;G.boss.z=G.p.z-4;G.boss.graveDig=9;G.boss.graveSlam=5;bannerT=0;$('banner').classList.remove('on');$('count').hidden=true;G.texts=[];});
+  await expect.poll(()=>page.evaluate(()=>Math.abs(graveBossModel.position.z-G.boss.z))).toBeLessThan(1);
+  await page.screenshot({path:testInfo.outputPath('gravekeeper.png')});
+  await page.evaluate(()=>{G.boss.graveDig=0;});
+  await expect.poll(()=>page.evaluate(()=>!!G.boss.gravePhase),{timeout:10000}).toBe(true);
+  expect(await page.evaluate(()=>G.zones.some(z=>!z.f&&z.r===3.6))).toBe(true);
 });
