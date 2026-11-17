@@ -26,39 +26,39 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-17T09:22:58.661Z.
-- مرجع العمل: [`1c0a6625aff048acabb57d33f599f40ce83fc75a`](https://github.com/aa9986087-cyber/ashen-arena/commit/1c0a6625aff048acabb57d33f599f40ce83fc75a).
-- آخر تعديل: تجربة عهود المقبرة: زعيم سابع وحاصد الأرواح والتدريب والآثار.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44054636158/attempts/1).
+- وقت التسجيل (UTC): 2026-11-17T09:51:31.573Z.
+- مرجع العمل: [`088ebd0327cdb117f055c9112b2d12feed422925`](https://github.com/aa9986087-cyber/ashen-arena/commit/088ebd0327cdb117f055c9112b2d12feed422925).
+- آخر تعديل: تجربة: اقتلاع الروح للحاصد وتقوية البداية.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44059052358/attempts/1).
 - بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
 - مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
-- إصدار التجربة المسجل: `clean-20261117-v12`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
+- إصدار التجربة المسجل: `clean-20261117-v15`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`ab6798e6a4ed`: 255 ملفًا.
+مقارنةً بـ`223c3005414f`: 250 ملفًا.
 - `docs/HANDOFF.md`
-- `docs/PROJECT-MAP.md`
-- `test/AGENTS.md`
 - `test/expansions/gravebound/README.md`
 - `test/expansions/gravebound/data.js`
 - `test/expansions/gravebound/gameplay.js`
 - `test/expansions/gravebound/models.js`
 - `test/expansions/gravebound/news.json`
-- `test/expansions/gravebound/style.css`
 - `test/expansions/gravebound/ui.js`
 - `test/index.html`
 - `test/modular-config.json`
-- وبقية 243 ملفًا في رابط commit أعلاه.
+- `test/releases/clean-20261117-v15/app.js`
+- `test/releases/clean-20261117-v15/app.min.js`
+- `test/releases/clean-20261117-v15/assets/audio/duel/block0.mp3`
+- وبقية 238 ملفًا في رابط commit أعلاه.
 
 ### أحدث خمس دفعات على main
 
+- 088ebd0 تجربة: اقتلاع الروح للحاصد وتقوية البداية
+- 223c300 docs: تحديث آلي لملف التسليم
 - 1c0a662 تجربة عهود المقبرة: زعيم سابع وحاصد الأرواح والتدريب والآثار
 - ab6798e docs: تحديث آلي لملف التسليم
 - 5c68436 حفظ نقطة التسليم تلقائيًا من Git ونتائج الفحوص
-- 777aba8 اعتماد مسار تطوير أسرع بأولوية الجوال وتسليم واضح
-- 48b0ba3 توثيق التحسينات في النشرة وإعلان إصلاح الشامان التجريبي
 
 الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
