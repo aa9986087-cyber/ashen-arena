@@ -357,9 +357,16 @@ test('preview: gravebound purchases, reaper touch special, save/resume and seven
   await expect.poll(()=>page.evaluate(()=>G.state)).toBe('play');
   await page.evaluate(()=>{
     G.noWaves=true;G.god=true;G.enemies=[];G.ups={soulcourt:1,soulguard:1,soulvessel:1};recalc();
+    const target=spawn('grunt',G.p.x+3.7,G.p.z);target.hp=target.maxHp=10000;
+    const w=G.weapons[0];fire(w,0);fire(w,0);fire(w,0);
+    window.__graveSweepProbe={count:G.grave.scytheCount,pulled:target.x<G.p.x+3.7,
+      safe:Math.hypot(target.x-G.p.x,target.z-G.p.z)>=2.4+target.r-1e-8,souls:G.grave.souls};
+    G.enemies=[];
     for(let i=0;i<6;i++){const e=spawn('grunt',G.p.x+1,G.p.z);e.hp=1;hit(e,10,{quiet:1,noCrit:1});}
     G.picks=[];G.pending=0;
   });
+  expect(await page.evaluate(()=>window.__graveSweepProbe)).toEqual({count:0,pulled:true,safe:true,souls:1});
+  await expect(page.locator('#graveMeter')).toContainText('اقتلاع');
   const start = await page.evaluate(()=>({x:G.p.x,z:G.p.z}));
   if (testInfo.project.name==='mobile') {
     const cdp=await page.context().newCDPSession(page);
