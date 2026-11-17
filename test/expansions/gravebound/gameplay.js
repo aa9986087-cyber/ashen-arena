@@ -200,7 +200,7 @@ function graveRestoreRun(raw) {
     if(q&&typeof q==='object'){
       const pending=q.cleave;
       g.warden={guardReadyAt:number(q.guardReadyAt,G.t+1.2),wardUntil:number(q.wardUntil,G.t+3),specialAt:Number.isFinite(q.specialAt)?Math.min(q.specialAt,G.t):-10,
-       cleave:pending&&Number.isFinite(pending.at)&&pending.at>=G.t-0.3?{at:number(pending.at,G.t+0.28),power:number(pending.power,100000),radius:number(pending.radius,30)}:null};
+       cleave:pending&&Number.isFinite(pending.at)&&pending.at>=G.t-0.3?{at:number(pending.at,G.t+0.28),power:number(pending.power,100000),frontPower:number(pending.frontPower,100000),radius:number(pending.radius,30)}:null};
     }
   }
   recalc();

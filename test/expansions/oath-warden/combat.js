@@ -1,6 +1,8 @@
 'use strict';
 /* Oath Warden combat; legacy reaper save key preserves ownership and purchases. */
 const OATH_WARDEN = Object.freeze({hp:165,spd:6.5,dmg:1.2,cost:6500,guardReduction:0.6,guardCooldown:1.2,specialCooldown:18});
+const WARDEN_SLAM_IMPACT = 0.28;
+const WARDEN_SLAM_DURATION = 0.72;
 function wardenState() {
   if (!G.grave) G.grave = {};
   return G.grave.warden || (G.grave.warden = {guardReadyAt:0,wardUntil:0,cleave:null,specialAt:-10});
@@ -24,19 +26,16 @@ function wardenBlockDamage(damage, source) {
 }
 function wardenSpecial(power, damageRank=0, radiusRank=0) {
   if (!wardenCanAct() || wardenState().cleave || !Number.isFinite(power) || power<=0) return false;
-  const p=G.p,s=wardenState(),f=p.face;
-  const rank=v=>Number.isFinite(v)?clamp(Math.floor(v),0,3):0;
-  s.wardUntil=G.t+3;s.specialAt=G.t;
-  s.cleave={at:G.t+0.28,power:power*(1+0.15*rank(damageRank)),radius:7*p.area*(1+0.08*rank(radiusRank))};
-  // Keep the impact close to the shield so the swing remains readable.
-  parts(p.x + Math.sin(f) * 1.3, 1.5, p.z + Math.cos(f) * 1.3,
-    9, 1, 0.75, 0.38, 6, 0.045, 0.22);
-  eachInRadius(p.x,p.z,4,e=>{
-    const dx=e.x-p.x,dz=e.z-p.z,d=Math.hypot(dx,dz);
-    if(d>0.01 && (dx*Math.sin(f)+dz*Math.cos(f))/d<0.5)return;
-    hit(e,power*0.55,{aoe:1,quiet:1,noCrit:1,grave:1});
-    if(!e.dead)e.frz=Math.max(e.frz||0,e.boss?0.2:1.4);
-  });
+  const p = G.p, s = wardenState();
+  const rank = v => Number.isFinite(v) ? clamp(Math.floor(v), 0, 3) : 0;
+  s.wardUntil = G.t + 3;
+  s.specialAt = G.t;
+  s.cleave = {
+    at: G.t + WARDEN_SLAM_IMPACT,
+    power: power * (1 + 0.15 * rank(damageRank)),
+    frontPower: power * 0.55,
+    radius: 7 * p.area * (1 + 0.08 * rank(radiusRank)),
+  };
   return true;
 }
 function wardenTick() {
@@ -44,6 +43,21 @@ function wardenTick() {
   const s=wardenState(),q=s.cleave;
   if(!q || G.t<q.at)return;
   s.cleave=null; // Consume before damage callbacks: re-entry cannot repeat the cleave.
-  const p=G.p;
+  const p = G.p, forwardX = Math.sin(p.face), forwardZ = Math.cos(p.face);
+  const impactX = p.x + forwardX * 2.5 + forwardZ * 0.6;
+  const impactZ = p.z + forwardZ * 2.5 - forwardX * 0.6;
+  vfxSparks(impactX, 0.24, impactZ, 16, [1.5, 0.83, 0.35], 10, 0.14, 0.3);
+  vfxSmoke(impactX, 0.12, impactZ, 7, [0.56, 0.47, 0.36, 0.42], 1.0, 0.95, 0.38, 0.55);
+  AU.play('boom');
+  shake(0.7);
+  // Saves from earlier releases have already applied the frontal hit.
+  if (q.frontPower > 0) {
+    eachInRadius(p.x, p.z, 4, e => {
+      const dx = e.x - p.x, dz = e.z - p.z, distance = Math.hypot(dx, dz);
+      if (distance > 0.01 && (dx * forwardX + dz * forwardZ) / distance < 0.5) return;
+      hit(e, q.frontPower, { aoe: 1, quiet: 1, noCrit: 1, grave: 1 });
+      if (!e.dead) e.frz = Math.max(e.frz || 0, e.boss ? 0.2 : 1.4);
+    });
+  }
   eachInRadius(p.x,p.z,q.radius,e=>hit(e,q.power*1.8,{aoe:1,quiet:1,noCrit:1,grave:1}));
 }

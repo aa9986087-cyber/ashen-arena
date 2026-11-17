@@ -15,7 +15,7 @@ async function fixture() {
   Object.assign(g.context, { COOP: { on: false, host: true, hpMul: 1, cntMul: 1, bossMul: 1 },
     OBST: [], eSrc: 0, coopDmgF: () => 1, bossMesh: { visible: false }, GEO: { boss0: {} }, MUS: {}, CM: { el: null },
     parts: noop, text: noop, ring: noop, vfxKill: noop, shake: noop, cine: noop, banner: noop, vfxHit: noop,
-    vfxHeal: noop, vfxSparks: noop, vfxBolt: noop, r1:value=>Math.round(value*10)/10,
+    vfxHeal: noop, vfxSparks: noop, vfxSmoke: noop, vfxBolt: noop, r1:value=>Math.round(value*10)/10,
     ASHEN_ADDONS:{queueMelee:fn=>fn()},
     enterArena: noop, buildPlayer: noop, setStage: noop });
   g.node('bossbar').querySelector = () => ({ textContent: '' });
@@ -122,10 +122,10 @@ graveTest('warden preserves prior ownership and purchase ranks; guard and pendin
  assert.equal(g.run('G.grave.warden.guardReadyAt'),21.2);
  assert.ok(g.run('G.grave.warden.cleave.power')>0);
 });
-graveTest('warden special hits front immediately and both sides once after delay without soul requirements',async()=>{
+graveTest('warden overhead strike hits both sides only on impact with extra damage in front',async()=>{
  const g=await fixture();
  g.run(`G.state='play';G.p.face=0;var front=spawn('grunt',0,3),back=spawn('grunt',0,-3);front.hp=back.hp=10000;graveRelease(100)`);
- assert.equal(g.run('back.hp'),10000);assert.ok(g.run('front.hp')<10000);
+ assert.equal(g.run('back.hp'),10000);assert.equal(g.run('front.hp'),10000);
  g.run('G.t+=0.3;wardenTick();wardenTick()');
- assert.ok(g.run('back.hp')<10000);assert.equal(g.run('G.grave.warden.cleave'),null);
+ assert.ok(g.run('front.hp<back.hp && back.hp<10000'));assert.equal(g.run('G.grave.warden.cleave'),null);
 });

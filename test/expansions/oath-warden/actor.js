@@ -15,7 +15,14 @@ function wardenLoadModel(){
     for(const m of (Array.isArray(o.material)?o.material:[o.material])){if(m){m.envMap=WARDEN_ACTOR.environment.texture;m.envMapIntensity=1.1;m.needsUpdate=true;}}
    }});
    const clips={};
-   for(const clip of gl.animations){const prepared=clip.name==='special'?THREE.AnimationUtils.subclip(clip,'special',8,39,30):clip;clips[clip.name]=ACTOR_MODELS.pinClip(prepared,root);}
+   for (const clip of gl.animations) {
+    if (clip.name !== 'special') clips[clip.name] = ACTOR_MODELS.pinClip(clip, root);
+    // Isolate the overhead cut from the source's longer combo.
+    if (clip.name === 'attack3') {
+     const slam = THREE.AnimationUtils.subclip(clip, 'special', 23, 76, 30);
+     clips.special = ACTOR_MODELS.pinClip(slam, root);
+    }
+   }
    WARDEN_ACTOR.asset={root,clips};delete PORTRAITS.reaper;
    if(S.char==='reaper')buildPlayer();
    if(!$('chars').hidden)drawChars();
@@ -27,11 +34,6 @@ function wardenLoadModel(){
 function wardenRelease(){
  const a=WARDEN_ACTOR.rig;if(!a)return;
  a.mixer.stopAllAction();a.mixer.uncacheRoot(a.root);a.g.parent?.remove(a.g);
- if (a.trail) {
-  a.trail.mesh.parent?.remove(a.trail.mesh);
-  a.trail.mesh.geometry.dispose();
-  a.trail.mesh.material.dispose();
- }
  WARDEN_ACTOR.rig=null;
 }
 function wardenBounds(root){
@@ -61,78 +63,19 @@ function wardenBuildRig(R,wep){
    const c=clip.clone();c.name=name+'Lower';c.tracks=c.tracks.filter(t=>leg.test(t.name));lower[name]=mixer.clipAction(c);
   }
  }
- const trail=R===PM?makeWardenTrail(root.getObjectByName('_Sword_Hand')):null;
- const a={g,fit,root,mixer,actions,upper,lower,trail,role:'idle',previousTime:null,previousNow:null,swing:0,attackAt:-10,wasDead:false};
+ const a={g,fit,root,mixer,actions,upper,lower,role:'idle',previousTime:null,previousNow:null,swing:0,attackAt:-10,wasDead:false};
  WARDEN_ACTOR.rig=a;R.warden=a;R.g=g;R.char='reaper';R.actor=null;R.anim=R.hm=null;R.wpHand=false;
  for(const id of ['aL','aR','lL','lR'])R[id]=new THREE.Group();
  R.wp=new THREE.Group();g.add(R.wp);scene.add(g);
  return true;
 }
-// Keep at most eight blade poses in one reusable mesh. The short ribbon follows
-// the actual weapon in three dimensions instead of drawing a shape on the floor.
-const WARDEN_TRAIL_SAMPLES = 8;
-function makeWardenTrail(sword) {
- if (!sword?.geometry) return null;
- sword.geometry.computeBoundingBox();
- const blade = sword.geometry.boundingBox;
- const tip = new THREE.Vector3(0, 0, blade.min.z);
- const inner = new THREE.Vector3(0, 0, (blade.min.z + blade.max.z) / 2);
- const geometry = new THREE.BufferGeometry();
- const vertexCount = (WARDEN_TRAIL_SAMPLES - 1) * 6;
- for (const name of ['position', 'color']) {
-  geometry.setAttribute(name, new THREE.BufferAttribute(new Float32Array(vertexCount * 3), 3)
-    .setUsage(THREE.DynamicDrawUsage));
+function wardenSlamFrame(elapsed) {
+ // Source frames 36 and 49 are the raised sword and the ground contact.
+ if (elapsed < 0.19) return 13 * elapsed / 0.19;
+ if (elapsed < WARDEN_SLAM_IMPACT) {
+  return 13 + 13 * (elapsed - 0.19) / (WARDEN_SLAM_IMPACT - 0.19);
  }
- geometry.setDrawRange(0, 0);
- const material = new THREE.MeshBasicMaterial({
-  vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
-  side: THREE.DoubleSide, toneMapped: false,
- });
- const mesh = new THREE.Mesh(geometry, material);
- mesh.frustumCulled = false;
- mesh.visible = false;
- scene.add(mesh);
- return { sword, tip, inner, mesh, times: new Float32Array(WARDEN_TRAIL_SAMPLES),
-  points: new Float32Array(WARDEN_TRAIL_SAMPLES * 6), world: new THREE.Vector3(), count: 0 };
-}
-function updateWardenTrail(trail, clock, cutting, keepTrail) {
- if (!trail) return;
- const { times, points, mesh, sword, world } = trail;
- if (!keepTrail || clock < times[trail.count - 1]) trail.count = 0;
- while (trail.count && clock - times[0] > 0.12) {
-  times.copyWithin(0, 1, trail.count);
-  points.copyWithin(0, 6, trail.count * 6);
-  trail.count--;
- }
- if (cutting && (!trail.count || clock - times[trail.count - 1] >= 1 / 90)) {
-  if (trail.count === WARDEN_TRAIL_SAMPLES) {
-   times.copyWithin(0, 1);
-   points.copyWithin(0, 6);
-   trail.count--;
-  }
-  sword.updateWorldMatrix(true, false);
-  let offset = trail.count * 6;
-  for (const end of [trail.inner, trail.tip]) {
-   world.copy(end).applyMatrix4(sword.matrixWorld).toArray(points, offset);
-   offset += 3;
-  }
-  times[trail.count++] = clock;
- }
- mesh.visible = trail.count > 1;
- if (!mesh.visible) return;
- const geometry = mesh.geometry, pos = geometry.attributes.position, col = geometry.attributes.color;
- let vertex = 0;
- for (let i = 1; i < trail.count; i++) {
-  for (const index of [2*i-2, 2*i-1, 2*i+1, 2*i-2, 2*i+1, 2*i]) {
-   const offset = index * 3;
-   const fade = Math.max(0, 1 - (clock - times[index >> 1]) / 0.12);
-   const brightness = fade * (index % 2 ? 1 : 0.08);
-   pos.setXYZ(vertex, points[offset], points[offset + 1], points[offset + 2]);
-   col.setXYZ(vertex++, brightness, brightness * 0.8, brightness * 0.54);
-  }
- }
- geometry.setDrawRange(0, vertex);
- pos.needsUpdate = col.needsUpdate = true;
+ return 26 + 26 * (elapsed - WARDEN_SLAM_IMPACT) / (WARDEN_SLAM_DURATION - WARDEN_SLAM_IMPACT);
 }
 function wardenPose(R,p,wepId,playing,now){
  const a=R.warden;
@@ -140,11 +83,11 @@ function wardenPose(R,p,wepId,playing,now){
  const clock=playing&&!p.dead?G.t:now*0.001,dt=a.previousTime===null?0:clamp(clock-a.previousTime,0,0.08);a.previousTime=clock;
  a.g.position.set(p.x,0,p.z);a.g.rotation.y=playing?p.face:Math.sin(now*0.0005)*0.3;
  const state=G.grave?.warden,special=state&&state.specialAt!==undefined?clock-state.specialAt:10;
- const specialActive=playing&&special>=0&&special<0.65&&!p.dead;
+ const specialActive=playing&&special>=0&&special<WARDEN_SLAM_DURATION&&!p.dead;
  // Auto-attacks cannot restart or replace the special, even when movement changes.
  if(!specialActive&&p.swing>a.swing+0.1){a.attackAt=clock;a.attackIndex=((a.attackIndex??-1)+1)%3;a.variant=['attack','attack2','attack3'][a.attackIndex];}
  a.swing=p.swing;
- let role=p.dead?'fall':specialActive?(special<0.18?'bash':'special'):clock-a.attackAt<0.6?(a.variant||'attack'):(playing&&p.moving?'run':'idle');
+ let role=p.dead?'fall':specialActive?'special':clock-a.attackAt<0.6?(a.variant||'attack'):(playing&&p.moving?'run':'idle');
  if(!a.actions[role])role='idle';
  const moving=playing&&p.moving&&!p.dead;
  const upper=moving&&a.upper[role],lower=upper&&a.lower.run;
@@ -156,17 +99,18 @@ function wardenPose(R,p,wepId,playing,now){
   active.play();if(lower)lower.reset().play();a.role=role;a.layered=!!upper;
  }
  const active=upper||a.actions[role];
- const duration=role==='bash'?0.18:role==='special'?0.47:['attack','attack2','attack3'].includes(role)?0.6:role==='fall'?0.8:null;
+ const duration=role==='special'?WARDEN_SLAM_DURATION:['attack','attack2','attack3'].includes(role)?0.6:role==='fall'?0.8:null;
  if(duration)active.timeScale=active.getClip().duration/duration;else active.timeScale=moving?1.05:1;
  a.fit.rotation.y += ((role==='run'||role==='walk'?0:Math.PI/2)-a.fit.rotation.y)*Math.min(1,dt*16);
- if(specialActive){active.paused=true;active.time=clamp((special-(role==='bash'?0:0.18))/(role==='bash'?0.18:0.47),0,0.999)*active.getClip().duration;}else if(['attack','attack2','attack3'].includes(role)){
+ if (specialActive && role === 'special') {
+  active.paused = true;
+  active.time = Math.min(active.getClip().duration, wardenSlamFrame(special) / 30);
+ } else if (['attack','attack2','attack3'].includes(role)) {
   const t=clamp(clock-a.attackAt,0,0.6);
   const phase=t<0.18?t/0.18*0.25:t<0.32?0.25+(t-0.18)/0.14*0.45:0.7+(t-0.32)/0.28*0.3;
   active.paused=true;active.time=Math.min(0.999,phase)*active.getClip().duration;
  }else active.paused=false;
  a.mixer.update(dt);
- const cut = specialActive && special >= 0.24 && special < 0.43;
- updateWardenTrail(a.trail,clock,cut,playing && !p.dead && special>=0 && special<0.65);
  // Root position tracks are pinned; locomotion never pulls the actor away from its hitbox.
  return true;
 }

@@ -381,7 +381,7 @@ test('preview: gravebound purchases, reaper touch special, save/resume and seven
   } else { await page.keyboard.press('KeyQ'); }
   await expect.poll(()=>page.evaluate(()=>window.__circleTargets.every(e=>e.hp<e.maxHp))).toBe(true);
   expect(await page.evaluate(()=>G.grave.ghosts.length)).toBe(0);
-  await expect(page.locator('#graveMeter')).toContainText('صدمة وقطع');
+  await expect(page.locator('#graveMeter')).toContainText('ضربة من فوق');
   expect(await page.evaluate(()=>PM.char==='reaper'&&!!PM.warden&&WARDEN_ACTOR.asset.clips.bash&&renderer.info.render.calls>0)).toBe(true);
   await page.evaluate(()=>graveCollect(5));
   await page.evaluate(()=>{bannerT=0;$('banner').classList.remove('on');G.texts=[];});
@@ -445,36 +445,53 @@ test('preview: warden visual direction and original animated GLB',async({page},t
  expect(await page.evaluate(()=>!!PM.warden&&PM.char==='reaper'&&renderer.info.render.calls>0)).toBe(true);
 });
 
-test('preview: warden special draws a sword trail without ground rings and preserves animation progress',async({page},testInfo)=>{
+test('preview: warden overhead sword lands with sparks and dust', async ({page},testInfo) => {
  test.setTimeout(90000);
  await page.goto('/test/#netlocal',{waitUntil:'load'});
  await expect.poll(()=>page.evaluate(()=>typeof window.__game),{timeout:45000}).toBe('object');
  await page.evaluate(()=>window.__game.ready);
  await page.evaluate(async()=>{S.char='reaper';S.chars.reaper=1;newRun();await wardenLoadModel();buildPlayer();});
  await expect(page.locator('#menu')).not.toHaveClass(/boot/);
- await page.locator('#mPlay').click();await expect.poll(()=>page.evaluate(()=>G.state)).toBe('play');
- const result=await page.evaluate(()=>{
-  G.noWaves=true;G.god=true;G.enemies=[];G.pending=0;G.picks=[];G.p.swing=0;
-  const start=G.t,now=performance.now(),ringsBefore=G.rings.length;graveRelease(100);
-  const pose=(offset,moving)=>{G.t=start+offset;G.p.moving=moving;wardenPose(PM,G.p,'scythe',true,now+offset*1000);const a=PM.warden,action=a.layered?a.upper[a.role]:a.actions[a.role];return {role:a.role,time:action.time,duration:action.getClip().duration};};
-  const bash=pose(0.1,0);G.p.swing=1;
-  const moving=pose(0.3,1);
-  pose(0.33,1);pose(0.36,1);wardenTick();
-  const trail=PM.warden.trail;
-  const visible=trail.mesh.visible&&trail.mesh.geometry.drawRange.count>=12;
-  const positions=trail.mesh.geometry.attributes.position.array;
-  const movement=Math.hypot(positions[3]-positions[6],positions[4]-positions[7],positions[5]-positions[8]);
-  const standing=pose(0.45,0);
-  G.state='paused';const paused=pose(0.45,0);G.state='play';
-  const end=pose(0.7,0),later=pose(1,0);
-  return {bash,moving,standing,paused,end,later,visible,movement,hidden:!trail.mesh.visible,rings:G.rings.length-ringsBefore};
+ await page.locator('#mPlay').click();
+ await expect.poll(()=>page.evaluate(()=>G.state)).toBe('play');
+ const result = await page.evaluate(() => {
+  G.noWaves=true;G.god=true;G.enemies=[];G.pending=0;G.picks=[];G.p.swing=0;G.p.face=0;
+  const p=G.p, start=G.t, ringsBefore=G.rings.length, now=performance.now();
+  const front=spawn('grunt',p.x,p.z+3), rear=spawn('grunt',p.x,p.z-3);
+  front.hp=rear.hp=10000;
+  graveRelease(100);
+  const sword=PM.warden.root.getObjectByName('_Sword_Hand');
+  sword.geometry.computeBoundingBox();
+  const pose=(offset,moving)=>{
+   G.t=start+offset;
+   p.moving=moving;
+   wardenPose(PM,p,'scythe',true,now+offset*1000);
+   sword.updateWorldMatrix(true,false);
+   const tip=new THREE.Vector3(0,0,sword.geometry.boundingBox.min.z).applyMatrix4(sword.matrixWorld);
+   return {height:tip.y,role:PM.warden.role};
+  };
+  const raised=pose(0.19,1);wardenTick();
+  const before=[front.hp,rear.hp];
+  const landed=pose(0.29,0);wardenTick();
+  const damage=[10000-front.hp,10000-rear.hp];
+  wardenTick();
+  const duplicate=10000-front.hp!==damage[0];
+  G.state='paused';
+  const paused=pose(0.29,0);
+  bannerT=0;$('banner').classList.remove('on');$('count').hidden=true;G.texts=[];
+  render(0,now);
+  return {raised,landed,paused,before,damage,duplicate,rings:G.rings.length-ringsBefore};
  });
- expect(result.rings).toBe(0);expect(result.visible).toBe(true);expect(result.movement).toBeGreaterThan(0.05);expect(result.hidden).toBe(true);
- expect(result.bash.role).toBe('bash');expect(result.moving.role).toBe('special');expect(result.standing.role).toBe('special');
- expect(result.standing.time).toBeGreaterThan(result.moving.time);
- expect(result.paused.time).toBeCloseTo(result.standing.time,6);
- expect(result.end.role).toBe('idle');expect(result.later.role).toBe('idle');
- await page.screenshot({path:testInfo.outputPath('warden-special-finished.png')});
+ expect(result.before).toEqual([10000,10000]);
+ expect(result.raised.role).toBe('special');
+ expect(result.landed.role).toBe('special');
+ expect(result.raised.height-result.landed.height).toBeGreaterThan(1);
+ expect(result.paused.height).toBeCloseTo(result.landed.height,5);
+ expect(result.damage[0]).toBeGreaterThan(result.damage[1]);
+ expect(result.damage[1]).toBeGreaterThan(0);
+ expect(result.duplicate).toBe(false);
+ expect(result.rings).toBe(0);
+ await page.screenshot({path:testInfo.outputPath('warden-overhead-impact.png')});
 });
 
 test('preview: warden normal attacks cycle three heavy clips without movement restarting them',async({page},testInfo)=>{

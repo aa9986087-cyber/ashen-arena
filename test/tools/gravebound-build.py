@@ -17,6 +17,8 @@ def apply(path, text, replace):
     if path == 'js/game/update.js':
         sub('hurt(s.dmg);','hurt(s.dmg, s);')
         sub('hurt(z.dmg);','hurt(z.dmg, z);')
+    if path == 'js/game/specials.js':
+        sub("  shake(0.7);\n  sp.f", "  if (S.char !== 'reaper') shake(0.7);\n  sp.f")
     if path == 'js/game/combat.js':
         sub('function hurt(d) {','function hurt(d, source) {')
         sub('  p.shieldRe = 5;', '  d = graveAbsorb(d, source);\n  if (d <= 0) { p.inv = 0.2; return; }\n  p.shieldRe = 5;')

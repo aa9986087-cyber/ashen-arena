@@ -64,7 +64,7 @@ function graveMeter() {
   graveHud.hidden = !on;
   if (!on) return;
   const g = graveState();
-  const value = S.char === 'reaper' ? '🛡️ صد أمامي · الخاصة: صدمة وقطع' + (G.t < wardenState().wardUntil ? ' · حماية مفعّلة' : '') : 'الأرواح ' + Math.floor(g.souls) + ' من ' + graveCapacity() +
+  const value = S.char === 'reaper' ? '🛡️ صد أمامي · الخاصة: ضربة من فوق' + (G.t < wardenState().wardUntil ? ' · حماية مفعّلة' : '') : 'الأرواح ' + Math.floor(g.souls) + ' من ' + graveCapacity() +
     (g.barrier > 0 ? ' · حاجز ' + Math.ceil(g.barrier) : '');
   if (value !== graveHudText) { graveHud.textContent = value; graveHudText = value; }
 }
