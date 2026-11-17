@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><title>تجربة صيانة الصدارة</title><style>html,body{margin:0;width:100%;height:100%;background:#0b0d18}iframe{display:block;border:0;width:100%;height:100%;height:100dvh}</style></head><body><iframe id="game" title="ساحة الرماد — تجربة صيانة الصدارة" src="./releases/clean-20261117-v15/index.html"></iframe><script>
+function installMaintenance(doc) {
+  const board=doc.getElementById('board');
+  if(!board) throw new Error('Leaderboard screen missing');
+  board.innerHTML='<div class="wrap"><div class="head"><h2>الصدارة</h2><button class="btn sm" id="maintenanceBack">رجوع</button></div><div role="status" style="text-align:center;padding:48px 16px"><div style="font-size:48px">🛠️</div><h3>الصدارة تحت الصيانة</h3><p class="note">نجهّز الصدارة للعودة. جرّب لاحقًا، وتقدر تكمل اللعب الآن.</p></div></div>';
+  doc.getElementById('maintenanceBack').onclick=()=>{
+    board.hidden=true;
+    doc.getElementById('menu').hidden=false;
+  };
+  doc.addEventListener('click',e=>{
+    const target=e.target.closest('[data-go="board"]');
+    if(!target)return;
+    e.preventDefault();e.stopImmediatePropagation();
+    doc.getElementById('menu').hidden=true;board.hidden=false;
+  },true);
+}
+document.getElementById("game").addEventListener("load",function(){installMaintenance(this.contentDocument);});
+</script></body></html>
