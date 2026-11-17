@@ -9,7 +9,10 @@ npm ci
 npm test                              # سريع: القواعد/العقود/إصلاحات runtime/الخادم والتغليف
 npm run test:fixtures                  # تنزيل 8 مكتبات حقيقية من روابط index والتحقق من SHA256
 npx playwright install --with-deps chromium
-npm run test:smoke                     # Chromium desktop + mobile، بدون إنتاج أو مايك
+npm run check:plan                     # مسار text أو mobile حسب الفرق والملفات المحلية
+npm run test:smoke                     # Chromium mobile باللمس، بدون إنتاج أو مايك
+npm run test:desktop                   # اختياري عند الحاجة للكمبيوتر
+npm run test:all                       # الجوال ثم الكمبيوتر
 npm run check                         # fast ثم analyze ثم fixtures ثم smoke
 npm run package:game                  # نسخة محلية فقط: dist/game
 node tools/test-server.mjs --root dist/game --port 8080
@@ -25,7 +28,7 @@ node tools/test-server.mjs --root dist/game --port 8080
 
 **القواعد المشتركة:** `node:test` و`vm` ينفذان الملفات الفعلية في scope واحد وبترتيب index، بدل تحويل اللعبة إلى modules. تغطي الحالات utils، أكواد Arabic/emoji والتلاعب، save defaults/migration والتخزين الممنوع، مراجع heroes/weapons/specials/evolutions، بيانات upgrades/tree/missions، recalc، أوزان البطاقات وحدود slots وشروط التطور، استعادة state بعد preview، ترتيب الصدارة والنتائج المحلية، المهام اليومية، والصيانة والرجوع دون draw/load للشبكة. DOM/storage/audio/VFX في هذه الوحدات boundaries خفيفة فقط، لا محرك بديل. اختبارات الإصلاحات في جذر tests تضيف تغطيتها المتخصصة؛ فحوص SQL نصية ولا تنفذ SQL في قاعدة.
 
-**Smoke:** رحلتان فعليتان: desktop 1280×800 وmobile 390×844؛ إقلاع واحد لكل جهاز يجمع سيناريوهات الواجهة واللعب، بدل إعادة تحميل المشهد مرتين. تحمل index والمكتبات الأصلية و`main.js`، وتتحقق من `window.__game`، القائمة والتنقل إلى الأبطال والمتجر والشجرة والمهام والإعدادات، قاعة المجد وتبويباتها الخمسة (الأسبوع، الصمود، الزعماء، الأسرع، القتلات) وزرّ الرجوع. تفحص انتقال حالة panel الصوت بعد اتصال محلي مع نفس الأعضاء، دون دخول غرفة أو طلب مايك. تبدأ جولة حقيقية، تنتظر تقدم وقت اللعبة وWebGL draw فعلي، وتحرك اللاعب بالكيبورد أو touch joystick، وتتحقق من hit-test/click لزر المشاهدين، ثم pause/save/return. جميع التأكيدات السابقة محفوظة؛ لا يتم استبدال main أو renderer أو update بـstubs، ولا تعديل G لمحاكاة نجاح الجولة. جودة الرسم المنخفضة إعداد محفوظ حقيقي لتخفيف SwiftShader في CI؛ فحص الارتفاع البصري الكامل/bloom خارج نطاق smoke.
+**Smoke:** الجوال 390×844 باللمس هو الفحص الافتراضي؛ الكمبيوتر 1280×800 اختياري. رحلة الأساسية تجمع الواجهة واللعب في إقلاع واحد لكل جهاز: تحميل index والمكتبات و`main.js`، تحقق `window.__game`، تنقل الشاشات وتبويبات الصدارة والرجوع، penalties وواجهة استعادة النسخة الاحتياطية، وحالة panel الصوت دون غرفة أو مايك. تبدأ جولة حقيقية مع تقدم الوقت وWebGL draw وحركة touch joystick (أو الكيبورد عند اختيار الكمبيوتر)، hit-test للمشاهدين ثم pause/save/return. رحلة إضافية تشغّل حزمة التجربة المثبتة وتختبر الشامانات في سيناريو ضرر مضبوط ثم حفظ/استكمال؛ تُضبط G لهذا السيناريو فقط ولا تُستبدل دوال الضرر والذكاء والرسم. جودة الرسم المنخفضة إعداد محفوظ حقيقي لتخفيف SwiftShader؛ جودة الفن الكاملة وSafari/الأجهزة الفعلية خارج هذا الفحص.
 
 ## عزل الشبكة وfixtures
 
@@ -42,13 +45,13 @@ npm run test:fixtures -- --refresh-lock
 ## كل ميزة: تعديل صغير، اختبار، ثم معاينة وموافقة
 
 1. أضف/حدّث اختبارًا مركزًا للسلوك الجديد؛ القواعد pure في unit، وتفاعل DOM/render في smoke عند الحاجة. لا تثبت عدد الأبطال أو كل تفاصيل legacy بـsnapshot.
-2. شغّل `npm test` أولًا، ثم الاختبار المعني و`npm run check` قبل المعاينة؛ أصلح فشلًا أصليًا بدليل بدل إسكات assertions. الأرقام في آخر actual run ليست وعد أداء ثابت.
-3. كوّن artifact محليًا وراجع المعاينة والتقارير، خصوصًا mobile/desktop ومسار الرجوع. النتيجة الخضراء ليست موافقة نشر.
-4. لا commit/push، ولا تغيير Pages، ولا API writes، ولا نشر/SQL إنتاج حتى موافقة المستخدم الصريحة بعد المعاينة.
+2. شغّل `npm test` أولًا؛ استخدم `npm run check:plan` لتحديد الحاجة للتحليل والمتصفح. تغييرات اللعب تحتاج اختبار السلوك والجوال، والكمبيوتر عند الحاجة. لا تكرر فحصًا ناجحًا دون تغيير متعلق به، ولا تسكت assertions لإمرار فشل.
+3. راجع المعاينة والتقارير حسب نطاق التغيير، خصوصًا اللمس ومسار الرجوع. الأرقام التاريخية ليست وعد أداء، والنتيجة الخضراء ليست موافقة نشر.
+4. نفّذ الرفع والنشر ضمن تفويض المستخدم القائم؛ لا تطلب الإذن مرة أخرى لنفس العمل المصرح به. تحديث الأساسية وSQL وإعدادات Pages تبقى ضمن حدود التفويض وتعليمات التجربة.
 
 ## GitHub Actions وPages: الحالة الحالية ليست حماية إنتاج
 
-يوجد workflow واحد `.github/workflows/game-pages.yml`: PR، وpush على main، وworkflow_dispatch. وظيفة `check` تنفذ fast → تحليل globals → fixtures/Chromium → smoke → packaging. `deploy` تحتاج check لنفس checkout/SHA وتستخدم artifact نفس الـrun، ولا تعمل على PR أو فرع غير main. صلاحية workflow الأساسية `contents: read`؛ فقط deploy تملك `pages: write` و`id-token: write`. إلغاء stale runs للـPR فقط؛ لا يلغي run جديد نشرًا سابقًا. المهلة 15 دقيقة لـcheck و5 لـdeploy، بلا شبكة إنتاج في browser tests.
+يوجد workflow واحد `.github/workflows/game-pages.yml`: PR، وpush على main، وworkflow_dispatch. وظيفة `check` تنفذ fast والتغليف دائمًا. `tools/change-scope.mjs` يقارن base/head؛ الوثائق وبيانات الأخبار الثابتة فقط تتجاوز التحليل وfixtures/Chromium. الملفات المختلطة والمجهولة وغياب تاريخ المقارنة تختار الجوال. لا path filter يخفي بوابة `check`. التشغيل اليدوي يفحص الجوال دائمًا مع خيار desktop. `deploy` تحتاج check لنفس checkout/SHA وتستخدم artifact نفس الـrun، ولا تعمل على PR أو فرع غير main. الصلاحيات وإلغاء stale PRs والمهل وعزل الإنتاج كما كانت.
 
 في deploy تستخدم `configure-pages@v5` مع `enablement: false` لقراءة configuration فقط؛ ليست محاولة تفعيل Pages. رفع Pages artifact عبر `upload-pages-artifact@v4` يقتصر على main غير PR؛ PR يرفع تقارير check فقط.
 

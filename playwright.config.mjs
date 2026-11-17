@@ -18,8 +18,8 @@ export default defineConfig({
     launchOptions: { args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
   },
   projects: [
-    { name: 'desktop', use: { viewport: { width: 1280, height: 800 } } },
     { name: 'mobile', use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 } },
+    { name: 'desktop', use: { viewport: { width: 1280, height: 800 } } },
   ],
   webServer: {
     command: 'node tools/test-server.mjs --port 4173',
