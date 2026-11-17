@@ -8,6 +8,16 @@ const GRAVE_GEO = {
   hood: new THREE.SphereGeometry(1, 12, 9, 0, Math.PI * 2, 0, Math.PI * 0.72),
   ring: new THREE.TorusGeometry(0.48, 0.035, 5, 20),
 };
+// Open, uneven hem gives the reaper a torn silhouette without textures.
+GRAVE_GEO.reaperRobe = new THREE.CylinderGeometry(0.32, 0.63, 1.65, 16, 1, true);
+const reaperHem = GRAVE_GEO.reaperRobe.attributes.position;
+for (let i = 0; i < reaperHem.count; i++) {
+  if (reaperHem.getY(i) < 0) {
+    const angle = Math.atan2(reaperHem.getZ(i), reaperHem.getX(i));
+    reaperHem.setY(i, -0.825 + 0.15 * (1 + Math.cos(angle * 8)));
+  }
+}
+GRAVE_GEO.reaperRobe.computeVertexNormals();
 const GRAVE_MAT = {};
 function graveMaterial(color, glow = 0) {
   const key = color + ':' + glow;
@@ -52,36 +62,33 @@ buildRig = function (R, id, wep) {
   else if (R.g) scene.remove(R.g);
   const g = new THREE.Group();
   R.char = id; R.actor = null; R.g = g; R.hm = R.anim = null; R.wpHand = false;
-  const cloth = 0x233932, bone = 0xb3b19a, iron = 0x47554d;
-  gravePart(g, 'robe', cloth, 0, 0.95, 0, 1, 1, 0.8);
-  gravePart(g, 'head', 0x152722, 0, 1.72, -0.12, 0.4, 0.45, 0.31);
-  gravePart(g, 'hood', 0x172923, 0, 2.35, -0.04, 0.34, 0.42, 0.36);
-  gravePart(g, 'head', bone, 0, 2.32, 0.22, 0.18, 0.22, 0.14);
-  gravePart(g,'stone',0x26332d,0,2.29,0.36,0.025,0.065,0.015);
-  for(let i=-1;i<=1;i++)gravePart(g,'stone',0x303b32,i*0.04,2.2,0.34,0.018,0.045,0.02);
+  const cloth = 0x14151c, bone = 0x8b9186;
+  gravePart(g, 'reaperRobe', cloth, 0, 0.98, 0, 1, 1, 0.85);
+  // Heavy mantle and deep hood; no exposed skull, teeth or rib cage.
+  gravePart(g, 'head', 0x1c1e28, 0, 1.68, -0.03, 0.58, 0.36, 0.35);
+  gravePart(g, 'head', cloth, 0, 2.08, -0.06, 0.39, 0.49, 0.36);
+  gravePart(g, 'head', 0x030507, 0, 2.08, 0.24, 0.27, 0.33, 0.09);
   for (const sign of [-1, 1]) {
-    gravePart(g, 'stone', 0x101d19, sign * 0.075, 2.36, 0.35, 0.105, 0.035, 0.025);
-    gravePart(g, 'head', 0x8de2b7, sign * 0.075, 2.36, 0.369, 0.018, 0.011, 0.008, 0x3b8b64);
-    gravePart(g, 'rock', iron, sign * 0.5, 1.72, 0, 0.23, 0.15, 0.27);
-    for (let i = 0; i < 3; i++) {
-      const rib = gravePart(g, 'bone', bone, sign * 0.2, 1.5 - i * 0.14, 0.3, 0.35, 0.28, 0.3);
-      rib.rotation.z = sign * 1.05;
-    }
+    const edge = gravePart(g, 'bone', 0x20232d, sign * 0.28, 2.03, 0.2, 0.42, 0.65, 0.48);
+    edge.rotation.z = sign * -0.18;
+    gravePart(g, 'head', 0x99ffd3, sign * 0.095, 2.12, 0.327, 0.04, 0.014, 0.009, 0x54c994);
   }
-  gravePart(g, 'stone', 0x9d9469, 0, 0.83, 0.34, 0.18, 0.19, 0.07);
-  for (let i = 0; i < 5; i++) {
-    const flap = gravePart(g, 'stone', i % 2 ? 0x1b3029 : cloth, (i - 2) * 0.22, 0.55 + (i % 2) * 0.09,
-      -0.36, 0.23, 1.05, 0.06); flap.rotation.x = -0.12;
+  gravePart(g, 'stone', 0x414a47, 0, 1.28, 0.31, 0.55, 0.07, 0.06);
+  // Narrow trailing strips make the ragged cloak readable on a phone.
+  for (let i = 0; i < 7; i++) {
+    const flap = gravePart(g, 'reaperRobe', i % 2 ? 0x20212b : cloth,
+      (i - 3) * 0.13, 0.88, -0.29, 0.19, 0.85 + (i % 3) * 0.12, 0.17);
+    flap.rotation.x = -0.17;
   }
   const limb = (x, y, length, leg) => {
     const p = new THREE.Group(); p.position.set(x, y, 0); g.add(p);
-    gravePart(p, 'bone', leg ? 0x1b2824 : cloth, 0, -length / 2, 0, leg ? 0.9 : 1.05, length, leg ? 1 : 1.1);
+    gravePart(p, 'bone', leg ? 0x101218 : cloth, 0, -length / 2, 0, leg ? 0.9 : 1.65, length, leg ? 1 : 1.6);
     gravePart(p, 'stone', leg ? 0x283a31 : bone, 0, -length, 0.03, leg ? 0.22 : 0.16, 0.16, leg ? 0.35 : 0.15);
     return p;
   };
   R.lL = limb(-0.21, 0.65, 0.5, true); R.lR = limb(0.21, 0.65, 0.5, true);
   R.aL = limb(-0.51, 1.76, 0.7, false); R.aR = limb(0.51, 1.76, 0.7, false);
-  R.wp = new THREE.Group(); R.wp.position.y = -0.7; R.aR.add(R.wp); R.aR.rotation.x = -1.2;
+  R.wp = new THREE.Group(); R.wp.position.y = -0.7; R.wp.scale.setScalar(1.3); R.aR.add(R.wp); R.aR.rotation.x = -1.2;
   scene.add(g); buildWeapon(R, wep);
 };
 /* Dedicated portrait scene avoids the live menu's fog/objects obscuring the new hero. */
@@ -95,7 +102,7 @@ heroPortrait = function (id) {
     buildRig(rig, 'reaper', {id:'scythe',lvl:3});
     portrait.add(rig.g); rig.g.rotation.y = -0.22;
     rig.aR.rotation.x=0;rig.aR.rotation.z=-0.05;rig.wp.rotation.z=Math.PI;
-    portrait.background = new THREE.Color(0x14251e);
+    portrait.background = new THREE.Color(0x252b34);
     portrait.add(new THREE.HemisphereLight(0xd5e9dc, 0x25382d, 1.25));
     const light = new THREE.DirectionalLight(0xffe8c5, 1.6); light.position.set(3,5,4); portrait.add(light);
     const cam = new THREE.PerspectiveCamera(34, 1, 0.1, 30);
