@@ -12,6 +12,7 @@
 | نماذج/حركة/صوت | `js/render/`، `js/audio/`؛ ابحث عن الاسم داخل المجلد أولًا | mobile؛ جودة الفن/أجهزة فعلية حسب التغيير |
 | فارس/رامية/حارس الغابة | `test/addons/<name>/` فقط؛ تعليمات `test/AGENTS.md` | ابنِ إصدار تجربة جديدًا واختبر mobile |
 | تعديل تجربة عام | `test/tools/modular-runtime/` و`build-modular-test.py` | المصدر إنتاج مثبت بـSHA؛ لا تعدّل ناتج البناء |
+| عهود المقبرة | `test/expansions/gravebound/` و`test/tools/gravebound-build.py` | `tests/gravebound.test.mjs` + اختبار preview: gravebound على الجوال |
 | شبكة/قاعدة بيانات | `js/duel/duel-net.js`، شاشات `js/ui/` المعنية، `supabase/`؛ ابحث عن RPC بالاسم | اختبار معزول متخصص؛ المتصفح لا يثبت SQL/RLS |
 | اختبارات/نشر | `tools/change-scope.mjs`، `.github/workflows/game-pages.yml`، `playwright.config.mjs` | `npm test` + workflow + mobile عند تعديل أدوات الفحص |
 

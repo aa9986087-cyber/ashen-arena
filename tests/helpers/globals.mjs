@@ -3,7 +3,7 @@ import { read, scriptOrder } from './project.mjs';
 
 // These stand-ins are boundary adapters only. Rules, data, navigation, and persistence are source code.
 // Browser smoke does not use this DOM adapter, or replace the renderer/main.
-export async function globals({ stored, deniedStorage = false, files } = {}) {
+export async function globals({ stored, deniedStorage = false, files, sources = {} } = {}) {
   const storage = new Map(stored === undefined ? [] : [['ashen_arena_v1', typeof stored === 'string' ? stored : JSON.stringify(stored)]]);
   const nodes = new Map();
   function node(id) {
@@ -44,7 +44,7 @@ export async function globals({ stored, deniedStorage = false, files } = {}) {
   for (const file of selected) if (!order.includes(file)) throw new Error(`Required rules script is absent from index: ${file}`);
   const loaded = [];
   for (const file of order.filter(f => selected.includes(f))) {
-    new vm.Script(await read(file), { filename: file }).runInContext(context, { timeout: 1000 });
+    new vm.Script(sources[file] ?? await read(file), { filename: file }).runInContext(context, { timeout: 1000 });
     loaded.push(file);
   }
   return { context, nodes, node, storage, events, loaded, run: src => vm.runInContext(src, context, { timeout: 1000 }),

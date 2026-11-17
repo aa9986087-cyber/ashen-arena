@@ -1,8 +1,15 @@
 {
   "schemaVersion": 1,
-  "release": "clean-20261117-v6",
-  "baseRevision": "3d7d60ef432f2339d71ffb649c3fd51877ffb8e7",
+  "release": "clean-20261117-v12",
+  "baseRevision": "ab6798e6a4ed2cfd7f71a77e0e00f10505d393d3",
   "addonSourceRevision": "c0c1701",
-  "enabledAddons": ["knight", "ranger", "forest-guardian"],
-  "notes": "إصلاح تكديس شفاء الشامان الذي يمنع موت الأعداء في الجولات الطويلة، مع إبقاء الإضافات الثلاث وإصلاح مصاص الدماء."
+  "enabledAddons": [
+    "knight",
+    "ranger",
+    "forest-guardian"
+  ],
+  "notes": "عهود المقبرة: حفار القبور وحاصد الأرواح وأربعة تدريبات وثلاثة آثار، مع عزل التجربة وإصلاحات الشفاء والإضافات الثلاث كما هي.",
+  "enabledExpansions": [
+    "gravebound"
+  ]
 }
