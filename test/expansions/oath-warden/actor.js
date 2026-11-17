@@ -5,7 +5,7 @@ function wardenLoadModel(){
  if(WARDEN_ACTOR.asset)return Promise.resolve(WARDEN_ACTOR.asset);
  if(WARDEN_ACTOR.pending)return WARDEN_ACTOR.pending;
  WARDEN_ACTOR.pending=new Promise((resolve,reject)=>{
-  new THREE.GLTFLoader().load(new URL('../../expansions/oath-warden/model.glb?v=1',location.href).href,gl=>{
+  new THREE.GLTFLoader().load(new URL('../../expansions/oath-warden/model.glb?v=2',location.href).href,gl=>{
    const root=gl.scene;
    if(!WARDEN_ACTOR.environment){
     const env=new THREE.Scene();env.background=new THREE.Color(0x9aa5b5);
@@ -15,7 +15,7 @@ function wardenLoadModel(){
     for(const m of (Array.isArray(o.material)?o.material:[o.material])){if(m){m.envMap=WARDEN_ACTOR.environment.texture;m.envMapIntensity=1.1;m.needsUpdate=true;}}
    }});
    const clips={};
-   for(const clip of gl.animations)clips[clip.name]=ACTOR_MODELS.pinClip(clip,root);
+   for(const clip of gl.animations){const prepared=clip.name==='special'?THREE.AnimationUtils.subclip(clip,'special',8,39,30):clip;clips[clip.name]=ACTOR_MODELS.pinClip(prepared,root);}
    WARDEN_ACTOR.asset={root,clips};delete PORTRAITS.reaper;
    if(S.char==='reaper')buildPlayer();
    if(!$('chars').hidden)drawChars();
@@ -48,7 +48,7 @@ function wardenBuildRig(R,wep){
  const upper={},lower={};
  const leg=/LeftUpLeg|LeftLeg|LeftFoot|LeftToe|RightUpLeg|RightLeg|RightFoot|RightToe|Hips/;
  for(const [name,clip]of Object.entries(clips)){
-  if(['attack','attack2','bash','block','hurt'].includes(name)){
+  if(['attack','attack2','bash','special','block','hurt'].includes(name)){
    const c=clip.clone();c.name=name+'Upper';c.tracks=c.tracks.filter(t=>!leg.test(t.name));upper[name]=mixer.clipAction(c);
   }
   if(['run','walk'].includes(name)){
@@ -66,10 +66,12 @@ function wardenPose(R,p,wepId,playing,now){
  if(!a || a!==WARDEN_ACTOR.rig)return false;
  const clock=playing&&!p.dead?G.t:now*0.001,dt=a.previousTime===null?0:clamp(clock-a.previousTime,0,0.08);a.previousTime=clock;
  a.g.position.set(p.x,0,p.z);a.g.rotation.y=playing?p.face:Math.sin(now*0.0005)*0.3;
- if(p.swing>a.swing+0.1){a.attackAt=clock;a.variant=a.variant==='attack'?'attack2':'attack';}
- a.swing=p.swing;
  const state=G.grave?.warden,special=state&&state.specialAt!==undefined?clock-state.specialAt:10;
- let role=p.dead?'fall':special>=0&&special<0.65?(special<0.28?'bash':'attack2'):clock-a.attackAt<0.42?(a.variant||'attack'):(playing&&p.moving?'run':'idle');
+ const specialActive=playing&&special>=0&&special<0.65&&!p.dead;
+ // Auto-attacks cannot restart or replace the special, even when movement changes.
+ if(!specialActive&&p.swing>a.swing+0.1){a.attackAt=clock;a.variant=a.variant==='attack'?'attack2':'attack';}
+ a.swing=p.swing;
+ let role=p.dead?'fall':specialActive?(special<0.18?'bash':'special'):clock-a.attackAt<0.42?(a.variant||'attack'):(playing&&p.moving?'run':'idle');
  if(!a.actions[role])role='idle';
  const moving=playing&&p.moving&&!p.dead;
  const upper=moving&&a.upper[role],lower=upper&&a.lower.run;
@@ -81,9 +83,10 @@ function wardenPose(R,p,wepId,playing,now){
   active.play();if(lower)lower.reset().play();a.role=role;a.layered=!!upper;
  }
  const active=upper||a.actions[role];
- const duration=role==='bash'?0.28:['attack','attack2'].includes(role)?0.42:role==='fall'?0.8:null;
+ const duration=role==='bash'?0.18:role==='special'?0.47:['attack','attack2'].includes(role)?0.42:role==='fall'?0.8:null;
  if(duration)active.timeScale=active.getClip().duration/duration;else active.timeScale=moving?1.05:1;
  a.fit.rotation.y += ((role==='run'||role==='walk'?0:Math.PI/2)-a.fit.rotation.y)*Math.min(1,dt*16);
+ if(specialActive){active.paused=true;active.time=clamp((special-(role==='bash'?0:0.18))/(role==='bash'?0.18:0.47),0,0.999)*active.getClip().duration;}else active.paused=false;
  a.mixer.update(dt);
  // Root position tracks are pinned; locomotion never pulls the actor away from its hitbox.
  return true;
