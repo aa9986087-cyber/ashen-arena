@@ -54,39 +54,39 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-17T21:20:10.729Z.
-- مرجع العمل: [`f0485d4951e63a29eba00ed3bafa695504eda0c2`](https://github.com/aa9986087-cyber/ashen-arena/commit/f0485d4951e63a29eba00ed3bafa695504eda0c2).
-- آخر تعديل: تجربة v21: أثر نصل وشرر درع بدلا من حلقات حكم العهد.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44177827480/attempts/1).
+- وقت التسجيل (UTC): 2026-11-17T21:29:48.554Z.
+- مرجع العمل: [`c6f41a9c8950f48b7d3db9b6ec3b50c682eeb936`](https://github.com/aa9986087-cyber/ashen-arena/commit/c6f41a9c8950f48b7d3db9b6ec3b50c682eeb936).
+- آخر تعديل: تجربة v22 بضربة سيف من فوق لحارس العهد.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44179849741/attempts/1).
 - بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
 - مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
-- إصدار التجربة المسجل: `clean-20261117-v21`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
+- إصدار التجربة المسجل: `clean-20261117-v22`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`731e018b60e7`: 245 ملفًا.
+مقارنةً بـ`be0504f71e12`: 251 ملفًا.
 - `docs/HANDOFF.md`
+- `test/expansions/gravebound/data.js`
+- `test/expansions/gravebound/gameplay.js`
+- `test/expansions/gravebound/ui.js`
+- `test/expansions/oath-warden/README.md`
 - `test/expansions/oath-warden/actor.js`
 - `test/expansions/oath-warden/combat.js`
 - `test/index.html`
 - `test/modular-config.json`
-- `test/releases/clean-20261117-v21/app.js`
-- `test/releases/clean-20261117-v21/app.min.js`
-- `test/releases/clean-20261117-v21/assets/audio/duel/block0.mp3`
-- `test/releases/clean-20261117-v21/assets/audio/duel/block1.mp3`
-- `test/releases/clean-20261117-v21/assets/audio/duel/block2.mp3`
-- `test/releases/clean-20261117-v21/assets/audio/duel/break0.mp3`
-- `test/releases/clean-20261117-v21/assets/audio/duel/clash0.mp3`
-- وبقية 233 ملفًا في رابط commit أعلاه.
+- `test/releases/clean-20261117-v22/app.js`
+- `test/releases/clean-20261117-v22/app.min.js`
+- `test/releases/clean-20261117-v22/assets/audio/duel/block0.mp3`
+- وبقية 239 ملفًا في رابط commit أعلاه.
 
 ### أحدث خمس دفعات على main
 
+- c6f41a9 تجربة v22 بضربة سيف من فوق لحارس العهد
+- be0504f docs: تحديث آلي لملف التسليم
 - f0485d4 تجربة v21: أثر نصل وشرر درع بدلا من حلقات حكم العهد
 - 731e018 docs: تحديث آلي لملف التسليم
 - f6296ba تجربة v20: ثلاث ضربات سيف ثقيلة ومتنوعة لحارس العهد دون تغيير القتال
-- a09ae4b docs: تحديث آلي لملف التسليم
-- b13ef06 تجربة v19: حركة خاصة مستقلة للحارس بلا تكرار عند تبديل المشي
 
 الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
