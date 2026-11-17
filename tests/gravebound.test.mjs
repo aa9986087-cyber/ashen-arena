@@ -24,6 +24,10 @@ async function fixture() {
   new vm.Script(await fs.readFile(new URL('test/expansions/oath-warden/combat.js',root),'utf8')).runInContext(g.context);
   for (const name of ['data', 'gameplay'])
     new vm.Script(await fs.readFile(new URL(`test/expansions/gravebound/${name}.js`, root), 'utf8')).runInContext(g.context);
+  if (config.enabledExpansions?.includes('boss-specials')) {
+    const combat = await fs.readFile(new URL('test/expansions/boss-specials/combat.js', root), 'utf8');
+    new vm.Script(combat).runInContext(g.context);
+  }
   g.run(`S.coins=60000; S.sp=150; S.char='reaper'; S.chars.reaper=1; newRun(); Math.random=()=>0.5;`);
   return g;
 }
