@@ -356,17 +356,18 @@ test('preview: gravebound purchases, reaper touch special, save/resume and seven
   await page.locator('#mPlay').click();
   await expect.poll(()=>page.evaluate(()=>G.state)).toBe('play');
   await page.evaluate(()=>{
-    G.noWaves=true;G.god=true;G.enemies=[];G.ups={soulcourt:1,soulguard:1,soulvessel:1};recalc();
-    const target=spawn('grunt',G.p.x+3.7,G.p.z);target.hp=target.maxHp=10000;
-    const w=G.weapons[0];fire(w,0);fire(w,0);fire(w,0);
-    window.__graveSweepProbe={count:G.grave.scytheCount,pulled:target.x<G.p.x+3.7,
-      safe:Math.hypot(target.x-G.p.x,target.z-G.p.z)>=2.4+target.r-1e-8,souls:G.grave.souls};
-    G.enemies=[];
-    for(let i=0;i<6;i++){const e=spawn('grunt',G.p.x+1,G.p.z);e.hp=1;hit(e,10,{quiet:1,noCrit:1});}
-    G.picks=[];G.pending=0;
+    G.noWaves=true;G.god=true;G.enemies=[];
+    G.p.hp=G.p.maxHp/2;
+    const before=G.p.hp;
+    for(let i=0;i<12;i++){const e=spawn('grunt',G.p.x+1,G.p.z);e.hp=1;hit(e,10,{quiet:1,noCrit:1});}
+    window.__reaperHeal={gain:G.p.hp-before,cap:G.p.maxHp*0.05};
+    G.enemies=[];G.picks=[];G.pending=0;
+    for(const sign of [-1,1]){const e=spawn('grunt',G.p.x+sign*4,G.p.z);e.hp=e.maxHp=10000;}
+    window.__circleTargets=G.enemies.slice();
   });
-  expect(await page.evaluate(()=>window.__graveSweepProbe)).toEqual({count:0,pulled:true,safe:true,souls:1});
-  await expect(page.locator('#graveMeter')).toContainText('اقتلاع');
+  const healing=await page.evaluate(()=>window.__reaperHeal);
+  expect(healing.gain).toBeGreaterThan(0);expect(healing.gain).toBeLessThanOrEqual(healing.cap+0.001);
+  await expect(page.locator('#graveMeter')).toContainText('القتل يشفيك');
   const start = await page.evaluate(()=>({x:G.p.x,z:G.p.z}));
   if (testInfo.project.name==='mobile') {
     const cdp=await page.context().newCDPSession(page);
@@ -376,8 +377,9 @@ test('preview: gravebound purchases, reaper touch special, save/resume and seven
     await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await cdp.detach();
     await page.locator('#bSpec').tap();
   } else { await page.keyboard.press('KeyQ'); }
-  expect(await page.evaluate(()=>G.grave.ghosts.length)).toBe(2);
-  await expect(page.locator('#graveMeter')).toContainText('الأرواح');
+  expect(await page.evaluate(()=>window.__circleTargets.every(e=>e.hp<e.maxHp))).toBe(true);
+  expect(await page.evaluate(()=>G.grave.ghosts.length)).toBe(0);
+  await expect(page.locator('#graveMeter')).toContainText('منجل دائري');
   expect(await page.evaluate(()=>PM.char==='reaper'&&PM.g.children.length>15&&renderer.info.render.calls>0)).toBe(true);
   await page.evaluate(()=>graveCollect(5));
   await page.evaluate(()=>{bannerT=0;$('banner').classList.remove('on');G.texts=[];});

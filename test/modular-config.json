@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "release": "clean-20261117-v16",
+  "release": "clean-20261117-v17",
   "baseRevision": "ab6798e6a4ed2cfd7f71a77e0e00f10505d393d3",
   "addonSourceRevision": "c0c1701",
   "enabledAddons": [
@@ -8,7 +8,7 @@
     "ranger",
     "forest-guardian"
   ],
-  "notes": "مظهر الحاصد فقط: رداء أسود ممزق، وجه مخفي بعيون خضراء ومنجل أكبر؛ دون تغيير القوة أو الأسعار.",
+  "notes": "حاصد أبسط: شفاء محدود عند القتل ومنجل دائري خاص وتطويرات متجر مباشرة؛ حركة قتال وعباءة محسنة.",
   "enabledExpansions": [
     "gravebound"
   ]

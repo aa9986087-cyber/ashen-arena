@@ -29,7 +29,7 @@ async function fixture() {
 graveTest('grave shop spends both existing currencies atomically, rejects stale purchases and equips only one owned relic', async () => {
   const g = await fixture();
   assert.equal(g.run(`graveBuy('training','soulvessel',0)`), true);
-  assert.deepEqual(g.json('[S.coins,S.sp,S.grave.training.soulvessel,UP.soulvessel.off,UP.soulvessel.max]'), [58800,147,1,false,1]);
+  assert.deepEqual(g.json('[S.coins,S.sp,S.grave.training.soulvessel,UP.soulvessel.off,UP.soulvessel.max]'), [58800,147,1,1,3]);
   assert.equal(g.run(`graveBuy('training','soulvessel',0)`), false);
   g.run('S.sp=0');
   assert.equal(g.run(`graveBuy('training','soulguard',0)`), false);
@@ -44,11 +44,12 @@ graveTest('grave shop spends both existing currencies atomically, rejects stale 
   assert.equal(g.run(`graveEquip('warden')`), false);
   assert.equal(g.run(`graveBuy('training','soulvessel',1)`), false);
 });
-graveTest('training uses the actual card pool and rank caps; unknown profile fields cannot poison saved ranks', async () => {
+graveTest('direct shop upgrades never require run cards; unknown profile fields cannot poison saved ranks', async () => {
   const g = await fixture();
   assert.equal(g.run(`upWeight('soulguard',[60,24,9,3])`), 0);
   g.run(`graveBuy('training','soulguard',0);newRun();G.state='play'`);
-  assert.ok(g.run(`upWeight('soulguard',[60,24,9,3])`) > 0);
+  assert.equal(g.run(`upWeight('soulguard',[60,24,9,3])`),0);
+  assert.equal(g.run(`reaperRank('soulguard')`),1);
   g.run(`G.ups.soulguard=1`);
   assert.equal(g.run(`upWeight('soulguard',[60,24,9,3])`), 0);
   g.run(`S.grave={training:{soulvessel:Infinity,soulcourt:999},relics:{lantern:-1},active:'lantern'};graveSyncTraining()`);
@@ -56,11 +57,11 @@ graveTest('training uses the actual card pool and rank caps; unknown profile fie
 });
 graveTest('souls and ghosts are bounded; special consumes souls and shield expires without stacking', async () => {
   const g = await fixture();
-  g.run(`G.state='play';G.ups={soulvessel:3,soulguard:3,soulcourt:3,soulflame:3};graveCollect(500)`);
+  g.run(`S.char='knight';graveState().relic='lantern';G.state='play';G.ups={soulvessel:3,soulguard:3,soulcourt:3,soulflame:3};graveCollect(500)`);
   assert.equal(g.run('graveState().souls'), 24);
   g.run('graveRelease(100)');
   assert.equal(g.run('graveState().souls'), 0);
-  assert.equal(g.run('graveState().ghosts.length'), 3);
+  assert.equal(g.run('graveState().ghosts.length'), 2);
   const shield = g.run('graveState().barrier');
   assert.ok(shield > 0 && shield <= g.run('G.p.maxHp*0.2') + 1e-8);
   g.run('graveCollect(500);graveRelease(100)');
@@ -73,11 +74,11 @@ graveTest('souls and ghosts are bounded; special consumes souls and shield expir
 });
 graveTest('real save/resume retains the run relic, resources and ghost lifetime; old abyss checkpoints migrate', async () => {
   const g = await fixture();
-  g.run(`graveBuy('relics','lantern',0);graveBuy('relics','warden',0);graveEquip('lantern');newRun();G.state='play';G.t=30;graveCollect(9);graveRelease(100);graveCollect(5);saveRun();`);
+  g.run(`graveBuy('relics','lantern',0);graveBuy('relics','warden',0);graveEquip('lantern');newRun();G.state='play';G.t=30;S.char='knight';G.ups.soulcourt=1;graveCollect(9);graveRelease(100);graveCollect(5);saveRun();`);
   const snap = g.json('loadRun()');
   assert.equal(snap.grave.souls, 5); assert.equal(snap.grave.ghosts.length, 1);
   g.run(`G.state='menu';graveEquip('warden');resumeRun()`);
-  assert.deepEqual(g.json('[S.char,G.grave.relic,G.grave.rank,G.grave.souls,G.grave.ghosts[0].life]'), ['reaper','lantern',1,5,8]);
+  assert.deepEqual(g.json('[S.char,G.grave.relic,G.grave.rank,G.grave.souls,G.grave.ghosts[0].life]'), ['knight','lantern',1,5,8]);
   g.run(`var old=loadRun();old.abyss=true;old.stage=6;delete old.grave;localStorage.setItem(RUN_KEY,JSON.stringify(old));resumeRun()`);
   assert.equal(g.run('STAGES[G.stage].abyss'), true);
 });
@@ -112,51 +113,19 @@ graveTest('preview backup round-trips but the actual production importer rejects
   assert.equal(prod.run('readBackup(code)'), null);
 });
 
-graveTest('reaper competes with the starter weapon and has useful untrained harvest and lasting ghost; other heroes keep their harvest', async () => {
-  const g = await fixture();
-  assert.ok(g.run('WEP.scythe.dmg/WEP.scythe.cd >= 0.9*WEP.sword.dmg/WEP.sword.cd'));
-  assert.ok(g.run('WEP.scythe.dmg/WEP.scythe.cd <= 1.15*WEP.sword.dmg/WEP.sword.cd'));
-  assert.ok(g.run('CHARS.reaper.hp>=105 && CHARS.reaper.hp<CHARS.knight.hp'));
-  g.run(`G.state='play';var target=spawn('grunt',0,2);target.hp=target.maxHp=10000;SPECIALS.reap.f(G.p,100)`);
-  const damage = 10000-g.run('target.hp');
-  assert.ok(damage >= 80 && damage <= 100);
-  g.run('G.t+=6.5;graveTick(6.5)');
-  assert.equal(g.run('G.grave.ghosts.length'),1);
-  assert.ok(g.run('G.shots[0].dmg')>=13);
-  g.run('graveTick(2)');
+graveTest('reaper heals only real kills within a saved one-second budget and shop ranks apply directly', async()=>{
+  const g=await fixture();
+  g.run(`graveBuy('training','soulvessel',0);newRun();G.state='play';G.p.hp=10;var before=G.p.hp;for(let i=0;i<20;i++){var e=spawn('grunt',1,0);kill(e);kill(e);}`);
+  assert.ok(g.run('G.p.hp-before')>0);
+  assert.ok(g.run('G.p.hp-before<=G.p.maxHp*0.05+1e-8'));
+  g.run('saveRun();resumeRun();G.state="play";var hp=G.p.hp;reaperHeal()');
+  assert.equal(g.run('G.p.hp'),g.run('hp'));
+  g.run('G.t+=1.1;reaperHeal()');assert.ok(g.run('G.p.hp>hp'));
+});
+graveTest('reaper circle hits both sides without stored souls, pulls or ghost requirements', async()=>{
+  const g=await fixture();
+  g.run(`G.state='play';var left=spawn('grunt',-4,0),right=spawn('grunt',4,0);left.hp=right.hp=10000;graveRelease(100)`);
+  assert.ok(Math.abs(g.run('10000-left.hp')-110)<1e-8);
+  assert.ok(g.run('right.hp<10000&&left.x===-4&&right.x===4'));
   assert.equal(g.run('G.grave.ghosts.length'),0);
-  g.run(`S.char='knight';newRun();G.state='play';G.ups.soulcourt=1;var other=spawn('grunt',0,2);other.hp=other.maxHp=10000;graveRelease(100)`);
-  assert.equal(10000-g.run('other.hp'),60);
-});
-
-graveTest('reaper third landed scythe swing pulls safely and harvests; empty swings and other heroes do not trigger it', async () => {
-  const g=await fixture();
-  g.run(`G.state='play';G.p.crit=0;var w={id:'scythe',lvl:1};fire(w,0);fire(w,0);fire(w,0)`);
-  assert.equal(g.run('G.grave.scytheCount'),0);
-  assert.equal(g.run('G.grave.souls'),0);
-  g.run(`var victim=spawn('grunt',3.7,0);victim.hp=victim.maxHp=10000;fire(w,0);fire(w,0)`);
-  assert.equal(g.run('G.grave.scytheCount'),2);
-  assert.equal(g.run('victim.x'),3.7);
-  g.run('fire(w,0)');
-  assert.equal(g.run('G.grave.scytheCount'),0);
-  assert.ok(g.run('victim.x')<3.7);
-  assert.ok(g.run('Math.hypot(victim.x,victim.z)>=2.4+victim.r-1e-8'));
-  assert.ok(g.run('G.grave.souls')>0);
-  g.run(`S.char='knight';newRun();G.state='play';G.p.crit=0;var other=spawn('grunt',3.7,0);other.hp=10000;fire(w,0);fire(w,0);fire(w,0)`);
-  assert.equal(g.run('other.x'),3.7);
-  assert.equal(g.run('G.grave.souls'),0);
-});
-
-graveTest('boss cannot be pulled and the third-swing meter survives actual save/resume', async () => {
-  const g=await fixture();
-  g.run(`G.state='play';G.p.crit=0;var boss=makeBoss(6,3.7,0);var w={id:'scythe',lvl:1};fire(w,0);fire(w,0);saveRun();resumeRun();G.state='play';G.bossOn=false;G.enemies=[boss];fire(w,0)`);
-  assert.equal(g.run('boss.x'),3.7);
-  assert.equal(g.run('G.grave.scytheCount'),0);
-  assert.ok(g.run('G.grave.lastSweepAt')>=0);
-});
-
-graveTest('obstacle correction cannot push a harvested enemy into the player', async () => {
-  const g=await fixture();
-  g.run(`G.state='play';var victim=spawn('grunt',5.5,0);victim.hp=10000;OBST.push({x:3.5,z:0,r:1});G.grave.scytheCount=2;graveScytheSweep({lvl:1},0)`);
-  assert.ok(g.run('Math.hypot(victim.x,victim.z)>=2.4+victim.r'));
 });

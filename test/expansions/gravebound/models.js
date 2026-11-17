@@ -75,14 +75,15 @@ buildRig = function (R, id, wep) {
   }
   gravePart(g, 'stone', 0x414a47, 0, 1.28, 0.31, 0.55, 0.07, 0.06);
   // Narrow trailing strips make the ragged cloak readable on a phone.
+  R.cloak = [];
   for (let i = 0; i < 7; i++) {
     const flap = gravePart(g, 'reaperRobe', i % 2 ? 0x20212b : cloth,
       (i - 3) * 0.13, 0.88, -0.29, 0.19, 0.85 + (i % 3) * 0.12, 0.17);
-    flap.rotation.x = -0.17;
+    flap.rotation.x = -0.17; R.cloak.push(flap);
   }
   const limb = (x, y, length, leg) => {
     const p = new THREE.Group(); p.position.set(x, y, 0); g.add(p);
-    gravePart(p, 'bone', leg ? 0x101218 : cloth, 0, -length / 2, 0, leg ? 0.9 : 1.65, length, leg ? 1 : 1.6);
+    gravePart(p, leg ? 'bone' : 'reaperRobe', leg ? 0x101218 : cloth, 0, -length / 2, 0, leg ? 0.9 : 0.48, leg ? length : length * 0.55, leg ? 1 : 0.48);
     gravePart(p, 'stone', leg ? 0x283a31 : bone, 0, -length, 0.03, leg ? 0.22 : 0.16, 0.16, leg ? 0.35 : 0.15);
     return p;
   };
@@ -166,9 +167,29 @@ const graveBaseRender = render;
 const graveBasePoseRig = poseRig;
 poseRig = function (R,p,wepId,playing,now) {
   graveBasePoseRig(R,p,wepId,playing,now);
-  if(R !== PM || R.char !== 'reaper' || !playing || wepId !== 'scythe' || !G.grave)return;
-  const t=G.t-G.grave.lastSweepAt;
-  if(t>=0&&t<0.3) {R.aR.rotation.z=-1.5+3*t/0.3;R.aL.rotation.x=-0.65;}
+  if (R.char !== 'reaper') return;
+  const moving = p.moving || 0, time = now * 0.001;
+  // Cloth follows the stride; shoulders and both arms finish the same cut.
+  (R.cloak || []).forEach((flap,i)=>{
+    flap.rotation.x = -0.17 - moving * 0.2 + Math.sin(time * 3 + i * 0.7) * (0.035 + moving * 0.07);
+    flap.rotation.z = Math.sin(time * 2.5 + i) * 0.035;
+  });
+  R.g.rotation.z = Math.sin(p.walk) * 0.035 * moving;
+  if (p.swing > 0) {
+    const cut = Math.sin((1-p.swing)*Math.PI);
+    R.aL.rotation.x = -0.55-cut*0.65;
+    R.aL.rotation.z = -0.2-cut*0.35;
+    R.aR.rotation.x = -1.05-cut*0.35;
+    R.g.rotation.y += Math.sin((1-p.swing)*Math.PI*2)*0.18;
+  } else { R.aL.rotation.z = -0.08; }
+  const t = G.grave ? G.t-G.grave.lastSweepAt : 10;
+  if (R === PM && playing && t>=0 && t<0.45) {
+    const phase=t/0.45, eased=phase*phase*(3-2*phase);
+    R.g.rotation.y += eased*TAU;
+    R.aR.rotation.x=-1.4; R.aR.rotation.z=-0.8;
+    R.aL.rotation.x=-1; R.aL.rotation.z=0.45;
+  }
+
 };
 render = function (dt, now) {
   const playing = G && ['play', 'cards', 'paused', 'count', 'ending'].includes(G.state);

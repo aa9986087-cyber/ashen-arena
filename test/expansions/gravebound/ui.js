@@ -21,7 +21,7 @@ drawShop = function () {
   if (!section) { section = el('section', 'graveShop'); section.id = 'graveShop'; $('permGrid').after(section); }
   section.innerHTML = '';
   section.append(el('h2', '', 'عهود المقبرة — في التجربة'),
-    el('p', '', 'التدريب يفتح بطاقات العهد ويرفع حدها إلى المستوى المشترى؛ البطاقة نفسها تختارها أثناء الجولة. كل الأسعار بالعملات ونقاط المهارة الحالية.'));
+    el('p', '', 'تطويرات الحاصد دائمة وتعمل مباشرة من بداية الجولة القادمة. لا تحتاج بطاقات لتفعيلها. الأسعار بالعملات ونقاط المهارة الحالية.'));
   const p = graveProfile();
   if (!p.demoClaimed) {
     const demo = el('button', 'btn sm', 'أضف رصيد تجربة: 25000 🪙 و50 ✨');
@@ -33,7 +33,7 @@ drawShop = function () {
     };
     section.append(el('p', '', 'رصيد اختياري مرة واحدة لتجربة المحتوى. يبقى في هذه المعاينة ولا ينتقل للعبة الأساسية.'), demo);
   }
-  for (const [kind, data, label] of [['training', GRAVE_TRAINING, 'تدريب العهد'], ['relics', GRAVE_RELICS, 'آثار — تجهيز واحد لكل جولة']]) {
+  for (const [kind, data, label] of [['training', GRAVE_TRAINING, 'تطويرات الحاصد — تعمل مباشرة'], ['relics', GRAVE_RELICS, 'آثار — تجهيز واحد لكل جولة']]) {
     section.append(el('h3', '', label));
     const grid = el('div', 'graveGrid'); section.append(grid);
     for (const [id, def] of Object.entries(data)) {
@@ -64,8 +64,7 @@ function graveMeter() {
   graveHud.hidden = !on;
   if (!on) return;
   const g = graveState();
-  const value = 'الأرواح ' + Math.floor(g.souls) + ' من ' + graveCapacity() +
-    (S.char === 'reaper' ? ' · اقتلاع ' + g.scytheCount + ' من 3' : '') +
+  const value = S.char === 'reaper' ? '💚 القتل يشفيك · الخاصة: منجل دائري' : 'الأرواح ' + Math.floor(g.souls) + ' من ' + graveCapacity() +
     (g.barrier > 0 ? ' · حاجز ' + Math.ceil(g.barrier) : '');
   if (value !== graveHudText) { graveHud.textContent = value; graveHudText = value; }
 }

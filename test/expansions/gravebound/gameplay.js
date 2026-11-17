@@ -1,7 +1,7 @@
 'use strict';
 function graveState() {
   if (!G.grave) G.grave = { souls: 0, barrier: 0, barrierUntil: 0, ghosts: [], eliteAt: -10, bossSoulAt: -10,
-    scytheCount: 0, lastSweepAt: -10,
+    scytheCount: 0, lastSweepAt: -10, healAt: -10, healed: 0, training: { ...graveProfile().training },
     relic: S.grave?.active || '', rank: S.grave?.relics?.[S.grave?.active] || 0 };
   return G.grave;
 }
@@ -17,37 +17,30 @@ function graveCollect(amount) {
   const g = graveState();
   g.souls = Math.min(graveCapacity(), g.souls + amount);
 }
-let graveScytheContext = null;
-function graveScytheSweep(w, ang) {
+function reaperRank(id) { return graveState().training?.[id] || 0; }
+function reaperHeal() {
+  if (S.char !== 'reaper' || G.state !== 'play' || G.p.dead || choosingCards()) return;
   const g = graveState(), p = G.p;
-  g.scytheCount = (g.scytheCount + 1) % 3;
-  if (g.scytheCount || G.t - g.lastSweepAt < 0.65) return;
-  g.lastSweepAt = G.t;
-  const R = 5.5 * p.area, arc = 2.8, points = [];
-  for (let i=0;i<=8;i++) {
-    const a = ang-arc/2+arc*i/8;
-    points.push([p.x+Math.cos(a)*R,0.55,p.z+Math.sin(a)*R]);
-  }
-  vfxBolt(points,{w:0.35,life:0.3,rough:0.08,col:[0.35,1.15,0.72]});
-  let caught = 0;
-  eachInRadius(p.x,p.z,R,e=>{
-    const dx=e.x-p.x,dz=e.z-p.z,d=Math.hypot(dx,dz);
-    if(angDiff(Math.atan2(dz,dx),ang)>arc/2)return;
-    if(!e.boss) {
-      const distance=Math.max(2.4+e.r,d-2.2);
-      if(distance<d) {
-        const oldX=e.x,oldZ=e.z;
-        e.x=p.x+dx/d*distance;e.z=p.z+dz/d*distance;e.kx=e.kz=0;pushOutOfObstacles(e,e.r*0.8);
-        if(Math.hypot(e.x-p.x,e.z-p.z)<2.4+e.r){e.x=oldX;e.z=oldZ;}
-      }
-    }
-    hit(e,(8+3*w.lvl)*p.dmgMul,{aoe:1,quiet:1,noCrit:1,grave:1});
-    caught++;
-  });
-  graveCollect(Math.max(1,Math.min(3,caught)));
-  text(p.x,p.z-1,'اقتلاع الروح','#8ae8c1',true);
+  if (G.t - g.healAt >= 1) { g.healAt = G.t; g.healed = 0; }
+  const amount = Math.max(0, Math.min(1 + 0.5 * reaperRank('soulvessel'), p.maxHp * 0.05 - g.healed, p.maxHp - p.hp));
+  if (amount <= 0) return;
+  g.healed += amount; heal(amount);
 }
 function graveRelease(power) {
+  if (S.char === 'reaper') {
+    const g = graveState(), p = G.p;
+    const radius = 6 * p.area * (1 + 0.08 * reaperRank('soulcourt'));
+    g.lastSweepAt = G.t;
+    ring(p.x, p.z, 0.5, radius, 0.45, [0.35, 1.1, 0.75]);
+    const points = [];
+    for (let i = 0; i <= 24; i++) { const a = i * TAU / 24; points.push([p.x + Math.cos(a) * radius, 0.8, p.z + Math.sin(a) * radius]); }
+    vfxBolt(points, {w:0.3,life:0.35,rough:0.03,col:[0.35,1.1,0.75]});
+    eachInRadius(p.x, p.z, radius, e => hit(e, power * 1.1 * (1 + 0.15 * reaperRank('soulflame')), {aoe:1,quiet:1,noCrit:1,grave:1}));
+    // The standard special handler sets its timer before calling this function.
+    G.specCd = Math.max(0, G.specCd - reaperRank('soulguard'));
+    text(p.x, p.z - 1, 'حصاد دائري', '#8ae8c1', true);
+    return;
+  }
   if (!graveEnabled()) return;
   const g = graveState(), souls = Math.min(graveCapacity(), g.souls), p = G.p;
   g.souls = 0;
@@ -155,7 +148,8 @@ kill = function (e) {
   if (e.dead) return;
   graveBaseKill(e);
   if (COOP.remoteKill) return;
-  graveCollect(e.boss ? 5 : e.elite ? 3 : 1);
+  if (S.char === 'reaper') reaperHeal();
+  else graveCollect(e.boss ? 5 : e.elite ? 3 : 1);
   const g = graveState();
   if (e.elite && g.relic === 'hunter' && G.t - g.eliteAt >= 3) {
     g.eliteAt = G.t; G.specCd = Math.max(0, G.specCd - (1 + g.rank));
@@ -165,18 +159,9 @@ const graveBaseHit = hit;
 hit = function (e, dmg, options) {
   const alive = !e.dead, hp = e.hp;
   graveBaseHit(e, dmg, options);
-  if (graveScytheContext?.game === G && alive && e.hp < hp && !options?.grave) graveScytheContext.landed = true;
   if (alive && e.boss && e.hp < hp && !options?.grave && G.t - graveState().bossSoulAt >= 2) {
     graveState().bossSoulAt = G.t; graveCollect(1);
   }
-};
-const graveBaseFire = fire;
-fire = function (w, ang) {
-  if (S.char !== 'reaper' || w.id !== 'scythe' || G.state !== 'play' || G.p.dead || choosingCards()) return graveBaseFire(w,ang);
-  const previous=graveScytheContext, attack={game:G,landed:false};
-  graveScytheContext=attack;
-  try { graveBaseFire(w,ang); } finally { graveScytheContext=previous; }
-  if(attack.landed)graveScytheSweep(w,ang);
 };
 const graveBaseUpdate = update;
 update = function (dt) {
@@ -197,7 +182,7 @@ makeBoss = function (kind, x, z) {
 function graveSaveRun() {
   const g = graveState();
   return { souls: g.souls, barrier: g.barrier, barrierUntil: g.barrierUntil, relic: g.relic, rank: g.rank,
-    scytheCount: g.scytheCount, lastSweepAt: g.lastSweepAt,
+    scytheCount: g.scytheCount, lastSweepAt: g.lastSweepAt, training: {...g.training}, healAt:g.healAt, healed:g.healed,
     eliteAt: g.eliteAt, bossSoulAt: g.bossSoulAt, ghosts: g.ghosts.map(q => ({ ...q })) };
 }
 function graveRestoreRun(raw) {
@@ -205,6 +190,10 @@ function graveRestoreRun(raw) {
   if (!raw || typeof raw !== 'object') return;
   g.relic = Object.hasOwn(GRAVE_RELICS, raw.relic) ? raw.relic : '';
   g.rank = Math.min(number(raw.rank, 3) | 0, graveProfile().relics[g.relic] || 0);
+  g.training = {};
+  for (const id in GRAVE_TRAINING) g.training[id] = raw.training ? Math.min(number(raw.training[id],3)|0,graveProfile().training[id]) : graveProfile().training[id];
+  g.healAt = Number.isFinite(raw.healAt) ? Math.min(raw.healAt,G.t) : G.t;
+  g.healed = number(raw.healed,G.p.maxHp*0.05);
   g.souls = number(raw.souls, graveCapacity());
   g.barrier = number(raw.barrier, G.p.maxHp * 0.25); g.barrierUntil = number(raw.barrierUntil, G.t + 8);
   g.eliteAt = Number.isFinite(raw.eliteAt) ? raw.eliteAt : G.t;
