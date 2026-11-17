@@ -35,11 +35,12 @@ function profileStats() {
     ach: Object.keys(S.ach || {}).length,
     tr: Object.keys(S.tree || {}).length,
     ch: S.char,
+    penalty: playerPenaltyReceipt(S),
   };
 }
 let profileBusy = false;
 async function profileSync() {
-  if (!S.name || profileBusy || (typeof NET_LOCAL !== 'undefined' && NET_LOCAL)) return;
+  if (!playerPenaltyReady || !S.name || profileBusy || (typeof NET_LOCAL !== 'undefined' && NET_LOCAL)) return;
   profileBusy = true;
   try {
     await api('/rest/v1/rpc/save_profile', {

@@ -123,9 +123,13 @@ async function loadOnline() {
 }
 async function sendOnline(e) {
   try {
-    await api('/rest/v1/rpc/submit_score', {
+    const penalty = playerPenaltyReceipt(S);
+    await api('/rest/v1/rpc/' + (penalty ? 'submit_penalized_score' : 'submit_score'), {
       method: 'POST',
-      body: JSON.stringify({ p_name: e.n, p_kills: e.k, p_lvl: e.l, p_t: e.t | 0, p_bosses: e.b }),
+      body: JSON.stringify({
+        ...(penalty ? { p_pid: S.pid, p_key: profileKey(), p_penalty: penalty } : { p_name: e.n }),
+        p_kills: e.k, p_lvl: e.l, p_t: e.t | 0, p_bosses: e.b,
+      }),
     });
     loadOnline();
   } catch (err) {}

@@ -32,7 +32,7 @@ $('bkCopy').onclick = async () => {
     toast('انسخ الكود من الخانة');
   }
 };
-$('bkLoad').onclick = () => {
+$('bkLoad').onclick = async () => {
   const o = readBackup($('bkIn').value);
   if (!o) {
     AU.play('deny');
@@ -53,9 +53,16 @@ $('bkLoad').onclick = () => {
   S.stats = Object.assign(defSave().stats, o.stats || {});
   S.set = Object.assign(defSave().set, o.set || {});
   S.gifts = gifts; // a gift redeemed on this device stays redeemed
+  let penaltyApplied;
+  $('settings').inert = true;
+  try {
+    penaltyApplied = await refreshPlayerPenalty();
+  } finally {
+    $('settings').inert = false;
+  }
   save();
   $('bkIn').value = '';
-  if (G.state !== 'paused') {
+  if (penaltyApplied || G.state !== 'paused') {
     newRun();
     buildPlayer();
   }

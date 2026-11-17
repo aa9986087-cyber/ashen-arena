@@ -19,7 +19,7 @@ export async function globals({ stored, deniedStorage = false, files } = {}) {
   }
   const events = { network: [], timers: [], sound: [], toasts: [], writes: 0 };
   const context = vm.createContext({
-    console, atob, btoa, location: { hostname: '127.0.0.1', hash: '#netlocal' },
+    console, atob, btoa, AbortSignal, location: { hostname: '127.0.0.1', hash: '#netlocal' },
     document: { getElementById: node, querySelectorAll: () => [], querySelector: () => null, addEventListener() {} },
     localStorage: {
       getItem(key) { if (deniedStorage) throw new Error('storage denied'); return storage.get(key) ?? null; },
@@ -34,7 +34,7 @@ export async function globals({ stored, deniedStorage = false, files } = {}) {
     vfxClear() {},
   });
   const selected = files ?? [
-    'js/core/utils.js', 'js/core/config.js', 'js/core/dom.js', 'js/core/codes.js', 'js/core/save.js',
+    'js/core/utils.js', 'js/core/config.js', 'js/core/dom.js', 'js/core/codes.js', 'js/core/save.js', 'js/core/penalties.js',
     'js/data/weapons.js', 'js/data/characters.js', 'js/data/upgrades.js', 'js/data/achievements.js',
     'js/data/stages.js', 'js/data/enemies.js', 'js/data/missions.js', 'js/data/news.js',
     'js/game/state.js', 'js/game/combat.js', 'js/game/specials.js', 'js/game/cards.js', 'js/game/run.js', 'js/game/daily.js',

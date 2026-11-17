@@ -66,3 +66,13 @@ window.__game = {
   dash,
 };
 requestAnimationFrame(frame);
+
+window.__game.ready = refreshPlayerPenalty().then(applied => {
+  if (applied) {
+    newRun();
+    buildPlayer();
+    menuState();
+    wallet();
+    profileSync();
+  }
+});
