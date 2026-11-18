@@ -108,10 +108,10 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-18T08:25:54.650Z.
-- مرجع العمل: [`ea545d2711a39ff27b4b119c63a756f71a615ad3`](https://github.com/aa9986087-cyber/ashen-arena/commit/ea545d2711a39ff27b4b119c63a756f71a615ad3).
-- آخر تعديل: نشر جرافيكس v36 والعرض الأفقي وإصلاح تفعيل أدوات المطوّر.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44266191464/attempts/1).
+- وقت التسجيل (UTC): 2026-11-18T09:02:22.399Z.
+- مرجع العمل: [`c358c3ff5534ced36c1a4f160cb05e5f04189b71`](https://github.com/aa9986087-cyber/ashen-arena/commit/c358c3ff5534ced36c1a4f160cb05e5f04189b71).
+- آخر تعديل: إرجاع المختبر بعد تفعيل وضع المطوّر.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44271143651/attempts/1).
 - بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
 - مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
@@ -119,28 +119,26 @@
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`288ce4b8b96d`: 22 ملفًا.
-- `css/base.css`
-- `css/hud.css`
-- `css/screens.css`
+مقارنةً بـ`34c270d7802b`: 11 ملفًا.
 - `docs/HANDOFF.md`
 - `index.html`
-- `js/content/maps/arena-maps.js`
-- `js/core/config.js`
 - `js/core/save.js`
-- `js/duel/duel-lobby.js`
-- `js/input.js`
-- `js/render/atmosphere.js`
-- `js/render/renderer.js`
-- وبقية 10 ملفًا في رابط commit أعلاه.
+- `js/game/run.js`
+- `js/ui/dev.js`
+- `js/ui/lab.js`
+- `js/ui/live.js`
+- `js/ui/profile.js`
+- `js/ui/screens.js`
+- `tests/browser/smoke.spec.mjs`
+- `tests/unit/structure.test.mjs`
 
 ### أحدث خمس دفعات على main
 
+- c358c3f إرجاع المختبر بعد تفعيل وضع المطوّر
+- 34c270d docs: تحديث آلي لملف التسليم
 - ea545d2 نشر جرافيكس v36 والعرض الأفقي وإصلاح تفعيل أدوات المطوّر
 - 288ce4b docs: تحديث آلي لملف التسليم
 - 975f872 تجربة v36 لخامات الساحات وبطاقات إعدادات الجودة
-- a3dea79 docs: تحديث آلي لملف التسليم
-- 26ebe0a تجربة v35 لجودة الرسم والعرض الأفقي
 
 الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
