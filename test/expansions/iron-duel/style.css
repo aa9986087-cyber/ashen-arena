@@ -1,0 +1,46 @@
+#duelMenu { --forge-gold: #deae73; --forge-line: #503a31; color: #f8e8d6; }
+#duelMenu .wrap { max-width: min(92vw, 760px); }
+#duelMenu .head h2 { color: #f4c991; }
+.forgeArt {
+  display: grid;
+  align-content: end;
+  gap: 5px;
+  min-height: 150px;
+  padding: 18px;
+  border: 1px solid #755137;
+  border-radius: 14px;
+  background: radial-gradient(ellipse at 90% 1%, #9d54364d, transparent 55%),
+    repeating-linear-gradient(130deg, #c2833511 0 1px, transparent 1px 15px),
+    linear-gradient(120deg, #2a171f, #101521 77%);
+}
+.forgeArt strong { font: 400 clamp(36px, 8vw, 64px) / 1.03 var(--display); color: #ffe2b5; }
+.forgeArt span, .forgeArt p, .forgeHint { margin: 0; color: #e0b68a; font-size: 13px; }
+.forgeHint { margin: 9px 1px; color: #c8b6a5; }
+.forgeStyles, .forgeRoomRow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.forgePick {
+  display: grid; justify-items: center; align-content: center; gap: 8px;
+  min-height: 91px; padding: 10px 3px; color: #f6e6d0;
+  background: #1a1921; border: 1px solid #514047; border-radius: 10px;
+  font: 700 13px var(--ui, sans-serif);
+}
+.forgePick.on { border-color: #deb075; background: #2f2328; }
+.forgeHelm {
+  display: block; width: 37px; height: 35px;
+  clip-path: polygon(16% 4%, 84% 4%, 100% 34%, 86% 86%, 50% 100%, 14% 86%, 0 34%);
+  background: linear-gradient(176deg, var(--trim), var(--metal) 47%, #110d15 48% 61%, var(--metal) 63%);
+}
+.forgeGore, .forgeOnline { border: 1px solid #634839; border-radius: 12px; background: #161920; padding: 11px 12px; margin: 12px 0; }
+.forgeGore { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 13px; }
+.forgeGore select, .forgeOnline input { background: #202630; color: #fff1de; border: 1px solid #72594b; border-radius: 8px; min-height: 39px; padding: 5px 9px; }
+.forgeOnline input { width: 100%; box-sizing: border-box; font-size: 16px; margin-bottom: 8px; text-align: center; direction: ltr; }
+.forgeRoomRow { grid-template-columns: 1fr 1fr; }
+.forgeInvite { font-size: 13px; color: #efc598; margin: 0.4rem 0 0; }
+.forgeDuelExtras {
+  z-index: 6; position: absolute; left: 50%; top: max(calc(env(safe-area-inset-top) + 62px), 66px);
+  translate: -50% 0; display: grid; text-align: center; row-gap: 5px;
+  color: #f8ddbb; font-size: clamp(10px, 2.4vw, 13px); pointer-events: none;
+  text-shadow: 0 1px 4px #100b12, 0 1px 4px #100b12;
+}
+#dForgeRoom:empty { display: none; }
+#dForgeGrip.tired { color: #ff8d67; }
+#dAtk, #dBlock { touch-action: none; }
