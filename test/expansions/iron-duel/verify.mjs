@@ -186,11 +186,11 @@ try {
     d.hp = 4;
     d.damage(10, a, 'light');
     for (let i=0;i<70;i++) d.update(1/120, a);
-    return {healthy, injured, penalty, wet, dead:d.act, tilt:d.forgeFall?.tilt, wound:d.forgeInjuries.length,
+    return {healthy, injured, penalty, wet, dead:d.act, tilt:d.forgeFall?.tilt, wound:d.forgeInjuries.length, cuts:d.cuts,
       camera:!!(DUEL.fin || DUEL.kc), ground:d.root.position.y, dropped:GORE.pieces.some(p => p.f === d && p.weapon)};
   });
   assert.ok(injuries.penalty > 0 && injuries.injured < injuries.healthy && injuries.wet, JSON.stringify(injuries));
-  assert.ok(injuries.dead === 'dead' && injuries.tilt > .7 && injuries.wound > 0 && !injuries.camera && injuries.dropped, JSON.stringify(injuries));
+  assert.ok(injuries.dead === 'dead' && injuries.tilt > .7 && injuries.wound > 0 && !injuries.camera && injuries.dropped && injuries.cuts === 0, JSON.stringify(injuries));
   await p1.evaluate(() => { duelFrame = window.__ironFrame; });
 
   await p1.evaluate(() => duelExit());

@@ -220,6 +220,17 @@ def build(out):
     start = code.index("  // fighters bleeding:")
     end = code.index("  // wounds and stumps", start)
     gore.write_text(code[:start] + code[end:])
+    code = gore.read_text()
+    start = code.index("function goreDecide(")
+    end = code.index("/* ---- per frame */", start)
+    gore.write_text(code[:start] + """function goreDecide(d, kind, from) {
+  const hit = d.forgeContact;
+  if (!hit?.pos || S.forgeBlood === 'light' || kind !== 'heavy' ||
+      !from?.wp.cut || hit.power < .88 || forgePenalty(d, hit.zone) < .69) return null;
+  const part = GORE_PARTS[hit.zone];
+  return part && !(d.cuts & part.bit) ? hit.zone : null;
+}
+""" + code[end:])
     patch(out, "js/duel/duel-gore.js", [
         ("          f.start('dead');\n          f.play('death', 0.1, 0, true);\n          DS.death(f);",
          "          forgeFall(f, f.lastFrom);"),
@@ -244,13 +255,6 @@ def build(out):
         } else goreStain(o.position.x, o.position.z, 0.7 + Math.random() * 0.3, true, 0.18);"""),
         ("const gV = new THREE.Vector3(),", "const gV = new THREE.Vector3(),\n  gV3 = new THREE.Vector3(),"),
         ("    if (!o.isSkinnedMesh) return;", "    if (!o.isSkinnedMesh || o.userData.forgeHiddenLegacy) return;"),
-        ("function goreDecide(d, kind, from) {", """function goreDecide(d, kind, from) {
-  const hit = d.forgeContact;
-  if (hit) {
-    if (S.forgeBlood === 'light' || kind !== 'heavy' || !from.wp.cut || hit.power < .88 || forgePenalty(d, hit.zone) < .69) return null;
-    const part = GORE_PARTS[hit.zone];
-    return part && !(d.cuts & part.bit) && hit.power > 0.70 ? hit.zone : null;
-  }"""),
     ])
     patch(out, "js/duel/duel-ffa.js", [
         ("    ffaExtra = [new Duelist(a, FFA_HUES[2], 104), new Duelist(b, FFA_HUES[3], 124)];",
