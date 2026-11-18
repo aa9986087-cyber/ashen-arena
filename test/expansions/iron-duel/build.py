@@ -50,8 +50,8 @@ def build(out):
     patch(out, "js/core/penalties.js", [("    if (!pid || !S.pkey) return null;", "    return null;")])
     patch(out, "js/duel/duel-net.js", [
         ("const NET_LOCAL = /netlocal/.test(location.hash);", "const NET_LOCAL = true;"),
-        ("  if (NET_LOCAL) {\n    const bc", "  if (!name.startsWith('duel-iron-v2-live-')) {\n    const bc"),
-        ("new BroadcastChannel('ashen:' + name)", "new BroadcastChannel('ashen-iron-v2:' + name)"),
+        ("  if (NET_LOCAL) {\n    const bc", "  if (!name.startsWith('duel-iron-v3-live-')) {\n    const bc"),
+        ("new BroadcastChannel('ashen:' + name)", "new BroadcastChannel('ashen-iron-v3:' + name)"),
     ])
     (out / "js/duel/duel-lobby.js").write_text(
         (out / "js/duel/duel-lobby.js").read_text().replace("ashen_duels_local", "ashen_iron_duels")
@@ -68,13 +68,13 @@ def build(out):
     movement_end = code.index("    this.lean =", movement_start)
     code = code[:movement_start] + """    if (this.act !== 'dodge') [vx, vz] = forgeFootwork(this, vx, vz, dt);
     else this.vx = this.vz = 0;
-    forgeBodyLean(this, dt);
-""" + code[movement_end:]
+    """ + code[movement_end:]
     start = code.index("    // swings: sword glows")
     end = code.index("    // end of timed states", start)
     code = code[:start] + """    const M = this.M[this.act] || DM[this.act];
+    const manual = forgeManual(this);
     const strike = !this.hitDone && FORGE_ATTACKS.has(this.act) &&
-      this.t >= M.hitFrom && this.t - dt <= M.hitTo ? this.act : null;
+      (manual ? this.t >= 0.035 : this.t >= M.hitFrom && this.t - dt <= M.hitTo) ? this.act : null;
 """ + code[end:]
     code = replace(code, "    this.hitDone = false;\n  }\n  /** The sword", """    this.hitDone = false;
     forgeBeginAction(this, act);
@@ -83,7 +83,7 @@ def build(out):
     pose = "this.root.rotation.y = this.face;"
     if code.count(pose) != 2:
         raise RuntimeError("Expected the local and remote pose exits")
-    code = code.replace(pose, pose + "\n      forgePoseAndStrike(this, foe, strike, dt);")
+    code = code.replace(pose, pose + "\n      forgeBodyLean(this, dt);\n      forgeGroundShadow(this);\n      forgePoseAndStrike(this, foe, strike, dt);")
     code = replace(code, """    // the killing blow: a staged finisher""", """    if (kind !== 'kick') forgeWound(this, from, kind);
     // the killing blow: a staged finisher""")
     code = replace(code, "    goreHit(this, from, kind);", "    if (!this.forgeContact) goreHit(this, from, kind);")
@@ -91,7 +91,12 @@ def build(out):
     code = replace(code, "if (kind === 'heavy' || d.st < cost)", "if (d.st < cost || (kind === 'heavy' && W.block > 1.25))")
     code = code.replace("this.st < this.M.light.st * 0.5", "this.st < this.M.light.st")
     code = code.replace("this.st < this.M.heavy.st * 0.5", "this.st < this.M.heavy.st")
-    code = code.replace("blockT: 0, moving: 0", "blockT: 0, moving: 0, vx: 0, vz: 0, forgeSweep: null, forgeLean: 0")
+    code = code.replace("blockT: 0, moving: 0", "blockT: 0, moving: 0, vx: 0, vz: 0, forgeSweep: null, forgeLean: 0, forgeMotion: null, forgeGesture: null")
+    code = replace(code, "    if (M && this.t >= M.t) {", "    if (M && this.t >= (manual ? (this.forgeGesture.held ? 1.45 : Math.max(M.t, this.forgeGesture.release + .26)) : M.t)) {")
+    code = replace(code, "    if (this.free) {\n      let mx", "    if (this.free || forgeManual(this)) {\n      let mx")
+    code = replace(code, "* (this.armless ? 0.65 : 1);", "* (this.armless ? 0.65 : forgeManual(this) ? .55 : 1);")
+    code = replace(code, "if (this.act === 'idle') {\n        // a real sprint", "if (this.act === 'idle' || forgeManual(this)) {\n        // a real sprint")
+    code = replace(code, "if (d.act === 'block' && Math.abs", "if (d.act === 'block' && a.act !== 'kick' && d.forgeContact?.guard && Math.abs")
     code = replace(code, "    goreReset(this);", "    forgeClearInjuries(this);\n    goreReset(this);")
     path.write_text(code)
     mode = out / "js/duel/duel-mode.js"
@@ -120,6 +125,7 @@ def build(out):
         ("|| 'fp';", "|| 'tps';"),
         ("    DUEL.scene.add(DUEL.me.root, DUEL.foe.root);",
          "    forgeDress(DUEL.me, forgeStyle());\n    forgeDress(DUEL.foe, 4);\n    DUEL.scene.add(DUEL.me.root, DUEL.foe.root);"),
+        ("if (DUEL.atkDown >= 0 && !DUEL.heavyFired && performance.now()", "if (!forgePointer?.drag && DUEL.atkDown >= 0 && !DUEL.heavyFired && performance.now()"),
         ("  duelLock(false);\n  DUEL.pitch = 0;",
          "  duelLock(!watch);\n  DUEL.pitch = 0;\n  me.forgeAttack = foe.forgeAttack = foe.forgeRemoteAttack = 0;\n  forgeDress(me, forgeStyle());"),
         ("    down();\n  });", "    b.setPointerCapture(e.pointerId);\n    down();\n  });"),
@@ -145,6 +151,7 @@ def build(out):
         ("        ch.send('go', {});\n        if (!N.ready)", "        ch.send('go', {});\n        if (N.ready && DUEL.round === 1) ch.send('rd', { n: 1 });\n        if (!N.ready)"),
         ("    N.ch.send('st', {", """    N.ch.send('st', {
       av: me.forgeStyle,
+      gesture: forgePacketGesture(me),
       mid: me.forgeAttack || 0,
       mt: r(me.t),
       md: me.forgeDirection || 0,
@@ -183,20 +190,21 @@ def build(out):
     patch(out, "js/duel/duel-arena.js", [
         ("  s.background = new THREE.Color(0x0a0708);", "  s.background = new THREE.Color(0x110d16);"),
         ("new THREE.Fog(0x120a0e, 22, 70)", "new THREE.Fog(0x20141c, 16, 56)"),
-        ("map: arenaFloorTex(), roughness: 0.88", "map: forgeFloorTexture(), roughness: 0.79"),
+        ("map: arenaFloorTex(), roughness: 0.88", "...forgeFloorMaterial()"),
         ("  s.add(key);", "  s.add(key);\n  forgeLight(s);"),
+        ("  key.shadow.bias = -0.0008;", "  key.shadow.bias = -0.0004;\n  key.shadow.normalBias = .035;\n  key.shadow.radius = 2.5;"),
     ])
     html = (out / "index.html").read_text()
     html = replace(html, "<title>ساحة الرماد</title>", "<title>حلبة النغالة | ساحة الرماد</title>")
-    html = html.replace("?v=202611180848", "?v=202611180848&preview=38")
+    html = html.replace("?v=202611180848", "?v=202611180848&preview=39")
     # Reuse the vetted Three.js assets and keep the preview independent of CDN rendering.
     vendors = "\n".join(f'<script src="vendor/{p.name}"></script>' for p in sorted((out / "vendor").glob("*.js")))
     html = re.sub(r'<script src="https://[^"]+"></script>', '', html)
     html = html.replace('<head>', '<head>\n<meta name="robots" content="noindex,nofollow">\n'
         '<meta http-equiv="Content-Security-Policy" content="connect-src \'self\' data: blob: wss://bvxfzcndquirqmpyhtpj.supabase.co https://bvxfzcndquirqmpyhtpj.supabase.co">\n'
-        '<link rel="stylesheet" href="style.css?v=38">', 1)
+        '<link rel="stylesheet" href="style.css?v=39">', 1)
     html = replace(html, '<script src="js/core/config.js', vendors + '\n<script src="js/core/config.js')
-    html = replace(html, '<script src="js/main.js', '\n'.join(f'<script src="{n}.js?v=38"></script>' for n in ['combat','art','gear','network','menu']) + '\n<script src="js/main.js')
+    html = replace(html, '<script src="js/main.js', '\n'.join(f'<script src="{n}.js?v=39"></script>' for n in ['combat','art','gear','network','menu']) + '\n<script src="js/main.js')
     (out / "index.html").write_text(html)
 
 def mobile_file(out, target):

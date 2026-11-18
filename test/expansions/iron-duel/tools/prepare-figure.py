@@ -2,6 +2,7 @@
 import argparse
 import copy
 import json
+import math
 import struct
 from pathlib import Path
 
@@ -70,6 +71,70 @@ def bake(source, output):
         })
         return len(result["accessors"]) - 1
 
+    def attribute(rows, code, shape, bounds=False):
+        width = len(rows[0])
+        raw = b"".join(struct.pack("<" + code * width, *row) for row in rows)
+        item = {"bufferView": view(raw, target=34962), "componentType": {"f": 5126, "H": 5123}[code],
+                "count": len(rows), "type": shape}
+        if bounds:
+            item.update(min=[min(column) for column in zip(*rows)],
+                        max=[max(column) for column in zip(*rows)])
+        result["accessors"].append(item)
+        return len(result["accessors"]) - 1
+
+    joint = {result["nodes"][node]["name"]: n for n, node in enumerate(result["skins"][0]["joints"])}
+
+    def garment(shells, material):
+        positions, normals, joints, weights, triangles = [], [], [], [], []
+        slices = 24
+        for rings in shells:
+            start = len(positions)
+            for r, (y, x, rx, rz, influences) in enumerate(rings):
+                for i in range(slices):
+                    a = i * math.tau / slices
+                    # Small folds in the fabric, independent of the body mesh.
+                    fold = 1 + .038 * math.cos(5 * a + r * .81) + .022 * math.sin(9 * a - r)
+                    c, s = math.cos(a), math.sin(a)
+                    positions.append((x + c * rx * fold, y, s * rz * fold - .008))
+                    nx, nz = c / rx, s / rz
+                    length = math.hypot(nx, nz)
+                    normals.append((nx / length, 0, nz / length))
+                    joints.append(tuple(joint[name] for name, _ in influences) + (0,) * (4 - len(influences)))
+                    weights.append(tuple(value for _, value in influences) + (0,) * (4 - len(influences)))
+                    if r < len(rings) - 1:
+                        a0 = start + r * slices + i
+                        b0 = start + r * slices + ((i + 1) % slices)
+                        triangles.extend((a0, b0, a0 + slices, b0, b0 + slices, a0 + slices))
+        attrs = {"POSITION": attribute(positions, "f", "VEC3", True),
+                 "NORMAL": attribute(normals, "f", "VEC3"),
+                 "JOINTS_0": attribute(joints, "H", "VEC4"),
+                 "WEIGHTS_0": attribute(weights, "f", "VEC4")}
+        return {"attributes": attrs, "indices": index(triangles), "material": materials[material]}
+
+    pelvis = [("pelvis", 1)]
+    hips = [(1.073, 0, .223, .141, pelvis), (1.023, 0, .241, .158, pelvis),
+            (.958, 0, .241, .167, pelvis),
+            (.904, 0, .231, .159, [("pelvis", .72), ("thigh_r", .14), ("thigh_l", .14)]),
+            (.859, 0, .212, .13, [("pelvis", .54), ("thigh_r", .23), ("thigh_l", .23)]),
+            (.840, 0, .107, .098, pelvis), (.835, 0, .003, .003, pelvis)]
+    belt = [(1.079, 0, .224, .143, pelvis), (1.069, 0, .233, .151, pelvis),
+            (1.033, 0, .247, .161, pelvis), (1.022, 0, .246, .163, pelvis)]
+    legs = []
+    for side, direction in [("l", 1), ("r", -1)]:
+        thigh, calf, foot = ("thigh_" + side, "calf_" + side, "foot_" + side)
+        legs.append([(y, direction * cx, rx, rz, weights) for y, cx, rx, rz, weights in [
+            (.951, .103, .116, .129, [("pelvis", .82), (thigh, .18)]),
+            (.870, .117, .121, .135, [("pelvis", .36), (thigh, .64)]),
+            (.763, .120, .113, .122, [(thigh, 1)]),
+            (.640, .118, .103, .105, [(thigh, .95), (calf, .05)]),
+            (.549, .116, .109, .107, [(thigh, .5), (calf, .5)]),
+            (.445, .113, .096, .098, [(thigh, .08), (calf, .92)]),
+            (.319, .110, .089, .093, [(calf, 1)]),
+            (.199, .105, .074, .080, [(calf, .9), (foot, .1)]),
+            (.147, .103, .066, .076, [(calf, .72), (foot, .28)]),
+            (.137, .103, .061, .071, [(calf, .66), (foot, .34)]),
+        ]])
+
     for skin in result["skins"]:
         skin["inverseBindMatrices"] = access(skin["inverseBindMatrices"])
     for no, mesh in enumerate(old["meshes"]):
@@ -91,7 +156,8 @@ def bake(source, output):
                     else "SkinTorso")
                 grouped[region].extend(tri)
             parts = [{"attributes": attrs, "indices": index(ids), "material": materials[name]}
-                     for name, ids in grouped.items() if ids]
+                     for name, ids in grouped.items() if ids and name not in ("Trousers", "Waist")]
+            parts.extend([garment([hips, *legs], "Trousers"), garment([belt], "Waist")])
         result["meshes"].append({"name": mesh["name"],"primitives": parts})
 
     while len(payload) % 4:

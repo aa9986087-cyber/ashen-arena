@@ -1,10 +1,19 @@
 'use strict';
 
-const FORGE_VERSION = 2;
+const FORGE_VERSION = 3;
 const FORGE_STATES = new Set(['idle','block','light','heavy','kick','dodge','hit','knock','kicked','stagger','dead']);
 const FORGE_RESULTS = new Set(['hit','riposte','combo','exec','kick','kickbreak','block','parry','break','miss','none','clash']);
 const forgeInt = (x, min, max) => Number.isSafeInteger(x) && x >= min && x <= max;
 const forgeNum = (x, min, max) => typeof x === 'number' && Number.isFinite(x) && x >= min && x <= max;
+
+function forgeGestureOkay(g) {
+  return g === null || (g && forgeNum(g.x, -1, 1) && forgeNum(g.y, -1, 1) && typeof g.held === 'boolean');
+}
+
+function forgePacketGesture(f) {
+  const g = f.forgeGesture;
+  return g ? { x: g.x, y: g.y, held: g.held } : null;
+}
 
 function forgePacketOkay(e, p) {
   if (e === 'st') {
@@ -12,14 +21,14 @@ function forgePacketOkay(e, p) {
       Math.hypot(p.x, p.z) < 10.12 && forgeNum(p.f, -4, 4) && FORGE_STATES.has(p.a) &&
       forgeNum(p.hp, 0, 100) && forgeNum(p.st, 0, 100) && forgeNum(p.mx, -1, 1) && forgeNum(p.mz, -1, 1) &&
       forgeInt(p.av, 0, FORGE_STYLES.length - 1) && forgeInt(p.mid, 0, 100000) && forgeNum(p.mt, 0, 7200) &&
-      forgeInt(p.md, -1, 1) && forgeInt(p.mc, 0, 10000) && DUEL_WEAPON_IDS.includes(p.w) &&
+      forgeInt(p.md, -1, 1) && forgeGestureOkay(p.gesture) && forgeInt(p.mc, 0, 10000) && DUEL_WEAPON_IDS.includes(p.w) &&
       (p.cu === undefined || forgeInt(p.cu, 0, 127)) &&
       (p.ck === undefined || forgeNum(p.ck, -1, 60)) &&
       (p.fv === undefined || forgeInt(p.fv, 0, 24));
   }
   if (e === 'mv') {
     return (FORGE_ATTACKS.has(p.k) || ['dodge','feint'].includes(p.k)) &&
-      forgeInt(p.mid, 0, 100000) && forgeInt(p.md, -1, 1) &&
+      forgeInt(p.mid, 0, 100000) && forgeInt(p.md, -1, 1) && forgeGestureOkay(p.gesture) &&
       (p.k !== 'dodge' || (forgeNum(p.dx, -1.01, 1.01) && forgeNum(p.dz, -1.01, 1.01) &&
         Math.hypot(p.dx, p.dz) <= 1.015)) && (p.k !== 'light' || forgeInt(p.c, 1, 10000));
   }
@@ -43,6 +52,7 @@ function forgeChannel(ch, host) {
     if (type === 'mv') {
       packet.mid = DUEL.me.forgeAttack || 0;
       packet.md = DUEL.me.forgeDirection || 0;
+      packet.gesture = forgePacketGesture(DUEL.me);
     }
     if (type === 'res') packet.mid = DUEL.foe.forgeAttack;
     if (host && ['rd','ko','end'].includes(type)) {
@@ -105,12 +115,13 @@ function forgeReadMove(f, m, time) {
   if (m.mid <= (f.forgeRemoteAttack || 0)) return;
   f.forgeRemoteAttack = m.mid;
   f.forgeAim = m.md;
+  f.forgeGesture = m.gesture ? { ...m.gesture, release: time ?? 0 } : null;
   f.netMove(m);
   f.forgeAttack = m.mid;
   if (time !== undefined) {
     const moves = f.M[m.k] || DM[m.k];
     f.t = Math.min(time, moves.t - 0.01);
-    f.hitDone = time > moves.hitTo + 0.06;
+    f.hitDone = !f.forgeGesture && time > moves.hitTo + 0.06;
   }
 }
 function forgeReadFighter(f, state) {
@@ -118,6 +129,9 @@ function forgeReadFighter(f, state) {
   if (f.wpId !== state.w) f.setWeapon(state.w);
   if (DUEL.phase !== 'fight' || DUEL.fin || DUEL.kc) return;
   if (FORGE_ATTACKS.has(state.a) && state.mid > (f.forgeRemoteAttack || 0)) {
-    forgeReadMove(f, { k: state.a, mid: state.mid, md: state.md, c: Math.max(1, state.mc) }, state.mt);
+    forgeReadMove(f, { k: state.a, mid: state.mid, md: state.md, c: Math.max(1, state.mc), gesture: state.gesture }, state.mt);
+  } else if (f.forgeGesture && state.gesture && f.forgeRemoteAttack === state.mid) {
+    if (f.forgeGesture.held && !state.gesture.held) f.forgeGesture.release = f.t;
+    Object.assign(f.forgeGesture, state.gesture);
   }
 }

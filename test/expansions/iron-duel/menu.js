@@ -4,12 +4,33 @@ function forgeBuildMenu() {
   const wrap = $('duelMenu').querySelector('.wrap');
   const headings = [...wrap.querySelectorAll(':scope > h4')];
   wrap.querySelector('.head h2').textContent = 'حلبة النغالة';
-  const art = el('div', 'forgeArt');
-  art.append(el('span', '', 'مبارزة ساحة الرماد'), el('strong', '', 'الفولاذ يحسمها'), el('p', '', 'حرّك قدمك قبل تضرب. قرّب النصل كفاية، وخل لك نَفَس للصدّ.'));
-  wrap.querySelector('.head').after(art);
-  const gear = el('div', 'forgeGear'), styles = el('div', 'forgeStyles'), look = el('p', 'forgeHint');
-  gear.append(el('h4', 'sec', 'درع المقاتل'), styles, look);
-  art.after(gear);
+  const tabs = el('nav', 'forgeNav');
+  tabs.setAttribute('aria-label', 'تجهيز المبارزة');
+  const loadout = el('div', 'forgeLoadout');
+  const panels = [['fighter','المقاتل'], ['weapons','الأسلحة'], ['room','الأونلاين']].map(([id, label]) => {
+    const tab = el('button', 'forgeTab', label);
+    const panel = el('section', 'forgePanel');
+    tab.id = 'forge-tab-' + id;
+    tab.type = 'button';
+    panel.id = 'forge-panel-' + id;
+    tab.setAttribute('aria-controls', panel.id);
+    tabs.append(tab);
+    return { tab, panel };
+  });
+  const show = index => panels.forEach(({ tab, panel }, i) => {
+    panel.hidden = i !== index;
+    tab.setAttribute('aria-pressed', String(i === index));
+  });
+  panels.forEach(({ tab }, i) => { tab.onclick = () => show(i); });
+  const [gear, weapons, rooms] = panels.map(item => item.panel);
+  const actions = el('div', 'forgeActions');
+  wrap.querySelector('.head').after(loadout, tabs, gear, weapons, rooms, actions);
+  show(0);
+  const styles = el('div', 'forgeStyles'), look = el('p', 'forgeHint');
+  gear.append(styles, look);
+  weapons.append($('dmWeapons'));
+  headings[0].hidden = true;
+  actions.append($('dmTrain'), $('ffaTrain'));
   const draw = () => {
     styles.replaceChildren();
     FORGE_STYLES.forEach((theme, i) => {
@@ -18,6 +39,7 @@ function forgeBuildMenu() {
       icon.style.setProperty('--metal', '#' + theme.steel.toString(16).padStart(6, '0'));
       icon.style.setProperty('--trim', '#' + theme.edge.toString(16).padStart(6, '0'));
       b.append(icon, el('b', '', theme.name));
+      b.setAttribute('aria-pressed', String(forgeStyle() === i));
       b.onclick = () => {
         S.forgeStyle = theme.id;
         save();
@@ -26,6 +48,7 @@ function forgeBuildMenu() {
       styles.append(b);
     });
     look.textContent = FORGE_STYLES[forgeStyle()].title;
+    forgeRefreshLoadout();
   };
   draw();
 
@@ -40,12 +63,9 @@ function forgeBuildMenu() {
   gorePicker.value = S.forgeBlood === 'light' ? 'light' : 'full';
   gorePicker.onchange = () => { S.forgeBlood = gorePicker.value; save(); };
   gore.append(el('span', '', 'مؤثرات الإصابة'), gorePicker);
-  $('dmTrain').before(gore);
-  $('dmTrain').textContent = 'ابدأ تدريب المبارزة';
-  wrap.querySelector('.head + .forgeArt')?.setAttribute('aria-label', 'حلبة النغالة');
-  const weaponLabel = $('dmWeapons').previousElementSibling;
-  if (weaponLabel) weaponLabel.textContent = 'ترسانة الحلبة';
-  $('ffaTrain').textContent = 'تدريب جماعي · ضد ثلاثة خصوم';
+  gear.append(gore);
+  $('dmTrain').textContent = 'ابدأ مبارزة تدريبية';
+  $('ffaTrain').textContent = 'تدريب ضد ٣ خصوم';
 
   const online = el('section', 'forgeOnline'), row = el('div', 'forgeRoomRow');
   const code = document.createElement('input');
@@ -62,14 +82,18 @@ function forgeBuildMenu() {
   join.id = 'forgeJoin';
   online.append(el('h4', 'sec', 'تبارز مع صديق'), msg, code, row, link);
   row.append(host, join);
-  $('dmTrain').after(online);
+  rooms.append(online);
   if (window.IRON_STANDALONE) {
     msg.textContent = 'نسخة التدريب للجوال. الغرف متاحة من النسخة المستضافة.';
     code.hidden = row.hidden = true;
+    panels[2].tab.hidden = true;
   }
 
   const room = new URLSearchParams(location.search).get('room');
-  if (room && /^[a-z0-9]{5,16}$/.test(room)) code.value = room;
+  if (room && /^[a-z0-9]{5,16}$/.test(room)) {
+    code.value = room;
+    if (!window.IRON_STANDALONE) show(2);
+  }
   const open = (id, mine) => {
     if (!/^[a-z0-9]{5,16}$/.test(id) || DUEL.on || host.disabled) {
       msg.textContent = 'اكتب رمز الغرفة أول.';
@@ -77,7 +101,7 @@ function forgeBuildMenu() {
     }
     host.disabled = join.disabled = true;
     const kind = local ? 'local' : 'live';
-    return duelStartOnline('iron-v2-' + kind + '-' + id, mine, 'خصم المبارزة')
+    return duelStartOnline('iron-v3-' + kind + '-' + id, mine, 'خصم المبارزة')
       .finally(() => { host.disabled = join.disabled = false; });
   };
   host.onclick = async () => {
@@ -103,10 +127,12 @@ function forgeBuildMenu() {
   const top = el('div', 'forgeDuelExtras');
   const invite = el('b', '', '');
   invite.id = 'dForgeRoom';
-  const grip = el('small', '', 'سحب يمين أو يسار يغيّر جهة الضربة');
+  const grip = el('small', '', 'اسحب زر النصل لتوجيه الضربة');
   grip.id = 'dForgeGrip';
   top.append(invite, grip);
   $('dTop').after(top);
+  const controls = { dKick: 'رفس', dLock: 'تثبيت', dDodge: 'مراوغة', dBlock: 'صد', dAtk: 'النصل' };
+  for (const [id, label] of Object.entries(controls)) $(id).textContent = label;
 
   for (const node of [headings[1], headings[2], headings[3], headings[1]?.nextElementSibling,
     $('ffaCreate'), $('ffaRoom'), $('ffaStatus'), $('ffaRooms'), $('dmStatus'), $('dmList'), $('dmRec')]) {
@@ -114,19 +140,53 @@ function forgeBuildMenu() {
   }
 }
 
+function forgeRefreshLoadout() {
+  const loadout = document.querySelector('.forgeLoadout');
+  if (!loadout) return;
+  const weapon = DUEL_WEAPONS[S.duelW] || DUEL_WEAPONS.sword;
+  loadout.replaceChildren(
+    el('span', '', FORGE_STYLES[forgeStyle()].name),
+    el('strong', '', weapon.n),
+  );
+}
+
 forgeBuildMenu();
 
 const forgeAttackButton = $('dAtk');
 let forgePointer = null;
 forgeAttackButton.addEventListener('pointerdown', event => {
-  forgePointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
-  if (DUEL.me) DUEL.me.forgeAim = 0;
+  if (forgePointer) return;
+  forgePointer = { id: event.pointerId, x: event.clientX, y: event.clientY, drag: false };
 });
 forgeAttackButton.addEventListener('pointermove', event => {
-  if (!DUEL.me || forgePointer?.id !== event.pointerId || DUEL.heavyFired) return;
-  const delta = duelRotated() ? event.clientY - forgePointer.y : event.clientX - forgePointer.x;
-  DUEL.me.forgeAim = Math.abs(delta) > 11 ? Math.sign(delta) : 0;
+  const f = DUEL.me;
+  if (!f || forgePointer?.id !== event.pointerId || DUEL.phase !== 'fight') return;
+  const dx = event.clientX - forgePointer.x, dy = event.clientY - forgePointer.y;
+  const x = clamp((duelRotated() ? dy : dx) / 78, -1, 1);
+  const y = clamp((duelRotated() ? dx : -dy) / 69, -1, 1);
+  if (!forgePointer.drag) {
+    if (DUEL.heavyFired || Math.hypot(dx, dy) < 9) return;
+    f.forgeAim = -Math.sign(x);
+    f.forgeGesture = { x, y, held: true, release: 0 };
+    if (!f.light()) {
+      f.forgeGesture = null;
+      f.forgeAim = 0;
+      return;
+    }
+    forgePointer.drag = DUEL.heavyFired = true;
+  }
+  if (f.forgeGesture) Object.assign(f.forgeGesture, { x, y });
+  forgeAttackButton.classList.add('steering');
 });
 for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
-  forgeAttackButton.addEventListener(type, () => { forgePointer = null; });
+  forgeAttackButton.addEventListener(type, event => {
+    if (forgePointer?.id !== event.pointerId) return;
+    const f = DUEL.me;
+    if (forgePointer.drag && f?.forgeGesture) {
+      f.forgeGesture.held = false;
+      f.forgeGesture.release = f.t;
+    }
+    forgeAttackButton.classList.remove('steering');
+    forgePointer = null;
+  });
 }

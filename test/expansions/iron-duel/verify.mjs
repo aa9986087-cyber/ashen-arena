@@ -33,7 +33,7 @@ try {
     window.BroadcastChannel = class extends Original {
       constructor(name) { super(name); this.nameForTest = name; }
       postMessage(data) {
-        if (this.nameForTest.startsWith('ashen-iron-v2:duel-iron-v2-local-')) {
+        if (this.nameForTest.startsWith('ashen-iron-v3:duel-iron-v3-local-')) {
           const drop = window.__ironDrop;
           if (drop?.has(data.e)) { drop.delete(data.e); return; }
         }
@@ -57,11 +57,13 @@ try {
   };
 
   const p1 = await page();
+  await p1.locator('#forge-tab-weapons').tap();
   assert.equal(await p1.locator('.forgeWeaponCard').count(), 13);
   await p1.getByRole('button',{name:'طعن',exact:true}).tap();
   assert.equal(await p1.locator('.forgeWeaponCard').count(), 3);
   await p1.getByRole('button',{name:/الخنجر الطويل/}).tap();
   await p1.waitForFunction(() => Array.from(document.querySelectorAll('.forgeWeaponVisual')).every(n => n.style.backgroundImage));
+  await p1.locator('#forge-tab-fighter').tap();
   await p1.getByRole('button',{name:'مقاتل الحلبة',exact:true}).tap();
   await p1.locator('#dmTrain').tap();
   await p1.waitForFunction(() => DUEL.on && DUEL.ready && DUEL.round===1);
@@ -116,11 +118,48 @@ try {
   assert.ok(results.drops>0 && results.marks>0);
   assert.ok(results.first>0 && results.first<results.moving && results.coasting>0);
   if (output) await p1.screenshot({path:output});
+  await p1.evaluate(() => {
+    window.__ironFrame = duelFrame;
+    duelFrame = () => {};
+    DUEL.me.setWeapon('sword');
+    DUEL.phase = 'fight';
+    DUEL.me.reset(0, 0, 0);
+    DUEL.foe.reset(0, 3.1, Math.PI);
+    DUEL.me.update(0, DUEL.foe);
+    DUEL.foe.update(0, DUEL.me);
+  });
+  const button = await p1.locator('#dAtk').boundingBox();
+  const finger = { x: button.x + button.width / 2, y: button.y + button.height / 2 };
+  const cdp = await ctx.newCDPSession(p1);
+  const touch = (type, point) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: point ? [point] : [] });
+  const readDrag = () => p1.evaluate(() => {
+    const f = DUEL.me;
+    for (let i=0;i<27;i++) f.update(1/120, DUEL.foe);
+    return { aim: f.forgeGesture?.y, tip: forgeReadBlade(f)[1].toArray(), hit: DUEL.foe.hp };
+  });
+  await touch('touchStart', finger);
+  await touch('touchMove', { x: finger.x - 50, y: finger.y - 69 });
+  await p1.waitForFunction(() => DUEL.me.forgeGesture?.y > .9);
+  const raised = await readDrag();
+  await touch('touchMove', { x: finger.x - 24, y: finger.y + 30 });
+  await p1.waitForFunction(() => DUEL.me.forgeGesture?.y < -.4, null, {timeout:4000});
+  const lowered = await readDrag();
+  await touch('touchEnd');
+  assert.ok(raised.aim > .9 && lowered.aim < -.4, JSON.stringify({raised,lowered}));
+  assert.ok(raised.tip[1] - lowered.tip[1] > .60, JSON.stringify({raised,lowered}));
+  assert.equal(lowered.hit, 100);
+  assert.equal(await p1.evaluate(() => DUEL.me.forgeGesture?.held), false);
+  await cdp.detach();
+  await p1.evaluate(() => { duelFrame = window.__ironFrame; });
+
   await p1.evaluate(() => duelExit());
   await p1.locator('#mDuel').tap();
 
+  console.log('Touch steering and release passed');
   const p2 = await page();
   await p1.evaluate(() => { window.__ironDrop = new Set(['rd', 'mv']); });
+  await p1.locator('#forge-tab-room').tap();
+  await p2.locator('#forge-tab-room').tap();
   await p1.locator('#forgeHost').tap();
   const room = await p1.locator('#forgeRoom').inputValue();
   await p2.locator('#forgeRoom').fill(room);
@@ -137,6 +176,7 @@ try {
   })));
   await Promise.all([p1,p2].map(p => p.waitForFunction(() => DUEL.net?.ready && DUEL.phase === 'fight' && DUEL.round === 1)));
   assert.equal(await p1.evaluate(() => window.__ironDrop.has('rd')), false);
+  console.log('Both room clients entered round 1');
 
   // Both tabs agree who is where; a dropped one-time attack is recovered from the state stream.
   await p1.evaluate(() => {

@@ -24,7 +24,7 @@ const forgeThumbs = new Map();
 function forgeLoadGear() {
   if (forgeGearPromise) return forgeGearPromise;
   const load = async file => {
-    const response = await fetch(forgeGearURL + file + '?v=38');
+    const response = await fetch(forgeGearURL + file + '?v=39');
     if (!response.ok) throw new Error('Gear file: ' + file);
     const bytes = await response.arrayBuffer();
     return new Promise((ok, bad) => new THREE.GLTFLoader().parse(bytes, '', ok, bad));
@@ -217,6 +217,7 @@ function forgeWeaponPicker() {
       S.duelW = id;
       save();
       AU.play('select');
+      forgeRefreshLoadout();
       forgeWeaponPicker();
     };
     cards.append(b);
