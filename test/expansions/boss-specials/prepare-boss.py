@@ -33,7 +33,7 @@ mesh.data.validate(clean_customdata=False)
 mesh.name = kind.title() + ' Boss'
 
 # The arena faces +Z in glTF, which is -Y in Blender.
-angle = {'sand': -math.pi/2, 'frost': math.pi, 'knight': -math.pi/2, 'fire': -math.pi/2, 'grave': 0}[kind]
+angle = {'sand': -math.pi/2, 'frost': math.pi, 'knight': -math.pi/2, 'fire': -math.pi/2, 'grave': 0, 'iron': 0}[kind]
 mesh.rotation_euler.z = angle
 bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 positions = np.empty(len(mesh.data.vertices) * 3, dtype=np.float32)
@@ -95,6 +95,11 @@ elif kind == 'knight':
         (.08,.009,.49), (.11,-.043,.261), (.151,.01,.067))
     bone('Sword.R', 'Hand.R', (-.219,-.035,.505), (-.415,-.137,.146), .067)
     bone('Shield.L', 'Forearm.L', (.23,-.15,.685), (.413,-.115,.225), .096)
+elif kind == 'iron':
+    humanoid((0,.025,.493), (0,.024,.682), (0,-.019,.824),
+        (.154,.021,.783), (.198,.018,.600), (.217,.026,.450), (.223,.002,.415),
+        (.086,.016,.493), (.112,-.043,.245), (.137,.015,.067))
+    bone('Horn.L', 'Hand.L', (.217,.026,.450), (.223,.245,.606), .054)
 elif kind == 'grave':
     humanoid((0,.033,.438), (0,.025,.655), (0,-.026,.829),
         (.198,.002,.79), (.282,-.01,.578), (.348,-.04,.386), (.352,-.052,.265),
@@ -139,6 +144,15 @@ for name, (start, end, radius) in segments.items():
         else:
             distance += 3 * ((x < .205) | (y > .09))
         distance -= .43
+    if name == 'Horn.L':
+        # Skin the mouthpiece and the flared bell together, so the instrument stays rigid.
+        bell = np.array([.218,-.216,.304])
+        tube = np.asarray(end) - bell
+        along = np.clip((positions-bell) @ tube / (tube @ tube), 0, 1)
+        radius = .043 + .075 * np.maximum(0, 1-along*2.9)
+        distance = np.linalg.norm(positions-bell-along[:,None]*tube, axis=1) / radius
+        distance += 4 * (x < .127) + 3 * ((y > -.093) & (y < .11) & (z > .481))
+        distance -= .50
     scores.append(distance)
 scores = np.stack(scores, axis=1)
 nearest = scores.argsort(axis=1)[:, :4]
@@ -166,10 +180,14 @@ def clip(name, keys):
     for t, lift, pose_angles in keys:
         frame = round(t*40)+1
         for b in pose:
-            x, y, z = pose_angles.get(b.name, (0,0,0))
-            rotation = Quaternion((0,0,1), math.radians(z)) @ Quaternion((0,1,0), math.radians(y)) @ Quaternion((1,0,0), math.radians(x))
+            target = pose_angles.get(b.name, (0,0,0))
             b.rotation_mode = 'QUATERNION'
-            b.rotation_quaternion = rest[b.name].inverted() @ rotation @ rest[b.name]
+            if isinstance(target, Quaternion):
+                b.rotation_quaternion = target
+            else:
+                x, y, z = target
+                rotation = Quaternion((0,0,1), math.radians(z)) @ Quaternion((0,1,0), math.radians(y)) @ Quaternion((1,0,0), math.radians(x))
+                b.rotation_quaternion = rest[b.name].inverted() @ rotation @ rest[b.name]
             b.keyframe_insert('rotation_quaternion', frame=frame, group=b.name)
         hips = rig.pose.bones['Hips']
         hips.location = rest['Hips'].inverted() @ Vector((0,0,lift))
@@ -214,6 +232,33 @@ def press(chest, left, right, forearm=0, lean=0, twist=0, open_arm=0):
         'Shin.L': (lean*.4,0,0), 'Shin.R': (lean*.4,0,0)}
 
 
+def herald_call():
+    upper, fore, horn = 'Arm.L', 'Forearm.L', 'Horn.L'
+    shoulder, elbow, grip, tip = [Vector(p) for p in
+        [segments[upper][0], segments[upper][1], segments[fore][1], segments[horn][1]]]
+    arm, lower, instrument = elbow-shoulder, grip-elbow, tip-grip
+    mouth = Vector((.032,-.115,.827))
+    aiming = Vector((-.728,.62,.29)).normalized() * instrument.length
+    target_grip = mouth - aiming
+    toward = target_grip - shoulder
+    forward = toward.normalized()
+    bend = Vector((1,0,-.57))
+    bend = (bend-forward*bend.dot(forward)).normalized()
+    length = min(toward.length, arm.length+lower.length-.002)
+    extension = (arm.length_squared-lower.length_squared+length**2)/(2*length)
+    target_elbow = shoulder + forward*extension + bend*math.sqrt(max(0,arm.length_squared-extension**2))
+    new_grip = shoulder + forward*length
+    upper_delta = arm.rotation_difference(target_elbow-shoulder)
+    fore_delta = (upper_delta @ lower).rotation_difference(new_grip-target_elbow)
+    lower_chain = fore_delta @ upper_delta
+    horn_delta = (lower_chain @ instrument).rotation_difference(aiming)
+    def local(key, chain, delta):
+        basis = chain @ rest[key]
+        return basis.inverted() @ delta @ basis
+    return {upper: local(upper, Quaternion(), upper_delta), fore: local(fore, upper_delta, fore_delta),
+        horn: local(horn, lower_chain, horn_delta), 'Arm.R': (-24,7,0), 'Head': (0,-2,-8)}
+
+
 ready = (0,0,{})
 if kind == 'sand':
     wind, special_keys = 1.10, [
@@ -221,6 +266,12 @@ if kind == 'sand':
         (.76,.11,press(-13,-59,-82,-19,-4,34,23)),
         (1.10,.072,press(10,-64,-32,-8,0,7,31)),
         (1.35,.06,press(2,-18,-23,-10,0,-13,16))]
+elif kind == 'iron':
+    wind, special_keys = 1.25, [
+        (.25,-.012,{'Arm.L':(-23,-9,-4),'Forearm.L':(-24,0,0),'Arm.R':(-15,7,0)}),
+        (.80,0,herald_call()),
+        (1.25,0,herald_call()),
+        (1.52,-.012,{'Arm.L':(-23,-9,-4),'Forearm.L':(-29,0,0),'Arm.R':(-10,7,0)})]
 elif kind == 'frost':
     wind, special_keys = 1.15, [
         (.29,-.036,press(14,15,21,-16,10,2,8)),
@@ -262,7 +313,7 @@ with tempfile.TemporaryDirectory(prefix='ashen-boss-maps-') as tmp:
         material.use_nodes = True
         tree = material.node_tree
         shader = next(n for n in tree.nodes if n.type == 'BSDF_PRINCIPLED')
-        for name, value in [('Metallic',.1 if kind=='knight' else .025),('Roughness',.55 if kind in {'frost','knight'} else .8)]:
+        for name, value in [('Metallic',.10 if kind in {'knight','iron'} else .025),('Roughness',.55 if kind in {'frost','knight'} else .8)]:
             for link in list(shader.inputs[name].links):
                 tree.links.remove(link)
             shader.inputs[name].default_value = value

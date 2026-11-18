@@ -9,6 +9,14 @@ def apply(path, text, replace):
         sub('e.ult <= 0 && d < 34', 'e.ult <= 0 && d < 34 && !bossSpecialActive()')
     if path == 'js/game/spawning.js':
         sub('  G.bossOn = true;', '  strengthenPreviewBoss(e);\n  G.bossOn = true;')
+    if path == 'js/audio/sound.js':
+        sub('  rocket: a => {', '''  warhorn: a => {
+    a.str(115, 0.49, 0.12, 0, a.sg, 710);
+    a.tone(115, 0.36, 'triangle', 0.071, 105);
+    a.tone(227, 0.27, 'triangle', 0.04, 207);
+    a.noise(0.18, 0.027, 410, 0, null, 'bandpass');
+  },
+  rocket: a => {''')
     if path == 'js/game/fx.js':
         sub('function banner(h, sub, dur) {',
             "function banner(h, sub, dur, bossMove = false) {\n  $('banner').classList.toggle('boss-move', bossMove);")
@@ -33,11 +41,16 @@ def apply(path, text, replace):
         sub('  // enemies\n', "  drawBossSpecialImpacts(['play', 'cards', 'paused', 'count'].includes(G.state));\n  // enemies\n")
         sub('      b.scale.set(s, s, s);', '      b.scale.set(s, s, s);\n      poseBossSpecial(b, e);')
         sub("    b.visible = !!q && q.kind !== 'sky';",
-            "    b.visible = !!q && q.kind !== 'sky' && (q.kind !== 'boss-special' || q.sty === 4);")
+            "    const shell = q?.bossGround?.form === 'shell';\n"
+            "    b.visible = !!q && q.kind !== 'sky' && (q.kind !== 'boss-special' || (shell && q.d - q.l <= BOSS_SHELL_FLIGHT));")
         sub('      bossAura.visible = true;', '      bossAura.visible = !e.bossSpecial;')
         sub('      const k = q.l / q.d;\n      m.position.set(q.x, 0.1, q.z);\n      m.scale.set(q.r, q.r, 1);',
             '      const k = clamp(q.l / q.d, 0, 1);\n      drawBossWarning(m, q, k);')
-        sub('      m.material.opacity = 0.18 + 0.4 * k;', '      b.geometry = q.bossGround?.form === "shell" ? bossShellGeometry : SPH;')
+        sub('      m.material.opacity = 0.18 + 0.4 * k;', '      b.geometry = shell ? bossShellGeometry : SPH;')
+        sub('      const y = (1 - k) * 26 + 1,',
+            '      const flight = shell ? clamp(1 - (q.d - q.l) / BOSS_SHELL_FLIGHT, 0, 1) : k;\n      const y = (1 - flight) * 26 + 1,')
+        sub('b.position.set(q.x + (1 - k) * 6, y, q.z - (1 - k) * 4);',
+            'b.position.set(q.x + (1 - flight) * 6, y, q.z - (1 - flight) * 4);')
     return text
 
 

@@ -45,7 +45,7 @@ const BOSS_SPECIALS = [
       [3.5, 3.5, 2.0, .19, Math.PI / 4, 'fissure']],
   },
   {
-    name: 'خطوط القصف', form: 'shell', hint: 'مرّ من الممر بين خطوط القصف', hp: 1.19, damage: 1.11, cd: 14, wind: 1.25, power: 1.25,
+    name: 'نداء القصف', form: 'shell', hornAt: .82, hint: 'مرّ من الممر بين خطوط القصف', hp: 1.19, damage: 1.11, cd: 14, wind: 1.25, power: 1.25,
     target: true,
     pattern: [[-4, -6, 2.35, 0], [-4, -2, 2.35, .13], [-4, 2, 2.35, .26], [-4, 6, 2.35, .39],
       [4, -6, 2.35, .39], [4, -2, 2.35, .26], [4, 2, 2.35, .13], [4, 6, 2.35, 0],
@@ -102,7 +102,7 @@ function startBossSpecial(e, p, special) {
     Object.assign(G.zones.at(-1), { bossCast: cast, bossGround: { form, yaw, cos: Math.cos(yaw), sin: Math.sin(yaw) } });
   }
   banner('⚠ ' + special.name, special.hint, special.wind + .12, true);
-  AU.play(e.kind === 3 ? 'rocket' : 'boss');
+  if (special.hornAt === undefined) AU.play('boss');
 }
 /* Returns true while this boss owns its attack timeline and stops ordinary movement/attacks. */
 function updateBossSpecial(e, p, dt) {
@@ -116,6 +116,10 @@ function updateBossSpecial(e, p, dt) {
   }
   const cast = e.bossSpecial;
   cast.elapsed += dt;
+  if (special.hornAt !== undefined && !cast.hornCalled && cast.elapsed >= special.hornAt) {
+    cast.hornCalled = true;
+    AU.play('warhorn');
+  }
   e.face = cast.face;
   e.stT = Math.max(0, special.wind - cast.elapsed);
   if (special.leap) {

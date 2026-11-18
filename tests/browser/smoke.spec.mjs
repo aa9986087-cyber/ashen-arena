@@ -616,6 +616,25 @@ test('preview: seven boss specials warn, animate, hit on cue and leave ground ma
       update(step);
       const froze = boss.bossSpecial.elapsed === moveBefore && target.l === moveBefore;
       boss.frz = 0;
+      let hornCue = null;
+      if (skill.hornAt !== undefined) {
+        const hornHeight = () => {
+          render(0, performance.now());
+          const body = scene.getObjectByName('ashenActor-boss3');
+          const horn = body?.getObjectByProperty('isSkinnedMesh', true)?.skeleton.bones
+            .find(bone => bone.name.startsWith('Horn'));
+          return horn?.getWorldPosition(new THREE.Vector3()).y;
+        };
+        const resting = hornHeight();
+        const ball = ballPool[G.zones.indexOf(target)];
+        const silentAtStart = !boss.bossSpecial.hornCalled && !ball.visible;
+        while (boss.bossSpecial.elapsed < skill.hornAt + .015) update(step);
+        const raised = hornHeight();
+        hornCue = {
+          lift: raised - resting,
+          firesAfterHorn: silentAtStart && !!boss.bossSpecial.hornCalled && !ball.visible,
+        };
+      }
       while (boss.bossSpecial.elapsed < skill.wind * .8) update(step);
       poseBossSpecial(pose, boss);
       const poseBefore = [pose.position.y, pose.rotation.x, pose.rotation.y, pose.rotation.z];
@@ -623,6 +642,7 @@ test('preview: seven boss specials warn, animate, hit on cue and leave ground ma
       render(0, performance.now());
       const warningMesh = zonePool[G.zones.indexOf(target)];
       const form = target.bossGround;
+      if (hornCue) hornCue.shellDropped = ballPool[G.zones.indexOf(target)].visible;
       const ray = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0,-1,0));
       warningMesh.updateMatrixWorld(true);
       function activeGround(x, z) {
@@ -645,10 +665,10 @@ test('preview: seven boss specials warn, animate, hit on cue and leave ground ma
       render(0, performance.now());
       const marks = bossImpactScar.count;
       const clip = actorKey && ACTOR_MODELS.diagnostics()[actorKey]?.clips.special;
-      const jointShift = skeleton?.bones.some((bone, i) => bone.quaternion.toArray()
+      const jointShift = hornCue ? hornCue.lift > 1 : skeleton?.bones.some((bone, i) => bone.quaternion.toArray()
         .some((value, axis) => Math.abs(value - jointsBefore[i][axis]) > .03));
       results.push({
-        kind, actorKey, clip, jointShift, matchCenter, matchEdges, warning, silhouette, name: skill.name, health: boss.maxHp, warningDamage, safeDuringWarning, froze, poseBefore,
+        kind, actorKey, clip, jointShift, hornCue, matchCenter, matchEdges, warning, silhouette, name: skill.name, health: boss.maxHp, warningDamage, safeDuringWarning, froze, poseBefore,
         hit: hpBefore > p.hp, marks, landed: kind !== 2 || boss.y < .1,
       });
       // Resume the loop with the visual on the last boss for a phone-sized screenshot.
@@ -668,13 +688,17 @@ test('preview: seven boss specials warn, animate, hit on cue and leave ground ma
     expect(row.warningDamage).toBeGreaterThan(20);
     expect(row.safeDuringWarning && row.hit && row.froze && row.landed).toBe(true);
     expect(row.marks).toBeGreaterThan(0);
+    if (row.kind === 3) {
+      expect(row.hornCue?.firesAfterHorn && row.hornCue?.shellDropped).toBe(true);
+      expect(row.hornCue.lift).toBeGreaterThan(1);
+    }
     if (row.actorKey) {
       expect(row.clip).toBe(row.kind === 0 ? 'rootSlam' : 'special');
       expect(row.jointShift).toBe(true);
     }
   }
   if (forestDefault === 'ancient') {
-    expect(checks.filter(row => row.actorKey).map(row => row.kind)).toEqual(expect.arrayContaining([0, 1, 2, 4, 5, 6]));
+    expect(checks.filter(row => row.actorKey).map(row => row.kind)).toEqual(expect.arrayContaining([0, 1, 2, 3, 4, 5, 6]));
   }
   await page.screenshot({ path: testInfo.outputPath('boss-special-impact.png') });
 });

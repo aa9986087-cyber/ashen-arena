@@ -29,6 +29,7 @@ const bossWarningGeometry = Object.fromEntries(Object.entries(BOSS_SPECIAL_FOOTP
   return [key, new THREE.ShapeGeometry(shape).rotateX(-Math.PI / 2)];
 }));
 const bossShellGeometry = new THREE.CylinderGeometry(.18, .35, 1.55, 6);
+const BOSS_SHELL_FLIGHT = .31;
 
 function drawBossWarning(mesh, zone, progress) {
   const form = zone.bossGround;

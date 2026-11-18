@@ -11,17 +11,6 @@
     "license": "CC BY 4.0"
   },
   {
-    "kind": 4,
-    "file": "frost.glb",
-    "height": 3.75,
-    "triangles": 7268,
-    "bytes": 1013624,
-    "sha256": "493482abfe7d37afd6751dceefea6385fdba6ba14cc7985be8ea471dbe16dd1d",
-    "source": "https://sketchfab.com/3d-models/ice-golem-f7370eebe4cf4f81b49c83925c0d3d0c",
-    "creator": "Caboose3d",
-    "license": "CC BY 4.0"
-  },
-  {
     "kind": 2,
     "file": "knight.glb",
     "height": 4.2,
@@ -30,6 +19,28 @@
     "sha256": "2240e1c6f5758b156909c462f772ad9df40d350a58bac91890b3c19461bde1e9",
     "source": "https://sketchfab.com/3d-models/dark-knight-spiked-black-armored-warrior-e2447a48b07c4f7f925356dd73e63ca6",
     "creator": "Pigcraft",
+    "license": "CC BY 4.0"
+  },
+  {
+    "kind": 3,
+    "file": "iron.glb",
+    "height": 4.15,
+    "triangles": 18500,
+    "bytes": 1533624,
+    "sha256": "2a83656d8f98f50ecbe22b1e2169630f9acd63bfdf63cf21a065c39275ad8a27",
+    "source": "https://sketchfab.com/3d-models/dark-fantasy-doom-herald-boss-warrior-3f22b02efea34fcdb42c06d5a53eeeec",
+    "creator": "Pigcraft",
+    "license": "CC BY 4.0"
+  },
+  {
+    "kind": 4,
+    "file": "frost.glb",
+    "height": 3.75,
+    "triangles": 7268,
+    "bytes": 1013624,
+    "sha256": "493482abfe7d37afd6751dceefea6385fdba6ba14cc7985be8ea471dbe16dd1d",
+    "source": "https://sketchfab.com/3d-models/ice-golem-f7370eebe4cf4f81b49c83925c0d3d0c",
+    "creator": "Caboose3d",
     "license": "CC BY 4.0"
   },
   {

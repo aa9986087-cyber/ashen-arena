@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "release": "clean-20261117-v28",
+  "release": "clean-20261118-v29",
   "baseRevision": "ab6798e6a4ed2cfd7f71a77e0e00f10505d393d3",
   "addonSourceRevision": "c0c1701",
   "enabledAddons": [
@@ -8,7 +8,7 @@
     "ranger",
     "forest-guardian"
   ],
-  "notes": "سبعة أشكال للتحذير والاصطدام، متطابقة مع منطقة الإصابة لكل زعيم.",
+  "notes": "الجنرال الحديدي المدرع ببوق الحرب. يرتفع البوق ويُسمع النداء قبل القصف.",
   "enabledExpansions": [
     "gravebound",
     "boss-specials"
