@@ -87,40 +87,40 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-18T03:52:33.142Z.
-- مرجع العمل: [`824c971f072cdeed8bc4374596b963217b1a5802`](https://github.com/aa9986087-cyber/ashen-arena/commit/824c971f072cdeed8bc4374596b963217b1a5802).
-- آخر تعديل: تجربة v30 لتوازن إيقاع هجمات الزعماء.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44232798775/attempts/1).
-- بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
-- مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
+- وقت التسجيل (UTC): 2026-11-18T04:14:13.784Z.
+- مرجع العمل: [`ddc6955c64477c650ad7289c1a2fbd4dfa821da6`](https://github.com/aa9986087-cyber/ashen-arena/commit/ddc6955c64477c650ad7289c1a2fbd4dfa821da6).
+- آخر تعديل: تجربة v31 للساحات الثماني بديكور مفتوح الترخيص.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44235078994/attempts/1).
+- بوابة check: **فشل**؛ الاختبارات السريعة: **ناجح**.
+- مسار الفحص: mobile؛ متصفح الجوال: **فشل**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
-- إصدار التجربة المسجل: `clean-20261118-v30`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
+- إصدار التجربة المسجل: `clean-20261118-v31`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`c0405879f160`: 247 ملفًا.
+مقارنةً بـ`54ad1a602cd3`: 248 ملفًا.
 - `docs/HANDOFF.md`
-- `test/expansions/boss-specials/combat.js`
+- `test/expansions/arena-maps/SOURCES.md`
+- `test/expansions/arena-maps/arena-maps.js`
+- `test/expansions/arena-maps/prepare-props.py`
+- `test/expansions/arena-maps/props.js`
 - `test/index.html`
 - `test/modular-config.json`
-- `test/releases/clean-20261118-v30/app.js`
-- `test/releases/clean-20261118-v30/app.min.js`
-- `test/releases/clean-20261118-v30/assets/audio/duel/block0.mp3`
-- `test/releases/clean-20261118-v30/assets/audio/duel/block1.mp3`
-- `test/releases/clean-20261118-v30/assets/audio/duel/block2.mp3`
-- `test/releases/clean-20261118-v30/assets/audio/duel/break0.mp3`
-- `test/releases/clean-20261118-v30/assets/audio/duel/clash0.mp3`
-- `test/releases/clean-20261118-v30/assets/audio/duel/clash1.mp3`
-- وبقية 235 ملفًا في رابط commit أعلاه.
+- `test/releases/clean-20261118-v31/app.js`
+- `test/releases/clean-20261118-v31/app.min.js`
+- `test/releases/clean-20261118-v31/assets/audio/duel/block0.mp3`
+- `test/releases/clean-20261118-v31/assets/audio/duel/block1.mp3`
+- `test/releases/clean-20261118-v31/assets/audio/duel/block2.mp3`
+- وبقية 236 ملفًا في رابط commit أعلاه.
 
 ### أحدث خمس دفعات على main
 
+- ddc6955 تجربة v31 للساحات الثماني بديكور مفتوح الترخيص
+- 54ad1a6 docs: تحديث آلي لملف التسليم
 - 824c971 تجربة v30 لتوازن إيقاع هجمات الزعماء
 - c040587 docs: تحديث آلي لملف التسليم
 - 4da3f52 تجربة v29 للجنرال الحديدي وبوق القصف
-- 8da640f docs: تحديث آلي لملف التسليم
-- 1262ed6 تجربة v28 لأشكال تحذير وآثار الزعماء السبعة
 
-الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
+ابدأ بمراجعة سجل الفحوص لهذا المرجع؛ لا تفترض نجاح التعديل أو نشره.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
 <!-- AUTO-HANDOFF:END -->
