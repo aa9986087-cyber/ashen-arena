@@ -103,40 +103,40 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-18T06:04:36.454Z.
-- مرجع العمل: [`26ebe0a090dc124dab871c27d84259e690b43150`](https://github.com/aa9986087-cyber/ashen-arena/commit/26ebe0a090dc124dab871c27d84259e690b43150).
-- آخر تعديل: تجربة v35 لجودة الرسم والعرض الأفقي.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44247698781/attempts/1).
-- بوابة check: **فشل**؛ الاختبارات السريعة: **ناجح**.
-- مسار الفحص: mobile؛ متصفح الجوال: **فشل**.
+- وقت التسجيل (UTC): 2026-11-18T06:14:45.767Z.
+- مرجع العمل: [`975f8721f8858d03bb49af0baa897f5f0668933d`](https://github.com/aa9986087-cyber/ashen-arena/commit/975f8721f8858d03bb49af0baa897f5f0668933d).
+- آخر تعديل: تجربة v36 لخامات الساحات وبطاقات إعدادات الجودة.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44249022320/attempts/1).
+- بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
+- مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
 - إصدار التجربة المسجل: `clean-20261118-v33`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`3647f488dd06`: 269 ملفًا.
+مقارنةً بـ`a3dea790b280`: 269 ملفًا.
 - `docs/HANDOFF.md`
-- `test/releases/graphics-20261118-v35/.nojekyll`
-- `test/releases/graphics-20261118-v35/assets/audio/duel/block0.mp3`
-- `test/releases/graphics-20261118-v35/assets/audio/duel/block1.mp3`
-- `test/releases/graphics-20261118-v35/assets/audio/duel/block2.mp3`
-- `test/releases/graphics-20261118-v35/assets/audio/duel/break0.mp3`
-- `test/releases/graphics-20261118-v35/assets/audio/duel/clash0.mp3`
-- `test/releases/graphics-20261118-v35/assets/audio/duel/clash1.mp3`
-- `test/releases/graphics-20261118-v35/assets/audio/duel/clash2.mp3`
-- `test/releases/graphics-20261118-v35/assets/audio/duel/hit0.mp3`
-- `test/releases/graphics-20261118-v35/assets/audio/duel/hit1.mp3`
-- `test/releases/graphics-20261118-v35/assets/audio/duel/hit2.mp3`
+- `test/releases/graphics-20261118-v36/.nojekyll`
+- `test/releases/graphics-20261118-v36/assets/audio/duel/block0.mp3`
+- `test/releases/graphics-20261118-v36/assets/audio/duel/block1.mp3`
+- `test/releases/graphics-20261118-v36/assets/audio/duel/block2.mp3`
+- `test/releases/graphics-20261118-v36/assets/audio/duel/break0.mp3`
+- `test/releases/graphics-20261118-v36/assets/audio/duel/clash0.mp3`
+- `test/releases/graphics-20261118-v36/assets/audio/duel/clash1.mp3`
+- `test/releases/graphics-20261118-v36/assets/audio/duel/clash2.mp3`
+- `test/releases/graphics-20261118-v36/assets/audio/duel/hit0.mp3`
+- `test/releases/graphics-20261118-v36/assets/audio/duel/hit1.mp3`
+- `test/releases/graphics-20261118-v36/assets/audio/duel/hit2.mp3`
 - وبقية 257 ملفًا في رابط commit أعلاه.
 
 ### أحدث خمس دفعات على main
 
+- 975f872 تجربة v36 لخامات الساحات وبطاقات إعدادات الجودة
+- a3dea79 docs: تحديث آلي لملف التسليم
 - 26ebe0a تجربة v35 لجودة الرسم والعرض الأفقي
 - 3647f48 docs: تحديث آلي لملف التسليم
 - 8c8965d نشر v34 رسميًا مع حارس العهد وساحات الزعماء والقائمة الجديدة
-- 3897285 docs: تحديث آلي لملف التسليم
-- a0d31b9 تجربة v33 تعيد أحجام الأشجار الأصلية
 
-ابدأ بمراجعة سجل الفحوص لهذا المرجع؛ لا تفترض نجاح التعديل أو نشره.
+الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
 <!-- AUTO-HANDOFF:END -->
