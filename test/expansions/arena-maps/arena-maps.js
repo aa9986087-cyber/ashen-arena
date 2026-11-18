@@ -122,6 +122,7 @@ function openArenaGeometry(model, surface) {
   g.setAttribute('position', new THREE.BufferAttribute(points, 3));
   g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   g.computeVertexNormals();
+  g.computeBoundingBox();
   arenaMapMeshCache.set(key, g);
   return g;
 }
@@ -235,9 +236,17 @@ function mountArenaMap(st) {
   const random = arenaRandom(8073 + st.bk * 719 + (st.abyss ? 157 : 0));
   const items = new Map();
   const occupied = [];
+  const surface = st.surface || 'natural';
   const add = (model, x, z, size, yaw, solid, variation = 1) => {
+    const { min, max } = openArenaGeometry(model, surface).boundingBox;
+    const skyline = Math.hypot(x, z) >= ARENA + 4;
+    // Limit the display bounds in world units, rather than applying the same shrink to every model.
+    const height = max.y - min.y;
+    const span = Math.hypot(max.x - min.x, max.z - min.z);
+    const scale = Math.min(size, (skyline ? 5.5 : 2.2) / height, (skyline ? 9 : 3.6) / span);
+    if (solid > 0) solid *= scale / size;
     if (!items.has(model)) items.set(model, []);
-    items.get(model).push([x,z,size,yaw,variation]);
+    items.get(model).push([x,z,scale,yaw,variation]);
     if (solid > 0) {
       occupied.push({x,z,r:solid});
       if (Math.hypot(x,z) + solid < ARENA - .5) OBST.push({x,z,r:solid});
@@ -263,7 +272,7 @@ function mountArenaMap(st) {
   }
   const [r,g,b] = st.tint;
   for (const [model, locations] of items) {
-    const geometry = openArenaGeometry(model, st.surface || 'natural');
+    const geometry = openArenaGeometry(model, surface);
     const batch = inst(geometry, lamV, locations.length, true);
     batch.mesh.receiveShadow = true;
     batch.mesh.name = 'arena-map-' + model;

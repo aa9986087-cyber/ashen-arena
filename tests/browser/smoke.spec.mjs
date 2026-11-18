@@ -811,8 +811,32 @@ test('preview: eight arena maps load by touch and clear their decor on stage cha
         const geo = mesh.geometry;
         return sum + (geo.index?.count || geo.attributes.position.count) * mesh.count / 3;
       }, 0);
+      let maxPlayHeight = 0, maxPlayWidth = 0;
+      const matrix = new THREE.Matrix4(), position = new THREE.Vector3(), scale = new THREE.Vector3();
+      for (const { mesh } of visible) {
+        const size = mesh.geometry.boundingBox.getSize(new THREE.Vector3());
+        for (let i = 0; i < mesh.count; i++) {
+          mesh.getMatrixAt(i, matrix);
+          position.setFromMatrixPosition(matrix);
+          if (Math.hypot(position.x, position.z) >= ARENA + 4) continue;
+          scale.setFromMatrixScale(matrix);
+          maxPlayHeight = Math.max(maxPlayHeight, size.y * scale.y);
+          maxPlayWidth = Math.max(maxPlayWidth, Math.hypot(size.x * scale.x, size.z * scale.z));
+        }
+      }
+      const clearance = G.p.r + .55;
+      const close = OBST.find(o => isOpen(o.x, o.z - o.r - clearance));
+      G.p.x = close.x;
+      G.p.z = close.z - close.r - clearance;
+      render(0, performance.now());
+      const torso = new THREE.Vector3(G.p.x, 1.25, G.p.z);
+      const direction = torso.sub(camera.position);
+      const ray = new THREE.Raycaster(camera.position, direction.clone().normalize(), 0, direction.length());
+      const actorVisible = !ray.intersectObjects(visible.map(({ mesh }) => mesh), false).length;
+      G.p.x = G.p.z = 0;
       render(0, performance.now());
       return {
+        maxPlayHeight, maxPlayWidth, actorVisible,
         stage: stage.n, key: arenaStageStyle(stage).terrain, current: visible.map(o => o.mesh.name),
         routes, previousClear, clearStart: isOpen(0, 0), collisionWorks: probe.x > collider.x + .15,
         triangles, image: renderer.domElement.toDataURL('image/jpeg', .78),
@@ -822,9 +846,12 @@ test('preview: eight arena maps load by touch and clear their decor on stage cha
     expect(snap.previousClear && snap.clearStart && snap.collisionWorks).toBe(true);
     expect(snap.routes).toBeGreaterThanOrEqual(4);
     expect(snap.current.length).toBeGreaterThanOrEqual(4);
+    expect(snap.maxPlayHeight).toBeLessThanOrEqual(2.21);
+    expect(snap.maxPlayWidth).toBeLessThanOrEqual(3.61);
+    expect(snap.actorVisible, `${name}: hero visibility`).toBe(true);
     expect(snap.triangles).toBeLessThan(42000);
     await fs.writeFile(testInfo.outputPath(snap.key + '.jpg'), Buffer.from(snap.image.split(',')[1], 'base64'));
-    summaries.push({ terrain: snap.key, routes: snap.routes, triangles: snap.triangles });
+    summaries.push({ terrain: snap.key, routes: snap.routes, triangles: snap.triangles, maxHeight: snap.maxPlayHeight });
   }
   expect(new Set(summaries.map(s => s.terrain)).size).toBe(8);
   await testInfo.attach('arena-geometry', { body: JSON.stringify(summaries, null, 2), contentType: 'application/json' });

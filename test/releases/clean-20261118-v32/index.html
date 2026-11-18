@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta name="robots" content="noindex, nofollow">
+    <meta http-equiv="Content-Security-Policy" content="connect-src 'self' data: blob:">
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="color-scheme" content="only dark" />
+    <meta name="darkreader-lock" />
+    <meta name="theme-color" content="#0b0d18" />
+    <title>ساحة الرماد</title>
+    <meta name="author" content="Vamos" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lalezar&family=Tajawal:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/base.css?v=clean-20261118-v32" />
+    <link rel="stylesheet" href="css/hud.css?v=clean-20261118-v32" />
+    <link rel="stylesheet" href="css/screens.css?v=clean-20261118-v32" />
+    <link rel="stylesheet" href="css/cards.css?v=clean-20261118-v32" />
+    <link rel="stylesheet" href="css/responsive.css?v=clean-20261118-v32" />
+    <link rel="stylesheet" href="css/menu.css?v=clean-20261118-v32" />
+    <link rel="stylesheet" href="css/menu2.css?v=clean-20261118-v32" />
+    <link rel="stylesheet" href="css/motion.css?v=clean-20261118-v32" />
+    <link rel="stylesheet" href="css/duel.css?v=clean-20261118-v32" />
+    <link rel="stylesheet" href="css/coop.css?v=clean-20261118-v32" />
+    <link rel="stylesheet" href="css/skill-tree.css?v=clean-20261118-v32" />
+  <link rel="stylesheet" href="gravebound.css?v=clean-20261118-v32">
+<link rel="stylesheet" href="boss-specials.css?v=clean-20261118-v32">
+</head>
+  <body class="mouse">
+    <canvas id="gl"></canvas>
+    <canvas id="fx"></canvas>
+    <div id="vig"></div>
+    <div id="dark"></div>
+    <div id="shade"></div>
+    <div id="intro">
+      <div class="iv"><span>VAMOS</span><i></i><small>يقدّم</small></div>
+    </div>
+    <div id="wipe"></div>
+
+    <div class="screen veil" id="liveScr" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>📺 مباشر</h2>
+          <button class="btn sm" id="liveBack">رجوع</button>
+        </div>
+        <p class="note" id="liveOnline"></p>
+        <h4 class="sec">⚔️ مبارزات شغالة</h4>
+        <div id="liveDuels"></div>
+        <h4 class="sec">🎮 يلعبون الحين</h4>
+        <div id="liveRuns"></div>
+      </div>
+    </div>
+    <div class="screen veil" id="coopMenu" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>🤝 التعاون</h2>
+          <button class="btn sm" id="cmBack">رجوع</button>
+        </div>
+        <p class="note">
+          العبوا مع بعض لين 4 محاربين ضد الوحوش والزعماء. كل ما زدتوا، صارت الوحوش أقوى. الخبرة والعالم مشتركين،
+          والبطاقات لكل واحد.
+        </p>
+        <button class="btn go" id="cmCreate">🏰 سوّ جلسة</button>
+        <div id="cmRoom" hidden>
+          <h4 class="sec" id="cmRoomT"></h4>
+          <div id="cmPlayers"></div>
+          <button class="btn go" id="cmStart"></button>
+          <p class="note" id="cmWait"></p>
+          <button class="btn" id="cmLeave">🚪 اطلع من الجلسة</button>
+        </div>
+        <h4 class="sec">🌐 جلسات مفتوحة</h4>
+        <p class="note" id="cmStatus"></p>
+        <div id="cmRooms"></div>
+      </div>
+    </div>
+    <div class="screen veil" id="duelMenu" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>⚔️ المبارزة</h2>
+          <button class="btn sm" id="dmBack">رجوع</button>
+        </div>
+        <h4 class="sec">🗡️ سلاحك</h4>
+        <div id="dmWeapons"></div>
+        <button class="btn go" id="dmTrain">🎯 تدريب ضد الكمبيوتر</button>
+        <h4 class="sec">👥 الملحمة · لين 4 لاعبين كل واحد لحاله</h4>
+        <p class="note">
+          آخر واحد واقف ياخذ الجولة، وأول من يفوز بـ3 جولات ياخذ الملحمة. فوق راس كل لاعب اسمه ولونه وصحته.
+        </p>
+        <button class="btn go" id="ffaTrain">🤖 تدريب: أنت ضد 3 بوتات</button>
+        <button class="btn" id="ffaCreate">🏟️ افتح ساحة</button>
+        <div id="ffaRoom" hidden>
+          <h4 class="sec" id="ffaRoomT"></h4>
+          <div id="ffaPlayers"></div>
+          <button class="btn go" id="ffaStart"></button>
+          <p class="note" id="ffaWait"></p>
+          <button class="btn" id="ffaLeave">🚪 اطلع من الساحة</button>
+        </div>
+        <p class="note" id="ffaStatus"></p>
+        <div id="ffaRooms"></div>
+        <h4 class="sec">🌐 تحدّى لاعب</h4>
+        <p class="note" id="dmStatus"></p>
+        <div id="dmList"></div>
+        <h4 class="sec">📜 سجل المبارزات</h4>
+        <div id="dmRec"></div>
+      </div>
+    </div>
+    <div id="voice" hidden>
+      <div class="vcBox">
+        <button class="iconBtn" id="vcClose" aria-label="إغلاق">✖</button>
+        <h3>🎧 غرف الصوت</h3>
+        <p class="note" id="vcStatus"></p>
+        <div id="vcRooms"></div>
+        <p class="note vcHint">
+          الصوت يروح من جهازك لجهازهم مباشرة. السماعة أفضل عشان ما يرجع صوتهم عندك. اللي ما يبي تسمعه اكتمه بـ🔊.
+        </p>
+      </div>
+    </div>
+    <div id="vcInv" hidden role="alert"></div>
+    <div id="vcBar" hidden>
+      <button id="vcBarRoom" aria-label="غرف الصوت">🎧</button>
+      <div id="vcTalk"></div>
+      <button id="vcBarMic" aria-label="المايك">🎙️</button>
+    </div>
+    <div id="pcard" hidden>
+      <div class="pcBox">
+        <button class="iconBtn" id="pcClose" aria-label="إغلاق">✖</button>
+        <div id="pcPic"></div>
+        <input type="file" id="avaFile" accept="image/*" />
+        <h3 id="pcName"></h3>
+        <p id="pcHero"></p>
+        <div id="pcBody"></div>
+      </div>
+    </div>
+    <div id="dmAsk" hidden>
+      <div class="dmBox">
+        <b id="dmAskT"></b>
+        <p id="dmAskS"></p>
+        <div class="dmRow"><button class="btn go" id="dmYes"></button><button class="btn" id="dmNo"></button></div>
+      </div>
+    </div>
+    <div id="duel" hidden>
+      <div id="dPad"></div>
+      <canvas id="dGore"></canvas>
+      <div id="dCine"><p id="dCineT"></p></div>
+      <div id="dIntro">
+        <b></b>
+        <p></p>
+      </div>
+      <div id="dRotate" hidden>
+        <i>📱</i><b>لف جوالك بالعرض</b>
+        <p>المبارزة تبدأ بعد لحظات…</p>
+      </div>
+      <div id="dHurt"></div>
+      <div id="dTop">
+        <div class="dSide me">
+          <b id="dNameMe">أنت</b>
+          <div class="dHp"><i id="dHpMe"></i></div>
+          <div class="dSt"><i id="dStMe"></i></div>
+          <span class="dPips" id="dPipsMe"></span>
+        </div>
+        <div id="dTime">60</div>
+        <div class="dSide foe">
+          <b id="dNameFoe">الخصم</b>
+          <div class="dHp"><i id="dHpFoe"></i></div>
+          <div class="dSt"><i id="dStFoe"></i></div>
+          <span class="dPips" id="dPipsFoe"></span>
+        </div>
+      </div>
+      <div id="dFfa"></div>
+      <div id="dFeed"></div>
+      <div id="dBtns">
+        <button class="iconBtn" id="dLand" aria-label="اقلب الشاشة بالعرض" hidden>🔄</button
+        ><button class="iconBtn" id="dView" aria-label="غيّر المنظور">👁️</button
+        ><button class="iconBtn" id="dExit" aria-label="خروج">✖</button>
+      </div>
+      <div id="dMsg">
+        <b></b>
+        <p></p>
+      </div>
+      <div id="dFloat"></div>
+      <div id="dJoy" hidden><i></i></div>
+      <div id="dActs">
+        <button class="dAct sm" id="dKick" aria-label="رفسة">🦶<small>رفسة</small></button>
+        <button class="dAct sm" id="dLock" aria-label="ثبّت النظر على الخصم">🎯<small>الخصم</small></button>
+        <button class="dAct" id="dDodge" aria-label="مراوغة">💨<small>مراوغة</small></button>
+        <button class="dAct" id="dBlock" aria-label="صد">🛡️<small>صد</small></button>
+        <button class="dAct big" id="dAtk" aria-label="ضرب">⚔️<small>اضغط سريعة · مطوّل قوية</small></button>
+      </div>
+      <p id="dKeys">
+        WASD حركة · Q E لف · R G فوق وتحت (أو اسحب بعجلة الماوس) · F ثبّت على الخصم · J ضرب (مطوّل = قوية) · K قوية ·
+        Shift صد (وقت رفع الضربة القوية = خدعة) · C ركض · U رفسة · Space مراوغة · V المنظور
+      </p>
+      <div id="dLoad">⚔️ جارٍ تجهيز الساحة…</div>
+      <div id="dOver" hidden>
+        <h2 id="dOverT"></h2>
+        <p id="dOverS"></p>
+        <div class="stack">
+          <button class="btn go" id="dAgain">🔁 إعادة</button>
+          <button class="btn" id="dLeave">خروج للقائمة</button>
+        </div>
+      </div>
+    </div>
+    <div id="hud" hidden>
+      <div id="coopTeam" hidden></div>
+      <div id="watchBar" hidden><b id="watchName"></b><button class="btn sm" id="watchExit">✖ خروج</button></div>
+      <div id="xpbar"><i></i></div>
+      <div id="topRow">
+        <div id="vital">
+          <div id="lvl">1</div>
+          <div id="bars">
+            <div class="bar" id="hpbar"><em></em><i></i><b></b></div>
+            <div class="bar" id="shbar" hidden><i></i></div>
+            <div id="lowHp" hidden></div>
+          </div>
+        </div>
+        <div id="stats">
+          <span id="sTime">⏱ 0:00</span><span id="sKills">💀 0</span><span id="sCoins">🪙 0</span>
+          <button id="labBtn" hidden aria-label="المختبر">🧪</button>
+          <button id="pauseBtn" aria-label="إيقاف مؤقت">⏸</button>
+          <button id="viewers" hidden aria-label="يشاهدونك">👁️ <b>0</b></button>
+        </div>
+      </div>
+      <div id="stageInfo"><span id="siName"></span><b id="siLeft" title="الأعداء الباقين قبل الزعيم"></b></div>
+      <div id="bossbar" hidden>
+        <span></span>
+        <div class="bar"><i></i></div>
+      </div>
+      <div id="bossCine" hidden aria-live="polite">
+        <i class="cineBar top"></i><i class="cineBar bot"></i>
+        <div class="cineTitle"><span>الزعيم</span><b id="bossCineName"></b></div>
+      </div>
+      <div id="loadout"></div>
+      <div id="fps" hidden></div>
+      <div id="count" hidden>
+        <b></b>
+        <p></p>
+      </div>
+      <div id="banner">
+        <h2></h2>
+        <p></p>
+      </div>
+      <div id="joy" hidden><i></i></div>
+      <div id="acts">
+        <button class="act" id="bSpec" aria-label="الضربة الخاصة">🌀<u></u><small>خاصة</small></button>
+        <button class="act" id="bPot" aria-label="جرعة شفاء" hidden>
+          ⚗️<u></u><b id="potN">0</b><small>جرعة</small>
+        </button>
+        <button class="act big" id="bDash" aria-label="مراوغة">💨<u></u><small>مراوغة</small></button>
+      </div>
+    </div>
+
+    <div class="screen boot" id="menu">
+      <div id="embers"></div>
+      <div id="menuTop">
+        <div class="mTopBtns">
+          <button class="iconBtn" id="mProfile" aria-label="ملفك الشخصي">👤</button>
+          <button class="iconBtn" id="mNews" aria-label="الأخبار">📰<i class="badge" id="newsDot" hidden></i></button>
+          <button class="iconBtn" id="mSet" data-go="settings" aria-label="الإعدادات">⚙️</button>
+          <button class="iconBtn" id="mLive" aria-label="مباشر">📺<i class="badge" id="liveBadge" hidden></i></button>
+          <button class="iconBtn" id="mVoice" aria-label="غرف الصوت">
+            🎧<i class="badge" id="voiceBadge" hidden></i>
+          </button>
+        </div>
+        <div class="wallet"><span class="wCoins">🪙 0</span><span class="wSp">✨ 0</span></div>
+      </div>
+      <div id="hero">
+        <div class="orn">
+          <i></i
+          ><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M12 2l4 10-4 10-4-10z" fill="currentColor" />
+            <path d="M2 12l10-3 10 3-10 3z" fill="currentColor" opacity=".55" /></svg
+          ><i></i>
+        </div>
+        <h1>ساحة الرماد</h1>
+        <p class="tag">ادخل ضعيفاً، واخرج إعصاراً</p>
+      </div>
+      <div id="menuNav">
+        <button class="btn" id="mUpdate" hidden>🔄 فيه تحديث جديد للعبة، اضغط هنا</button>
+        <button class="btn go" id="mResume" hidden></button>
+        <div id="playRow">
+          <button class="btn go" id="mPlay">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 3h3l9 9-3 3-9-9zM20 3h-3l-9 9 3 3 9-9zM5 16l3 3M19 16l-3 3M3 21l3-3M21 21l-3-3" /></svg
+            ><span id="mPlayT">ابدأ المعركة</span>
+          </button>
+          <button class="btn" id="mDuel" aria-label="المبارزة">⚔️<small>مبارزة</small></button>
+          <button class="btn" id="mCoop" aria-label="التعاون">🤝<small>تعاون</small></button>
+        </div>
+        <div id="tiles">
+          <button class="tile" data-go="chars">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 13a7 7 0 0 1 14 0v6h-4v-5h-1v5h-4v-5H9v5H5z" />
+              <path d="M12 6V3M10 3h4" /></svg
+            ><b>الأبطال</b>
+          </button>
+          <button class="tile" data-go="shop">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 8h12l1 12H5z" />
+              <path d="M9 8V6a3 3 0 0 1 6 0v2M9 12a3 3 0 0 0 6 0" /></svg
+            ><b>المتجر</b><i class="sale" id="saleTag" dir="ltr" hidden>−30%</i>
+          </button>
+          <button class="tile" data-go="tree">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="5" r="2" />
+              <circle cx="6" cy="18" r="2" />
+              <circle cx="18" cy="18" r="2" />
+              <circle cx="12" cy="13" r="1.4" />
+              <path d="M12 7v4.6M11 14l-4 2.6M13 14l4 2.6" /></svg
+            ><b>المهارات</b>
+          </button>
+          <button class="tile" data-go="ach">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
+              <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8M10 17h4" /></svg
+            ><b>المهام</b><i class="badge" id="dailyBadge" hidden></i>
+          </button>
+          <button class="tile" data-go="board">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 17 3 8l5 4 4-7 4 7 5-4-1 9z" />
+              <path d="M4 20.5h16" />
+              <circle cx="12" cy="13.5" r="1" /></svg
+            ><b>الصدارة</b>
+          </button>
+          <button class="tile" id="mChat">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 5h16v11H9l-5 4z" />
+              <path d="M8 9.5h8M8 12.5h5" /></svg
+            ><b>الشات</b><i class="badge" id="chatBadge" hidden></i>
+          </button>
+        </div>
+        <button class="btn" id="mLab" hidden>🧪 المختبر: جرّب كل شي بسرعة</button>
+        <p class="credit">
+          <span class="crOrn">✦</span> صُنعت في <em>الرافعية</em> بواسطة <b>Vamos</b> <span class="crOrn">✦</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="screen veil" id="chars" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>الأبطال</h2>
+          <div class="wallet"><span class="wCoins"></span></div>
+          <button class="btn sm" data-go="menu">رجوع</button>
+        </div>
+        <div class="grid" id="charGrid"></div>
+      </div>
+    </div>
+
+    <div id="news" hidden>
+      <div class="nBox" role="dialog" aria-label="أخبار اللعبة">
+        <header class="nHead">
+          <span class="nIc">📰</span>
+          <div>
+            <h2>أخبار الساحة</h2>
+            <small>وش الجديد باللعبة</small>
+          </div>
+          <button class="nClose" id="newsClose" aria-label="إغلاق">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </header>
+        <div id="newsList"></div>
+        <button class="btn go" id="newsOk">يلا نلعب</button>
+      </div>
+    </div>
+
+    <div class="screen veil" id="shop" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>المتجر</h2>
+          <div class="wallet"><span class="wCoins"></span></div>
+          <button class="btn sm" data-go="menu">رجوع</button>
+        </div>
+        <div id="shopHero"></div>
+        <h4 class="sec">تطويرات دائمة</h4>
+        <div class="grid" id="permGrid"></div>
+        <h4 class="sec">دليل الأسلحة: تجيك كلها بالبطاقات أثناء الجولة، وتتطور فيها</h4>
+        <div class="grid" id="wepGrid"></div>
+      </div>
+    </div>
+
+    <div class="screen veil" id="tree" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>شجرة المهارات</h2>
+          <div class="wallet"><span class="wSp"></span></div>
+          <button class="btn sm" data-go="menu">رجوع</button>
+        </div>
+        <p class="note" id="treeNote">
+          تكسب نقطة مهارة ✨ عن كل زعيم تهزمه وعن بعض الإنجازات. اختر الفرع من فوق، وكل فرع ينفتح من أول مهارة لآخرها.
+        </p>
+        <div id="treeView"></div>
+      </div>
+    </div>
+
+    <div class="screen veil" id="ach" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>المهام والإنجازات</h2>
+          <button class="btn sm" data-go="menu">رجوع</button>
+        </div>
+        <h4 class="sec">🎯 مهام اليوم</h4>
+        <div class="grid" id="dailyGrid"></div>
+        <p class="note" id="dailyReset"></p>
+        <h4 class="sec">🏆 الإنجازات</h4>
+        <div class="grid" id="achGrid"></div>
+      </div>
+    </div>
+
+    <div class="screen veil" id="settings" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>الإعدادات</h2>
+          <button class="btn sm" id="setBack">رجوع</button>
+        </div>
+        <div class="row">
+          <label for="oSfx">المؤثرات الصوتية</label><input type="range" id="oSfx" min="0" max="1" step="0.05" />
+        </div>
+        <div class="row">
+          <label for="oMus">الموسيقى</label><input type="range" id="oMus" min="0" max="1" step="0.05" />
+        </div>
+        <div class="row"><span>الظلال</span><button class="btn sm sw" id="oShadow"></button></div>
+        <div class="row"><span>اهتزاز الشاشة</span><button class="btn sm sw" id="oShake"></button></div>
+        <div class="row"><span>جودة الرسم</span><button class="btn sm sw" id="oQual"></button></div>
+        <div class="row"><span>عداد الفريمات (FPS)</span><button class="btn sm sw" id="oFps"></button></div>
+        <div class="row"><span>توفير البطارية (60 إطار ثابتة)</span><button class="btn sm sw" id="oEco"></button></div>
+        <div class="row"><span>مكان أزرار الهجوم</span><button class="btn sm sw" id="oSide"></button></div>
+        <div class="row">
+          <span>كود هدية</span>
+          <span class="giftBox"
+            ><input class="txt" id="giftIn" placeholder="GF1-..." autocomplete="off" spellcheck="false" /><button
+              class="btn sm"
+              id="giftOk"
+            >
+              استخدم
+            </button></span
+          >
+        </div>
+        <p class="note credits">
+          أصوات القوائم: «Interface Sounds» من Kenney (CC0). أصوات المبارزة: «Oculus Audio Pack 01» من Oculus VR (رخصة
+          CC BY 4.0)، وKenney وPanderMusubi (CC0). المقاتل والحركات: Quaternius (CC0). الأيقونات: game-icons.net من Lorc
+          وDelapouite وغيرهم (رخصة CC BY 3.0)، وLucide (ISC). مؤثرات القتال: Kenney Particle Pack (CC0). نماذج الأسلحة:
+          KayKit وKenney (CC0).
+        </p>
+        <div id="devBox" hidden>
+          <h4 class="sec">👑 أدوات المطور</h4>
+          <p class="note">تعدّل حسابك على هذا الجهاز فقط. أدوات القتال (استدعاء وحوش وزعماء…) من زر 🧪 أثناء اللعب.</p>
+          <div class="labg" id="devTools"></div>
+        </div>
+        <div class="row bkRow">
+          <span>نسخة احتياطية لتقدمك</span>
+          <div class="bkBox">
+            <textarea class="txt" id="bkIn" placeholder="الصق كود التقدم هنا (AS1-...)" spellcheck="false"></textarea>
+            <div class="bkBtns">
+              <button class="btn sm" id="bkCopy">📋 انسخ تقدمي</button
+              ><button class="btn sm" id="bkLoad">استرجع</button>
+            </div>
+          </div>
+        </div>
+        <div class="row"><span>مسح كل التقدم</span><button class="btn sm sw" id="oReset">امسح</button></div>
+      </div>
+    </div>
+
+    <div class="screen veil" id="board" hidden>
+      <div class="wrap boardWrap">
+        <div class="head">
+          <div class="boardTitle">
+            <p class="eyebrow">HALL OF ASH</p>
+            <h2>قاعة المجد</h2>
+          </div>
+          <button class="iconBtn" id="bHow" aria-label="كيف تنحسب الترتيبات" aria-expanded="false">ⓘ</button>
+          <button class="btn sm" id="bName"></button>
+          <button class="btn sm" data-go="menu">رجوع</button>
+        </div>
+        <div id="bRule">
+          <b>خمس قاعات، خمس بطولات</b>
+          <p>كل لاعب يظهر بكل جولاته مع بعض (نفس أرقام ملفه). اختر القاعة من التبويبات، والترتيب كذا:</p>
+          <ol>
+            <li>
+              <span>🏆</span>
+              <p>
+                <b>الأسبوع:</b> زعماء هذا الأسبوع، ثم قتلاته، ثم أسرع فوز.
+                <small class="bWhy">يتجدد كل اثنين، فكل أسبوع معركة جديدة. جولات المختبر ما تنحسب.</small>
+              </p>
+            </li>
+            <li>
+              <span>🛡️</span>
+              <p><b>الصمود:</b> أطول مدة بقاء حياً في جولة وحدة.</p>
+            </li>
+            <li>
+              <span>👑</span>
+              <p><b>الزعماء:</b> أكثر زعماء أسقطتهم في كل جولاتك. الزعيم هو وحش المرحلة الكبير، وبالهاوية بعد.</p>
+            </li>
+            <li>
+              <span>⚡</span>
+              <p><b>الأسرع:</b> أقل زمن للوصول إلى أول زعيم وإسقاطه.</p>
+            </li>
+            <li>
+              <span>💀</span>
+              <p><b>القتلات:</b> أكثر أعداء أسقطتهم في كل جولاتك.</p>
+            </li>
+          </ol>
+          <p class="bNote">⭐ أرقام الصمود والأسرع تُسجَّل من الجولات الجديدة، والأرقام تتحدث بعد كل جولة تخلصها.</p>
+        </div>
+        <nav class="boardTabs" id="boardTabs" role="tablist" aria-label="ترتيبات قاعة المجد">
+          <button type="button" role="tab" data-metric="week" class="active">🏆 الأسبوع</button>
+          <button type="button" role="tab" data-metric="endure">🛡️ الصمود</button>
+          <button type="button" role="tab" data-metric="bosses">👑 الزعماء</button>
+          <button type="button" role="tab" data-metric="fast">⚡ الأسرع</button>
+          <button type="button" role="tab" data-metric="kills">💀 القتلات</button>
+        </nav>
+        <p class="boardLead" id="boardLead"></p>
+        <div class="podium" id="podium" aria-live="polite"></div>
+        <div id="boardList"></div>
+        <p class="note" id="boardMode"></p>
+        <div id="offBox">
+          <h4 class="sec">أرسل نتيجتك لخوياك</h4>
+          <textarea class="txt" id="myCode" readonly></textarea>
+          <button class="btn sm mt8" id="bCopy">📋 انسخ نتيجتي</button>
+          <h4 class="sec">أضف نتيجة خويّك</h4>
+          <p class="note" id="pasteNote">الصق هنا الرسالة أو الكود اللي أرسله لك.</p>
+          <textarea class="txt" id="inCode" placeholder="AR1-..."></textarea>
+          <button class="btn sm mt8" id="bAdd">أضف للقائمة</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="screen veil center" id="nameScr" hidden>
+      <h2>وش اسمك؟</h2>
+      <p class="note" id="nameNote">يظهر اسمك في قائمة الصدارة</p>
+      <div class="stack">
+        <input class="txt" id="nameIn" maxlength="14" autocomplete="off" placeholder="اكتب اسمك" />
+        <button class="btn go" id="nameOk">ادخل الساحة</button>
+      </div>
+    </div>
+
+    <div class="screen" id="cards" hidden>
+      <h2 id="cardTitle"></h2>
+      <p id="cardSub"></p>
+      <div id="cardRow"></div>
+      <button class="btn sm" id="reroll" hidden></button>
+    </div>
+
+    <div class="screen" id="lab" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>🧪 المختبر</h2>
+          <button class="btn go" id="labClose">رجوع للعب</button>
+        </div>
+        <p class="note" id="labNote">جولات المختبر ما تنحسب بالصدارة ولا تعطي عملات.</p>
+        <h4 class="sec">استدعِ وحوش (3 من كل نوع)</h4>
+        <div class="labg" id="labMon"></div>
+        <h4 class="sec">جرّب سلاح</h4>
+        <div class="labg" id="labWep"></div>
+        <h4 class="sec">استدعِ زعيم</h4>
+        <div class="labg" id="labBoss"></div>
+        <h4 class="sec">انتقل لمرحلة</h4>
+        <div class="labg" id="labStage"></div>
+        <h4 class="sec">أدوات</h4>
+        <div class="labg" id="labTools"></div>
+      </div>
+    </div>
+
+    <div class="screen veil" id="chat" hidden>
+      <div class="wrap">
+        <div class="head">
+          <h2>الشات العام</h2>
+          <button class="btn sm" id="cName"></button><button class="btn sm" id="cBack">رجوع</button>
+        </div>
+        <p class="note" id="chatInfo"></p>
+        <div class="labg" id="chatMod" hidden></div>
+        <div id="chatList"></div>
+        <form id="chatForm">
+          <input class="txt" id="chatIn" maxlength="200" autocomplete="off" placeholder="اكتب رسالتك…" />
+          <button class="btn go sm" id="chatSend">إرسال</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="screen veil center" id="pause" hidden>
+      <h2>استراحة</h2>
+      <div id="pStats"></div>
+      <div class="stack">
+        <button class="btn go" id="pResume">أكمل القتال</button>
+        <button class="btn" id="pSet">⚙️ الإعدادات</button>
+        <button class="btn" id="pChat">💬 الشات العام</button>
+        <button class="btn" id="pSave">احفظ واخرج للقائمة</button>
+        <button class="btn" id="pQuit">أنهِ الجولة</button>
+        <p class="credit">
+          <span class="crOrn">✦</span> صُنعت في <em>الرافعية</em> بواسطة <b>Vamos</b> <span class="crOrn">✦</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="screen veil center" id="over" hidden>
+      <h2 id="ovTitle">سقطت في الساحة</h2>
+      <div class="sum" id="ovSum"></div>
+      <div class="stack">
+        <button class="btn go" id="ovRetry">جولة جديدة</button>
+        <button class="btn" id="ovShot">🖼️ صورة نتيجتي</button>
+        <button class="btn" id="ovCopy">📋 انسخ نتيجتي لخوياي</button>
+        <button class="btn" id="ovMenu">القائمة الرئيسية</button>
+        <p class="credit">
+          <span class="crOrn">✦</span> صُنعت في <em>الرافعية</em> بواسطة <b>Vamos</b> <span class="crOrn">✦</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="screen center" id="ending" hidden>
+      <h2>مبروك، وصلت النهاية</h2>
+      <p id="endStats"></p>
+      <p id="endTaunt"></p>
+      <div class="stack">
+        <button class="btn go" id="endGo">ادخل الهاوية</button>
+        <button class="btn" id="endExit">هذا حدّي، احفظ رقمي واخرج</button>
+      </div>
+    </div>
+
+    <div id="cine"><b></b></div>
+    <div id="evoFx" hidden>
+      <div class="efRays"></div>
+      <div class="efIcons"><i class="efFrom"></i><b class="efArrow">←</b><i class="efTo"></i></div>
+      <small>تطوّر السلاح</small>
+      <h3></h3>
+      <p></p>
+    </div>
+    <div id="toast"></div>
+
+    <!-- three.js r128 + GLTFLoader (globals: THREE, THREE.GLTFLoader) -->
+
+
+    <!-- bloom post-processing (used on high quality) -->
+
+
+
+
+
+
+    <!-- Game scripts: plain (non-module) scripts sharing one global scope. ORDER MATTERS:
+     each file may only use, at load time, what the files above it define. -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      <script src="vendor.js?v=clean-20261118-v32"></script>
+    <script src="app.min.js?v=clean-20261118-v32"></script>
+  </body>
+</html>
