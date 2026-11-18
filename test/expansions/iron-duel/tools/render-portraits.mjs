@@ -20,16 +20,16 @@ try {
     return route.fulfill({path:file}).catch(() => route.abort());
   });
   await page.goto(origin, {waitUntil:'domcontentloaded'});
-  const frames = await page.evaluate(async () => {
+  const frames = await page.evaluate(async fighterOnly => {
     const [model] = await Promise.all([duelLoad(), forgeLoadGear()]);
     const rig = new Duelist(model, 212, 110);
     const scene = new THREE.Scene();
     const lights = [
-      new THREE.HemisphereLight(0xf4e6d9, 0x898ba1, .63),
-      new THREE.DirectionalLight(0xffe1b9, 1.11),
-      new THREE.DirectionalLight(0xa1bdde, .84),
+      new THREE.HemisphereLight(0xf4e6d9, 0x898ba1, .52),
+      new THREE.DirectionalLight(0xffdda7, 1.24),
+      new THREE.DirectionalLight(0xa1bdde, 1.05),
     ];
-    lights[1].position.set(-3, 5, 4);
+    lights[1].position.set(-4, 3.4, 2.9);
     lights[2].position.set(4, 3, -4);
     scene.add(...lights);
     const canvas = new THREE.WebGLRenderer({alpha:true, antialias:true, preserveDrawingBuffer:true});
@@ -48,13 +48,13 @@ try {
     scene.add(rig.root);
     rig.mixer.update(.21);
     rig.sword.visible = false;
-    FORGE_STYLES.forEach(({id}, i) => {
-      forgeDress(rig, i);
-      rig.root.rotation.y = .35;
-      render(id, 320, 392, .82, [.52, 1.61, 4.9], [0, 1.05, 0]);
-    });
+    forgeDress(rig, 0);
+    rig.root.rotation.y = .22;
+    const head = goreBone(rig,'Head');
+    head.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), -.19));
+    render('fighter', 480, 590, .89, [.47, 1.48, 4.9], [0, .94, 0]);
     scene.remove(rig.root);
-    for (const id of DUEL_WEAPON_IDS) {
+    for (const id of fighterOnly ? [] : DUEL_WEAPON_IDS) {
       const weapon = forgeWeaponModel(id);
       const wrapper = new THREE.Group();
       const bounds = new THREE.Box3().setFromObject(weapon);
@@ -68,7 +68,7 @@ try {
     }
     canvas.dispose();
     return frames;
-  });
+  }, process.argv.includes('--fighter-only'));
   await fs.mkdir(output, {recursive:true});
   await Promise.all(Object.entries(frames).map(([id, frame]) => fs.writeFile(path.join(output, id + '.webp'), Buffer.from(frame, 'base64'))));
   console.log('Rendered in-game wardrobe and weapon portraits:', Object.keys(frames).length);

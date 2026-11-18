@@ -68,7 +68,7 @@ try {
   await p1.waitForFunction(() => Array.from(document.querySelectorAll('.forgeWeaponVisual')).every(n => n.complete && n.naturalWidth > 1));
   assert.equal(await p1.locator('.weaponStage h3').textContent(), 'الخنجر الطويل');
   await p1.locator('#forge-tab-fighter').tap();
-  await p1.getByRole('button',{name:'مقاتل الحلبة',exact:true}).tap();
+  assert.equal(await p1.locator('.fighterStage h3').textContent(), 'مقاتل الحلبة');
   await p1.waitForFunction(() => document.querySelector('.fighterStage img').naturalWidth > 1);
   await p1.locator('#dmTrain').tap();
   await p1.waitForFunction(() => DUEL.on && DUEL.ready && DUEL.round===1);
@@ -80,7 +80,13 @@ try {
   });
   assert.equal(await p1.evaluate(() => DUEL.phase),'fight');
   console.log('Training loaded and the first round started');
-  assert.equal(await p1.evaluate(() => DUEL.me.forgeStyle), 3);
+  assert.equal(await p1.evaluate(() => DUEL.me.forgeStyle), 0);
+  assert.ok(await p1.evaluate(() => {
+    const materials = DUEL.me.forgeFigure.pieces.map(p => p.material.name);
+    return materials.includes('SkinTorso') && materials.includes('Trousers') &&
+      materials.includes('SkinFeet') && !materials.some(part => /tunic|armor/i.test(part)) &&
+      !!DUEL.me.forgeFigure.pieces.find(p => p.material.name === 'Trousers')?.material.map;
+  }));
   assert.equal(await p1.evaluate(() => DUEL.me.wpId), 'dirk');
   assert.ok(await p1.evaluate(() => DUEL.me.forgeFigure.pieces.every(p => p.isSkinnedMesh && p.visible)));
   assert.ok(await p1.evaluate(() => DUEL.me.forgeFigure.legacy.every(p => !p.visible)));

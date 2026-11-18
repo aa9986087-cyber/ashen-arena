@@ -29,7 +29,7 @@ function forgePacketOkay(e, p) {
     return forgeInt(p.r, 0, 99) && forgeNum(p.x, -10.1, 10.1) && forgeNum(p.z, -10.1, 10.1) &&
       Math.hypot(p.x, p.z) < 10.12 && forgeNum(p.f, -4, 4) && FORGE_STATES.has(p.a) &&
       forgeNum(p.hp, 0, 100) && forgeNum(p.st, 0, 100) && forgeNum(p.mx, -1, 1) && forgeNum(p.mz, -1, 1) &&
-      forgeInt(p.av, 0, FORGE_STYLES.length - 1) && forgeInt(p.mid, 0, 100000) && forgeNum(p.mt, 0, 7200) &&
+      forgeInt(p.mid, 0, 100000) && forgeNum(p.mt, 0, 7200) &&
       forgeInt(p.md, -1, 1) && forgeGestureOkay(p.gesture) && forgeInt(p.mc, 0, 10000) && DUEL_WEAPON_IDS.includes(p.w) &&
       (p.cu === undefined || forgeInt(p.cu, 0, 127)) &&
       (p.ck === undefined || forgeNum(p.ck, -1, 60)) &&
@@ -134,7 +134,6 @@ function forgeReadMove(f, m, time) {
   }
 }
 function forgeReadFighter(f, state) {
-  forgeDress(f, state.av);
   if (f.wpId !== state.w) f.setWeapon(state.w);
   if (state.r === DUEL.round) forgeReadWound(f, state.wound);
   if (DUEL.phase !== 'fight' || DUEL.fin || DUEL.kc) return;

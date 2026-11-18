@@ -136,9 +136,9 @@ def build(out):
     pixel();
   });
 """ + code[warm_end:]
-    code = code.replace("m.visible = !m.userData.cut", "m.visible = forgeFighterVisible(me, m)")
+    code = code.replace("m.visible = !m.userData.cut", "m.visible = forgeFighterVisible(m)")
     code = replace(code, "const heavy = att.act === 'heavy' || r !== 'hit';", "const heavy = (def.forgeImpact?.amount || 0) > .63 || r !== 'hit';")
-    code = replace(code, "m.visible = !fp && !m.userData.cut;", "m.visible = forgeFighterVisible(me, m, fp);")
+    code = replace(code, "m.visible = !fp && !m.userData.cut;", "m.visible = forgeFighterVisible(m, fp);")
     mode.write_text(code)
     patch(out, "js/duel/duel-mode.js", [
         ("    duelSoundsLoad();", "    duelSoundsLoad();\n    await forgeLoadGear();"),
@@ -147,10 +147,10 @@ def build(out):
         ("setItem('ashen_duel_view',", "setItem('ashen_iron_view',"),
         ("|| 'fp';", "|| 'tps';"),
         ("    DUEL.scene.add(DUEL.me.root, DUEL.foe.root);",
-         "    forgeDress(DUEL.me, forgeStyle());\n    forgeDress(DUEL.foe, 4);\n    DUEL.scene.add(DUEL.me.root, DUEL.foe.root);"),
+         "    forgeDress(DUEL.me, 0);\n    forgeDress(DUEL.foe, 1);\n    DUEL.scene.add(DUEL.me.root, DUEL.foe.root);"),
         ("if (DUEL.atkDown >= 0 && !DUEL.heavyFired && performance.now()", "if (!forgePointer?.drag && DUEL.atkDown >= 0 && !DUEL.heavyFired && performance.now()"),
         ("  duelLock(false);\n  DUEL.pitch = 0;",
-         "  duelLock(!watch);\n  DUEL.pitch = 0;\n  me.forgeAttack = foe.forgeAttack = foe.forgeRemoteAttack = 0;\n  forgeDress(me, forgeStyle());"),
+         "  duelLock(!watch);\n  DUEL.pitch = 0;\n  me.forgeAttack = foe.forgeAttack = foe.forgeRemoteAttack = 0;"),
         ("    down();\n  });", "    b.setPointerCapture(e.pointerId);\n    down();\n  });"),
         ("  b.addEventListener('pointercancel', end);\n  b.addEventListener('pointerleave', end);",
          """  b.addEventListener('pointercancel', () => {
@@ -173,7 +173,6 @@ def build(out):
     })"""),
         ("        ch.send('go', {});\n        if (!N.ready)", "        ch.send('go', {});\n        if (N.ready && DUEL.round === 1) ch.send('rd', { n: 1 });\n        if (!N.ready)"),
         ("    N.ch.send('st', {", """    N.ch.send('st', {
-      av: me.forgeStyle,
       gesture: forgePacketGesture(me),
       wound: forgeWoundPacket(me),
       mid: me.forgeAttack || 0,
@@ -244,7 +243,7 @@ def build(out):
           o.position.y = p.r;
         } else goreStain(o.position.x, o.position.z, 0.7 + Math.random() * 0.3, true, 0.18);"""),
         ("const gV = new THREE.Vector3(),", "const gV = new THREE.Vector3(),\n  gV3 = new THREE.Vector3(),"),
-        ("    if (!o.isSkinnedMesh) return;", "    if (!o.isSkinnedMesh || !forgeIsEquipped(f, o)) return;"),
+        ("    if (!o.isSkinnedMesh) return;", "    if (!o.isSkinnedMesh || o.userData.forgeHiddenLegacy) return;"),
         ("function goreDecide(d, kind, from) {", """function goreDecide(d, kind, from) {
   const hit = d.forgeContact;
   if (hit) {
@@ -255,7 +254,7 @@ def build(out):
     ])
     patch(out, "js/duel/duel-ffa.js", [
         ("    ffaExtra = [new Duelist(a, FFA_HUES[2], 104), new Duelist(b, FFA_HUES[3], 124)];",
-         "    ffaExtra = [new Duelist(a, FFA_HUES[2], 104), new Duelist(b, FFA_HUES[3], 124)];\n    ffaExtra.forEach((fighter, i) => forgeDress(fighter, (i + 1) % FORGE_STYLES.length));"),
+         "    ffaExtra = [new Duelist(a, FFA_HUES[2], 104), new Duelist(b, FFA_HUES[3], 124)];\n    ffaExtra.forEach((fighter, i) => forgeDress(fighter, i + 2));"),
     ])
     patch(out, "js/duel/duel-arena.js", [
         ("  s.background = new THREE.Color(0x0a0708);", "  s.background = new THREE.Color(0x110d16);"),

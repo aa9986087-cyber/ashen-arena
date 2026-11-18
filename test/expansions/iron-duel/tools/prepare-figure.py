@@ -1,9 +1,11 @@
-"""Split the CC0 Superhero Male into dressable pieces, keeping its original rig and vertex weights."""
+"""Bake the arena fighter from CC0 MakeHuman geometry and the Quaternius animation rig."""
 import argparse
 import copy
 import json
-import math
 import struct
+from io import BytesIO
+from PIL import Image
+from importlib import import_module
 from pathlib import Path
 
 def load(path):
@@ -13,19 +15,18 @@ def load(path):
     model = json.loads(source[20:20 + json_len])
     return model, source[28 + json_len:]
 
-def bake(source, output):
+def bake(source, makehuman, clothes, output):
     old, data = load(source)
     result = {k: copy.deepcopy(old[k]) for k in ("asset", "scene", "scenes", "nodes", "skins") if k in old}
     result.update(accessors=[], bufferViews=[], meshes=[], materials=[])
-    result["asset"]["copyright"] = "Superhero Male by Quaternius, CC0 1.0. Mesh partitioned for Ashen Arena."
+    result["asset"]["copyright"] = "MakeHuman body and weights, Margaret Toigo wool trousers, Quaternius rig. CC0 1.0."
     payload = bytearray()
     known = {}
     colors = {
         "SkinTorso": (0.48, 0.23, 0.13), "SkinArms": (0.48, 0.23, 0.13),
         "SkinHead": (0.48, 0.23, 0.13), "SkinFeet": (0.45, 0.20, 0.12),
-        "Trousers": (0.05, 0.055, 0.065), "Waist": (0.12, 0.064, 0.035),
-        "Tunic": (.23,.18,.12), "TunicHem": (.23,.18,.12), "Boots": (.08,.05,.03),
-        "Eyes": (0.68, 0.66, 0.54), "Brows": (0.045, 0.025, 0.018),
+        "Trousers": (0.88, 0.88, 0.88),
+        "Eyes": (0.43, 0.40, 0.36), "Iris": (0.032, 0.021, 0.016),
     }
     materials = {}
     for name, rgb in colors.items():
@@ -78,113 +79,42 @@ def bake(source, output):
         item = {"bufferView": view(raw, target=34962), "componentType": {"f": 5126, "H": 5123}[code],
                 "count": len(rows), "type": shape}
         if bounds:
-            item.update(min=[min(column) for column in zip(*rows)],
-                        max=[max(column) for column in zip(*rows)])
+            item.update(min=[float(min(column)) for column in zip(*rows)],
+                        max=[float(max(column)) for column in zip(*rows)])
         result["accessors"].append(item)
         return len(result["accessors"]) - 1
 
     joint = {result["nodes"][node]["name"]: n for n, node in enumerate(result["skins"][0]["joints"])}
 
-    def garment(shells, material):
-        positions, normals, joints, weights, uv, triangles = [], [], [], [], [], []
-        slices = 24
-        for rings in shells:
-            start = len(positions)
-            for r, (y, x, rx, rz, influences, *offset) in enumerate(rings):
-                for i in range(slices):
-                    a = i * math.tau / slices
-                    # Small folds in the fabric, independent of the body mesh.
-                    fold = 1 + .038 * math.cos(5 * a + r * .81) + .022 * math.sin(9 * a - r)
-                    c, s = math.cos(a), math.sin(a)
-                    positions.append((x + c * rx * fold, y, s * rz * fold + (offset[0] if offset else -.008)))
-                    nx, nz = c / rx, s / rz
-                    length = math.hypot(nx, nz)
-                    normals.append((nx / length, 0, nz / length))
-                    uv.append((i / slices, y))
-                    joints.append(tuple(joint[name] for name, _ in influences) + (0,) * (4 - len(influences)))
-                    weights.append(tuple(value for _, value in influences) + (0,) * (4 - len(influences)))
-                    if r < len(rings) - 1:
-                        a0 = start + r * slices + i
-                        b0 = start + r * slices + ((i + 1) % slices)
-                        triangles.extend((a0, b0, a0 + slices, b0, b0 + slices, a0 + slices))
-        attrs = {"POSITION": attribute(positions, "f", "VEC3", True),
-                 "NORMAL": attribute(normals, "f", "VEC3"),
-                 "TEXCOORD_0": attribute(uv, "f", "VEC2"),
-                 "JOINTS_0": attribute(joints, "H", "VEC4"),
-                 "WEIGHTS_0": attribute(weights, "f", "VEC4")}
-        return {"attributes": attrs, "indices": index(triangles), "material": materials[material]}
+    image_path = clothes / "Pants_wool.png"
+    with Image.open(image_path) as source_image:
+        image = source_image.convert("RGB")
+        image.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+        texture = BytesIO()
+        image.save(texture, format="JPEG", quality=90, optimize=True)
+    result["images"] = [{"bufferView": view(texture.getvalue()), "mimeType": "image/jpeg"}]
+    result["textures"] = [{"source": 0}]
+    result["materials"][materials["Trousers"]]["pbrMetallicRoughness"]["baseColorTexture"] = {"index":0}
 
-    pelvis = [("pelvis", 1)]
-    hips = [(1.073, 0, .223, .141, pelvis), (1.023, 0, .241, .158, pelvis),
-            (.958, 0, .241, .167, pelvis),
-            (.904, 0, .231, .159, [("pelvis", .72), ("thigh_r", .14), ("thigh_l", .14)]),
-            (.859, 0, .212, .13, [("pelvis", .54), ("thigh_r", .23), ("thigh_l", .23)]),
-            (.840, 0, .107, .098, pelvis), (.835, 0, .003, .003, pelvis)]
-    belt = [(1.079, 0, .224, .143, pelvis), (1.069, 0, .233, .151, pelvis),
-            (1.033, 0, .247, .161, pelvis), (1.022, 0, .246, .163, pelvis)]
-    legs = []
-    for side, direction in [("l", 1), ("r", -1)]:
-        thigh, calf, foot = ("thigh_" + side, "calf_" + side, "foot_" + side)
-        legs.append([(y, direction * cx, rx, rz, weights) for y, cx, rx, rz, weights in [
-            (.951, .103, .116, .129, [("pelvis", .82), (thigh, .18)]),
-            (.870, .117, .121, .135, [("pelvis", .36), (thigh, .64)]),
-            (.763, .120, .113, .122, [(thigh, 1)]),
-            (.640, .118, .103, .105, [(thigh, .95), (calf, .05)]),
-            (.549, .116, .109, .107, [(thigh, .5), (calf, .5)]),
-            (.445, .113, .096, .098, [(thigh, .08), (calf, .92)]),
-            (.319, .110, .089, .093, [(calf, 1)]),
-            (.199, .105, .074, .080, [(calf, .9), (foot, .1)]),
-            (.147, .103, .066, .076, [(calf, .72), (foot, .28)]),
-            (.137, .103, .061, .071, [(calf, .66), (foot, .34)]),
-        ]])
-
-    hem = [(1.060, 0, .216, .144, pelvis),
-           (1.013, 0, .243, .155, pelvis),
-           (.990, 0, .255, .163, pelvis),
-           (.983, 0, .254, .161, pelvis)]
-    boots = []
-    for side, direction in [("l", 1), ("r", -1)]:
-        calf, foot = "calf_" + side, "foot_" + side
-        boots.append([(y, direction * .115, rx, rz, weights, z) for y, rx, rz, weights, z in [
-            (.369, .092, .105, [(calf, 1)], -.013),
-            (.350, .100, .112, [(calf, 1)], -.013),
-            (.302, .092, .103, [(calf, 1)], -.013),
-            (.214, .087, .096, [(calf, .85), (foot, .15)], -.019),
-            (.134, .082, .094, [(calf, .25), (foot, .75)], -.027),
-            (.082, .081, .119, [(foot, 1)], -.014),
-            (.046, .088, .152, [(foot, 1)], -.010),
-            (.011, .091, .153, [(foot, 1)], -.010),
-            (.009, .003, .003, [(foot, 1)], -.010),
-        ]])
-
+    fitter = import_module("makehuman-upper")
+    inverse = values(old["skins"][0]["inverseBindMatrices"], "f", 16)
     for skin in result["skins"]:
         skin["inverseBindMatrices"] = access(skin["inverseBindMatrices"])
-    for no, mesh in enumerate(old["meshes"]):
-        primitive = mesh["primitives"][0]
-        attrs = {key: access(primitive["attributes"][key]) for key in ("POSITION", "NORMAL", "TEXCOORD_0", "JOINTS_0", "WEIGHTS_0")}
-        if no < 2:
-            parts = [{"attributes": attrs, "indices": access(primitive["indices"]),
-                      "material": materials["Brows" if no == 0 else "Eyes"]}]
-        else:
-            pos = values(primitive["attributes"]["POSITION"], "f", 3)
-            code = {5121: "B", 5123: "H", 5125: "I"}[old["accessors"][primitive["indices"]]["componentType"]]
-            ids = [v[0] for v in values(primitive["indices"], code, 1)]
-            grouped = {key: [] for key in ("SkinTorso","SkinArms","SkinHead","SkinFeet","Trousers","Waist","Tunic")}
-            for i in range(0, len(ids), 3):
-                tri = ids[i:i+3]
-                xx, yy, _ = [sum(pos[j][k] for j in tri) / 3 for k in range(3)]
-                region = ("SkinFeet" if yy < 0.145 else "Trousers" if yy < 0.99 else "Waist" if yy < 1.042
-                    else "SkinHead" if yy > 1.54 and abs(xx) < 0.17 else "SkinArms" if abs(xx) > 0.235
-                    else "SkinTorso")
-                # Reuse the original skin weights here, so the sleeves flex with the shoulders.
-                if (region == "SkinTorso" and yy < 1.515) or (region == "SkinArms" and abs(xx) < .385):
-                    region = "Tunic"
-                grouped[region].extend(tri)
-            parts = [{"attributes": attrs, "indices": index(ids), "material": materials[name]}
-                     for name, ids in grouped.items() if ids and name not in ("Trousers", "Waist", "SkinFeet")]
-            parts.extend([garment([hips, *legs], "Trousers"), garment([belt], "Waist"),
-                          garment([hem], "TunicHem"), garment(boots, "Boots")])
-        result["meshes"].append({"name": mesh["name"],"primitives": parts})
+    parts = []
+    for name, xyz, normal, uv, ids, weights, triangles in fitter.fit(makehuman, clothes, joint, inverse):
+        attrs = {"POSITION": attribute(xyz, "f", "VEC3", True),
+                 "NORMAL": attribute(normal, "f", "VEC3"),
+                 "TEXCOORD_0": attribute(uv, "f", "VEC2"),
+                 "JOINTS_0": attribute(ids, "H", "VEC4"),
+                 "WEIGHTS_0": attribute(weights, "f", "VEC4")}
+        parts.append({"attributes": attrs, "indices": index(triangles), "material": materials[name]})
+    for node in result["nodes"]:
+        if node.get("mesh") == 2:
+            node["mesh"] = 0
+        elif "mesh" in node:
+            node.pop("mesh")
+            node.pop("skin", None)
+    result["meshes"] = [{"name": "ArenaFighter", "primitives": parts}]
 
     while len(payload) % 4:
         payload.append(0)
@@ -198,6 +128,8 @@ def bake(source, output):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("source", type=Path)
+    parser.add_argument("makehuman", type=Path)
+    parser.add_argument("clothes", type=Path)
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
-    bake(args.source,args.output)
+    bake(args.source,args.makehuman,args.clothes,args.output)

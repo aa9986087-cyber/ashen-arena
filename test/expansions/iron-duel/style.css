@@ -23,7 +23,7 @@
 }
 #duelMenu .btn.go { background: linear-gradient(180deg, #e9c096, #bf8c61); color: #201811; border-color: #d9ad86; text-shadow: none; }
 .forgeLoadout { display: flex; flex-wrap: wrap; column-gap: 10px; font-size: 12px; color: var(--forge-muted); }
-.forgeLoadout strong { border-inline-start: 1px solid var(--forge-line); padding-inline-start: 10px; color: var(--forge-gold); }
+.forgeLoadout strong { color: var(--forge-gold); }
 
 .forgeNav { display: flex; gap: 14px; border-bottom: 1px solid var(--forge-line); }
 .forgeTab, .forgeWeaponTab {
@@ -32,7 +32,7 @@
   color: var(--forge-muted); font: 700 14px var(--ui, sans-serif);
 }
 .forgeTab[aria-pressed="true"] { color: var(--forge-text); border-color: var(--forge-gold); }
-.forgeTab:focus-visible, .forgeWeaponTab:focus-visible, .forgePick:focus-visible, .forgeWeaponCard:focus-visible { outline: 2px solid var(--forge-gold); outline-offset: -2px; }
+.forgeTab:focus-visible, .forgeWeaponTab:focus-visible, .forgeWeaponCard:focus-visible { outline: 2px solid var(--forge-gold); outline-offset: -2px; }
 #forge-panel-fighter, #dmWeapons { display: grid; grid-template-columns: 1.15fr 1fr; gap: 10px; min-width: 0; }
 .forgeWardrobe, .forgeArsenal { min-width: 0; display: grid; align-content: start; gap: 9px; }
 .forgeStage {
@@ -47,19 +47,14 @@
 .forgeStageCopy { width: min(49%, 220px); text-align: start; }
 .forgeStageCopy h3 { margin: 0 0 5px; color: #fff4e6; font: 800 clamp(19px, 4vw, 30px)/1.18 var(--ui, sans-serif); text-shadow: 0 2px 8px #0a0808; }
 .forgeStageCopy p { margin: 0; color: #e3cebc; font: 600 12px/1.45 var(--ui, sans-serif); }
-.forgeStyles { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
-.forgePick, .forgeWeaponCard {
+.forgeWeaponCard {
   display: grid; justify-items: center; gap: 3px; min-width: 0; padding: 3px 4px 7px;
   color: #ebdfd0; border: 1px solid #4c3d34; border-radius: 5px; background: #1a181c;
   overflow: hidden; font: 650 11px/1.2 var(--ui, sans-serif); text-align: center;
 }
-.forgePick.on, .forgeWeaponCard.on {
+.forgeWeaponCard.on {
   color: #fff1db; border-color: var(--forge-gold);
   background: radial-gradient(ellipse at center, #52382c, #251e21 92%);
-}
-.forgePick img {
-  width: 100%; height: 45px; object-fit: cover; object-position: center 9%;
-  background: radial-gradient(ellipse at center, #544234, transparent 90%);
 }
 .forgeWeaponTabs { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--forge-line); border-radius: 5px; }
 .forgeWeaponTab { flex: 1; min-height: 32px; padding: 2px; font-size: 12px; }
@@ -95,13 +90,11 @@
   #duelMenu .wrap { gap: 9px; }
   #forge-panel-fighter, #dmWeapons { grid-template-columns: 1fr; }
   .forgeStage { min-height: 175px; }
-  .forgeStyles { grid-template-columns: repeat(5,minmax(0,1fr)); }
-  .forgePick img { height: 49px; }
   .forgeWeaponCards { max-height: min(32vh, 205px); }
 }
 @media (max-height: 460px) and (min-width: 551px) {
   #duelMenu .wrap { gap: 7px; padding-block: 10px; }
   .forgeStage { min-height: 153px; }
-  .forgePick img, .forgeWeaponVisual { height: 37px; }
+  .forgeWeaponVisual { height: 37px; }
   .forgeWeaponCards { max-height: 34vh; }
 }

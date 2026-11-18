@@ -24,19 +24,41 @@ function forgeInjuryMaterial(f, m) {
     };
   }
   m.userData.forgeInjury = true;
+  const skin = m.name.startsWith('Skin');
+  const head = m.name === 'SkinHead';
+  m.customProgramCacheKey = () => head ? 'forge-facial-surface' : skin ? 'forge-skin-surface' : 'forge-injury-surface';
   m.onBeforeCompile = shader => {
     Object.assign(shader.uniforms, f.forgeWoundUniforms);
-    shader.vertexShader = 'varying vec3 vForgeWorld;\n' + shader.vertexShader.replace(
+    shader.vertexShader = 'varying vec3 vForgeWorld; varying vec3 vForgeRest;\n' + shader.vertexShader.replace(
       '#include <project_vertex>',
-      'vForgeWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;\n#include <project_vertex>');
+      'vForgeWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvForgeRest = position;\n#include <project_vertex>');
     shader.fragmentShader = `
       varying vec3 vForgeWorld;
+      varying vec3 vForgeRest;
       uniform int forgeCount;
       uniform vec4 forgeSites[${FORGE_WOUNDS}];
       uniform vec4 forgeNormals[${FORGE_WOUNDS}];
       uniform vec3 forgeTangents[${FORGE_WOUNDS}];
     ` + shader.fragmentShader.replace('#include <color_fragment>', `
       #include <color_fragment>
+      ${skin ? `
+      float grain = sin(vForgeRest.x * 423.0 + cos(vForgeRest.z * 319.0)) *
+        sin(vForgeRest.y * 389.0 + sin(vForgeRest.x * 277.0));
+      float warmth = smoothstep(.032, .126, vForgeRest.z) * smoothstep(1.15, 1.67, vForgeRest.y);
+      diffuseColor.rgb *= vec3(.97 + warmth * .045, .96 - warmth * .06, .94 - warmth * .055) + grain * .022;
+      ${head ? `
+      float hairline = 1.720 + .039 * smoothstep(-.06, .10, vForgeRest.z)
+        - .014 * smoothstep(.036, .086, abs(vForgeRest.x));
+      float hair = smoothstep(hairline - .009, hairline + .004, vForgeRest.y);
+      float jaw = smoothstep(.027, .104, vForgeRest.z) *
+        (1.0 - smoothstep(1.625, 1.645, vForgeRest.y)) * smoothstep(1.573, 1.606, vForgeRest.y);
+      float brow = (1.0 - smoothstep(.006, .011, abs(vForgeRest.y - (1.680 - abs(abs(vForgeRest.x) - .037) * .21)))) *
+        smoothstep(.013, .032, abs(vForgeRest.x)) * (1.0 - smoothstep(.052, .069, abs(vForgeRest.x))) *
+        smoothstep(.071, .099, vForgeRest.z);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.047, .030, .021) * (1.0 + grain * .23), hair * .91);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.095, .062, .043), max(brow * .81, jaw * (.41 + grain * .15)));
+      ` : ''}
+      ` : ''}
       float wet = 0.0;
       for (int i = 0; i < ${FORGE_WOUNDS}; i++) {
         if (i >= forgeCount) break;
@@ -152,9 +174,6 @@ function forgeClearInjuries(f) {
   f.forgeImpact = f.forgeFall = f.forgeFallDirection = f.forgeLastZone = null;
   f.forgeWoundSerial = f.forgeRemoteWound = 0;
   f.forgeDamage = null;
-  for (let i = GORE.jets.length - 1; i >= 0; i--) {
-    if (GORE.jets[i].f === f && GORE.jets[i].point) GORE.jets.splice(i, 1);
-  }
 }
 
 function forgeReact(f, dt) {

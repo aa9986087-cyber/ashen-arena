@@ -26,45 +26,19 @@ function forgeBuildMenu() {
   const actions = el('div', 'forgeActions');
   wrap.querySelector('.head').after(loadout, tabs, gear, weapons, rooms, actions);
   show(0);
-  const styles = el('div', 'forgeStyles');
   const stage = el('div', 'forgeStage fighterStage');
   const portrait = document.createElement('img');
   portrait.alt = '';
-  const bio = el('div', 'forgeStageCopy'), name = el('h3'), look = el('p');
-  bio.append(name, look);
+  portrait.src = forgeArtURL('fighter');
+  const bio = el('div', 'forgeStageCopy');
+  bio.append(el('h3', '', 'مقاتل الحلبة'));
   stage.append(portrait, bio);
   const selection = el('div', 'forgeWardrobe');
   gear.append(stage, selection);
-  selection.append(styles);
   weapons.append($('dmWeapons'));
   headings[0].hidden = true;
   actions.append($('dmTrain'), $('ffaTrain'));
-  const draw = () => {
-    styles.replaceChildren();
-    const selected = FORGE_STYLES[forgeStyle()];
-    portrait.src = forgeArtURL(selected.id);
-    stage.style.setProperty('--outfit', '#' + selected.tunic.toString(16).padStart(6, '0'));
-    name.textContent = selected.name;
-    look.textContent = selected.title;
-    FORGE_STYLES.forEach((theme, i) => {
-      const b = el('button', 'forgePick' + (forgeStyle() === i ? ' on' : ''));
-      const figure = document.createElement('img');
-      figure.src = forgeArtURL(theme.id);
-      figure.alt = '';
-      b.type = 'button';
-      b.append(figure, el('b', '', theme.name));
-      b.setAttribute('aria-pressed', String(forgeStyle() === i));
-      b.onclick = () => {
-        S.forgeStyle = theme.id;
-        save();
-        draw();
-        styles.children[i].focus({preventScroll:true});
-      };
-      styles.append(b);
-    });
-    forgeRefreshLoadout();
-  };
-  draw();
+  forgeRefreshLoadout();
 
   const gore = el('div', 'forgeGore');
   const gorePicker = document.createElement('select');
@@ -163,7 +137,6 @@ function forgeRefreshLoadout() {
   if (!loadout) return;
   const weapon = DUEL_WEAPONS[S.duelW] || DUEL_WEAPONS.sword;
   loadout.replaceChildren(
-    el('span', '', FORGE_STYLES[forgeStyle()].name),
     el('strong', '', weapon.n),
   );
 }

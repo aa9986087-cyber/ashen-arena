@@ -77,32 +77,6 @@ for (const [id, record] of Object.entries(FORGE_WEAPON_DATA)) {
 }
 DUEL_WEAPON_IDS.splice(0, DUEL_WEAPON_IDS.length, ...Object.keys(FORGE_WEAPON_DATA));
 
-let forgeClothMap;
-function forgeClothRelief() {
-  if (forgeClothMap) return forgeClothMap;
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 128;
-  const g = canvas.getContext('2d');
-  g.fillStyle = '#868686';
-  g.fillRect(0, 0, 128, 128);
-  for (let i = 0; i < 128; i += 4) {
-    for (let j = 0; j < 128; j += 4) {
-      const value = (i + j) % 8 ? 121 : 150;
-      g.fillStyle = `rgb(${value},${value},${value})`;
-      g.fillRect(i, j, 4, 2);
-    }
-  }
-  for (let i = 0; i < 128; i += 16) {
-    g.fillStyle = '#4f4f4f';
-    g.fillRect(i, 0, 1, 128);
-    g.fillStyle = '#acacac';
-    g.fillRect(i + 1, 0, 2, 128);
-  }
-  forgeClothMap = arenaTex(canvas, [3,5]);
-  forgeClothMap.encoding = THREE.LinearEncoding;
-  return forgeClothMap;
-}
-
 function forgeAttachFigure(fighter) {
   if (fighter.forgeFigure) return fighter.forgeFigure;
   if (!forgeFigureTemplate) throw new Error('Fighter asset unavailable');
@@ -110,7 +84,7 @@ function forgeAttachFigure(fighter) {
   let binding = null;
   fighter.root.traverse(mesh => {
     if (!mesh.isSkinnedMesh) return;
-    mesh.userData.forgeWear = 'legacy';
+    mesh.userData.forgeHiddenLegacy = true;
     legacy.push(mesh);
     if (mesh.geometry.attributes.position.count === 7281) binding = mesh.skeleton;
   });
@@ -122,53 +96,21 @@ function forgeAttachFigure(fighter) {
     if (bones.some(b => !b)) throw new Error('Incomplete humanoid binding');
     const mesh = new THREE.SkinnedMesh(source.geometry, source.material.clone());
     mesh.name = 'Forge ' + source.material.name;
-    mesh.userData.forgeWear = 'figure';
     mesh.castShadow = true;
     mesh.frustumCulled = false;
     fighter.root.add(mesh);
     mesh.bind(new THREE.Skeleton(bones, source.skeleton.boneInverses.map(i => i.clone())), source.bindMatrix.clone());
     forgeInjuryMaterial(fighter, mesh.material);
-    if (['Tunic','TunicHem','Trousers','Boots','Waist'].includes(mesh.material.name)) {
-      mesh.material.bumpMap = forgeClothRelief();
-      mesh.material.bumpScale = mesh.material.name === 'Tunic' ? .017 : .007;
-      mesh.material.roughness = mesh.material.name === 'Boots' ? .69 : .94;
-    }
     if (source.material.name !== 'SkinArms') fighter.fpHide.push(mesh);
-    if (/SkinHead|Eyes|Brows/.test(source.material.name)) fighter.headMeshes.push(mesh);
+    if (/SkinHead|Eyes|Iris/.test(source.material.name)) fighter.headMeshes.push(mesh);
     pieces.push(mesh);
   });
   fighter.forgeFigure = { pieces, legacy };
   return fighter.forgeFigure;
 }
 
-function forgeIsEquipped(fighter, object) {
-  const kind = object.userData.forgeWear;
-  const plate = FORGE_STYLES[fighter.forgeStyle]?.plate;
-  return !kind || kind === 'figure' || kind === 'both' || (plate ? kind === 'armored' : kind === 'lightCloth');
-}
-
-function forgeFighterVisible(fighter, object, fp = false) {
-  return !fp && !object.userData.cut &&
-    (object.userData.forgeOmitStyle === undefined || object.userData.forgeOmitStyle !== fighter.forgeStyle) &&
-    (object.userData.forgeStyle === undefined || object.userData.forgeStyle === fighter.forgeStyle) &&
-    forgeIsEquipped(fighter, object);
-}
-
-function forgeStyleFigure(fighter, style) {
-  if (style.skin) {
-    const figure = forgeAttachFigure(fighter);
-    for (const mesh of figure.pieces) {
-      const part = mesh.material.name;
-      if (part === 'Tunic' || part === 'TunicHem') mesh.material.color.setHex(style.tunic);
-      else if (part.startsWith('Skin')) mesh.material.color.setHex(style.skin);
-      else if (part === 'Trousers') mesh.material.color.setHex(style.trousers);
-      else if (part === 'Waist' || part === 'Boots') mesh.material.color.setHex(style.belt);
-      if (['SkinHead','Eyes','Brows'].includes(part)) mesh.userData.forgeWear = style.plate ? 'legacy' : 'figure';
-    }
-  }
-  const figure = fighter.forgeFigure;
-  if (!figure) return;
-  for (const mesh of [...figure.pieces, ...figure.legacy]) mesh.visible = forgeFighterVisible(fighter, mesh);
+function forgeFighterVisible(object, fp = false) {
+  return !fp && !object.userData.cut && !object.userData.forgeHiddenLegacy;
 }
 
 function forgeArtURL(id) {
