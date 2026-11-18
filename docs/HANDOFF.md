@@ -101,40 +101,40 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-18T05:49:19.801Z.
-- مرجع العمل: [`8c8965d1c16ebe3c34364cabe07e07b4f6b3b3f6`](https://github.com/aa9986087-cyber/ashen-arena/commit/8c8965d1c16ebe3c34364cabe07e07b4f6b3b3f6).
-- آخر تعديل: نشر v34 رسميًا مع حارس العهد وساحات الزعماء والقائمة الجديدة.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44245895144/attempts/1).
-- بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
-- مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
+- وقت التسجيل (UTC): 2026-11-18T06:04:36.454Z.
+- مرجع العمل: [`26ebe0a090dc124dab871c27d84259e690b43150`](https://github.com/aa9986087-cyber/ashen-arena/commit/26ebe0a090dc124dab871c27d84259e690b43150).
+- آخر تعديل: تجربة v35 لجودة الرسم والعرض الأفقي.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44247698781/attempts/1).
+- بوابة check: **فشل**؛ الاختبارات السريعة: **ناجح**.
+- مسار الفحص: mobile؛ متصفح الجوال: **فشل**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
 - إصدار التجربة المسجل: `clean-20261118-v33`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`3897285f47b4`: 73 ملفًا.
-- `assets/models/campaign/LICENSE.md`
-- `assets/models/campaign/fire.glb`
-- `assets/models/campaign/frost.glb`
-- `assets/models/campaign/grave.glb`
-- `assets/models/campaign/iron.glb`
-- `assets/models/campaign/knight.glb`
-- `assets/models/campaign/sand.glb`
-- `assets/models/forest-guardian/LICENSE-ancient-tree.md`
-- `assets/models/forest-guardian/ancient-tree.glb`
-- `assets/models/knight/model.glb`
-- `assets/models/knight/portrait.jpg`
-- `assets/models/oath-warden/model.glb`
-- وبقية 61 ملفًا في رابط commit أعلاه.
+مقارنةً بـ`3647f488dd06`: 269 ملفًا.
+- `docs/HANDOFF.md`
+- `test/releases/graphics-20261118-v35/.nojekyll`
+- `test/releases/graphics-20261118-v35/assets/audio/duel/block0.mp3`
+- `test/releases/graphics-20261118-v35/assets/audio/duel/block1.mp3`
+- `test/releases/graphics-20261118-v35/assets/audio/duel/block2.mp3`
+- `test/releases/graphics-20261118-v35/assets/audio/duel/break0.mp3`
+- `test/releases/graphics-20261118-v35/assets/audio/duel/clash0.mp3`
+- `test/releases/graphics-20261118-v35/assets/audio/duel/clash1.mp3`
+- `test/releases/graphics-20261118-v35/assets/audio/duel/clash2.mp3`
+- `test/releases/graphics-20261118-v35/assets/audio/duel/hit0.mp3`
+- `test/releases/graphics-20261118-v35/assets/audio/duel/hit1.mp3`
+- `test/releases/graphics-20261118-v35/assets/audio/duel/hit2.mp3`
+- وبقية 257 ملفًا في رابط commit أعلاه.
 
 ### أحدث خمس دفعات على main
 
+- 26ebe0a تجربة v35 لجودة الرسم والعرض الأفقي
+- 3647f48 docs: تحديث آلي لملف التسليم
 - 8c8965d نشر v34 رسميًا مع حارس العهد وساحات الزعماء والقائمة الجديدة
 - 3897285 docs: تحديث آلي لملف التسليم
 - a0d31b9 تجربة v33 تعيد أحجام الأشجار الأصلية
-- 705f62b تجربة v32 لتصغير ديكور الساحات ووضوح الرؤية
-- 6e58957 docs: تحديث آلي لملف التسليم
 
-الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
+ابدأ بمراجعة سجل الفحوص لهذا المرجع؛ لا تفترض نجاح التعديل أو نشره.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
 <!-- AUTO-HANDOFF:END -->
