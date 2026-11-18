@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "release": "clean-20261117-v27",
+  "release": "clean-20261117-v28",
   "baseRevision": "ab6798e6a4ed2cfd7f71a77e0e00f10505d393d3",
   "addonSourceRevision": "c0c1701",
   "enabledAddons": [
@@ -8,7 +8,7 @@
     "ranger",
     "forest-guardian"
   ],
-  "notes": "المجسمات المتحركة للغابة والرمال والصقيع والفارس واللهب والمقبرة. الجنرال بانتظار اختيار شكل بشري.",
+  "notes": "سبعة أشكال للتحذير والاصطدام، متطابقة مع منطقة الإصابة لكل زعيم.",
   "enabledExpansions": [
     "gravebound",
     "boss-specials"

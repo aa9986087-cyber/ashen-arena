@@ -621,6 +621,22 @@ test('preview: seven boss specials warn, animate, hit on cue and leave ground ma
       const poseBefore = [pose.position.y, pose.rotation.x, pose.rotation.y, pose.rotation.z];
       const safeDuringWarning = p.hp === hpBefore;
       render(0, performance.now());
+      const warningMesh = zonePool[G.zones.indexOf(target)];
+      const form = target.bossGround;
+      const ray = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0,-1,0));
+      warningMesh.updateMatrixWorld(true);
+      function activeGround(x, z) {
+        ray.ray.origin.set(x, 2, z);
+        return ray.intersectObject(warningMesh, false).length > 0;
+      }
+      const matchCenter = bossSpecialContains(target, target.x, target.z) && activeGround(target.x, target.z);
+      const matchEdges = [-.67, 0, .67].every(side => [-.67, 0, .67].every(front => {
+        const x = target.x + (side * form.cos + front * form.sin) * target.r;
+        const z = target.z + (front * form.cos - side * form.sin) * target.r;
+        return bossSpecialContains(target, x, z) === activeGround(x, z);
+      }));
+      const silhouette = warningMesh.geometry.uuid;
+      const warning = renderer.domElement.toDataURL('image/jpeg', .72);
       const model = actorKey && scene.getObjectByName('ashenActor-' + actorKey);
       const skeleton = model && model.getObjectByProperty('isSkinnedMesh', true)?.skeleton;
       const jointsBefore = skeleton?.bones.map(bone => bone.quaternion.toArray());
@@ -632,7 +648,7 @@ test('preview: seven boss specials warn, animate, hit on cue and leave ground ma
       const jointShift = skeleton?.bones.some((bone, i) => bone.quaternion.toArray()
         .some((value, axis) => Math.abs(value - jointsBefore[i][axis]) > .03));
       results.push({
-        kind, actorKey, clip, jointShift, name: skill.name, health: boss.maxHp, warningDamage, safeDuringWarning, froze, poseBefore,
+        kind, actorKey, clip, jointShift, matchCenter, matchEdges, warning, silhouette, name: skill.name, health: boss.maxHp, warningDamage, safeDuringWarning, froze, poseBefore,
         hit: hpBefore > p.hp, marks, landed: kind !== 2 || boss.y < .1,
       });
       // Resume the loop with the visual on the last boss for a phone-sized screenshot.
@@ -644,7 +660,10 @@ test('preview: seven boss specials warn, animate, hit on cue and leave ground ma
   expect(checks).toHaveLength(7);
   expect(new Set(checks.map(x => x.name)).size).toBe(7);
   expect(new Set(checks.map(x => x.poseBefore.join(','))).size).toBe(7);
+  expect(new Set(checks.map(x => x.silhouette)).size).toBe(7);
   for (const row of checks) {
+    expect(row.matchCenter && row.matchEdges).toBe(true);
+    await fs.writeFile(testInfo.outputPath('warning-' + row.kind + '.jpg'), Buffer.from(row.warning.split(',')[1], 'base64'));
     expect(row.health).toBeGreaterThan(2500);
     expect(row.warningDamage).toBeGreaterThan(20);
     expect(row.safeDuringWarning && row.hit && row.froze && row.landed).toBe(true);

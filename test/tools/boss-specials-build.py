@@ -27,15 +27,17 @@ def apply(path, text, replace):
           AU.play('boom');
           shake(0.3);
         }""")
+        sub('if (!p.dead && (z.x - p.x) ** 2 + (z.z - p.z) ** 2 < z.r * z.r) hurt(z.dmg);',
+            'if (!p.dead && (z.bossGround ? bossSpecialContains(z, p.x, p.z) : (z.x - p.x) ** 2 + (z.z - p.z) ** 2 < z.r * z.r)) hurt(z.dmg);')
     if path == 'js/render/renderer.js':
         sub('  // enemies\n', "  drawBossSpecialImpacts(['play', 'cards', 'paused', 'count'].includes(G.state));\n  // enemies\n")
         sub('      b.scale.set(s, s, s);', '      b.scale.set(s, s, s);\n      poseBossSpecial(b, e);')
         sub("    b.visible = !!q && q.kind !== 'sky';",
             "    b.visible = !!q && q.kind !== 'sky' && (q.kind !== 'boss-special' || q.sty === 4);")
-        sub('      const k = q.l / q.d;\n      m.position.set(q.x, 0.1, q.z);',
-            '      const k = clamp(q.l / q.d, 0, 1);\n      m.position.set(q.x, 0.1, q.z);')
-        sub('      m.material.opacity = 0.18 + 0.4 * k;',
-            "      m.material.opacity = q.kind === 'boss-special' ? 0.23 + 0.43 * k : 0.18 + 0.4 * k;")
+        sub('      bossAura.visible = true;', '      bossAura.visible = !e.bossSpecial;')
+        sub('      const k = q.l / q.d;\n      m.position.set(q.x, 0.1, q.z);\n      m.scale.set(q.r, q.r, 1);',
+            '      const k = clamp(q.l / q.d, 0, 1);\n      drawBossWarning(m, q, k);')
+        sub('      m.material.opacity = 0.18 + 0.4 * k;', '      b.geometry = q.bossGround?.form === "shell" ? bossShellGeometry : SPH;')
     return text
 
 
