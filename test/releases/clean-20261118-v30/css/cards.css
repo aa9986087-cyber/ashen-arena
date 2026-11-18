@@ -1,0 +1,487 @@
+/* Upgrade cards and the legendary cinematic. */
+/* ---------- cards ---------- */
+#cards {
+  align-items: center;
+  justify-content: safe center;
+  z-index: 30;
+  background: radial-gradient(ellipse at 50% 40%, rgba(30, 24, 52, 0.82), rgba(4, 4, 10, 0.92) 75%);
+}
+#cards h2 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(38px, 7.5vw, 62px);
+  line-height: 1.15;
+  text-align: center;
+  background: linear-gradient(180deg, #e8fffb 10%, var(--xp) 55%, #1f8f84);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 0 #06302c) drop-shadow(0 0 20px rgba(63, 208, 192, 0.55));
+}
+#cards > p {
+  color: #d8cfb4;
+  font-weight: 700;
+  margin-bottom: 18px;
+  text-align: center;
+}
+/* all the cards in one row (they shrink to fit; never stacked on top of each other) */
+#cardRow {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  width: 100%;
+  max-width: 1000px;
+}
+/* a card: rarity-coloured frame (--rc), inner hairline, ribbon, medallion, one shine sweep when dealt */
+.card {
+  position: relative;
+  overflow: hidden;
+  flex: 0 1 214px;
+  min-width: 0;
+  min-height: 290px;
+  background:
+    radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--rc) 22%, transparent), transparent 60%),
+    linear-gradient(180deg, #232a4c, #120f22);
+  border: 2px solid var(--rc);
+  border-radius: 18px;
+  padding: 16px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition:
+    transform 0.12s,
+    box-shadow 0.15s;
+  animation: deal 0.32s cubic-bezier(0.2, 1.2, 0.3, 1) backwards;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 13px;
+  border: 1px solid color-mix(in srgb, var(--rc) 45%, transparent);
+  pointer-events: none;
+}
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  pointer-events: none;
+  animation: cardShine 0.9s 0.25s ease-out backwards;
+  animation-delay: inherit;
+}
+@keyframes cardShine {
+  from {
+    left: -60%;
+  }
+  to {
+    left: 130%;
+  }
+}
+.card:hover,
+.card:focus-visible {
+  transform: translateY(-8px);
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.55),
+    0 0 26px -2px var(--rc);
+}
+.card .ic {
+  width: 78px;
+  height: 78px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-size: 42px;
+  line-height: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--rc) 40%, #1a1830), #0c0a18 75%);
+  border: 2px solid var(--rc);
+  box-shadow:
+    0 0 18px color-mix(in srgb, var(--rc) 55%, transparent),
+    inset 0 2px 6px rgba(255, 255, 255, 0.15);
+}
+.card .rar {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #120f22;
+  background: var(--rc);
+  border-radius: 999px;
+  padding: 2px 10px;
+  align-self: center;
+}
+.card h3 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.2;
+  color: #fff4dc;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6);
+}
+.card p {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #d9d0b8;
+  flex: 1;
+  white-space: pre-line;
+}
+.card .syn {
+  font-size: 12px;
+  color: var(--xp);
+  font-weight: 800;
+}
+.card .st {
+  font-size: 13px;
+  font-weight: 800;
+  color: #8ff0a8;
+  background: rgba(80, 220, 120, 0.1);
+  border-radius: 8px;
+  padding: 3px 8px;
+  align-self: stretch;
+  font-variant-numeric: tabular-nums;
+}
+.card .lv {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--gold);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 6px;
+  align-self: stretch;
+}
+.card .body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  align-items: inherit;
+}
+.card.pact {
+  --rc: var(--pact);
+}
+/* legendary: warm gold ground and a breathing glow */
+.card.r3 {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 200, 80, 0.35), transparent 60%),
+    linear-gradient(180deg, #4a3712, #170f06);
+  animation:
+    deal 0.32s cubic-bezier(0.2, 1.2, 0.3, 1) backwards,
+    glow 1.4s infinite alternate;
+}
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translateY(34px) scale(0.86) rotate(-2deg);
+  }
+}
+@keyframes glow {
+  to {
+    box-shadow:
+      0 14px 30px rgba(0, 0, 0, 0.5),
+      0 0 38px 4px var(--r3);
+  }
+}
+#reroll {
+  margin-top: 14px;
+}
+#cine {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  background: radial-gradient(circle, rgba(255, 200, 80, 0.9), rgba(255, 140, 20, 0.35) 45%, transparent 72%);
+}
+#cine.on {
+  animation: cine 1.9s ease-out;
+}
+#cine b {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(46px, 12vw, 110px);
+  color: #fff7dc;
+  text-shadow:
+    0 0 30px #ff9d00,
+    0 5px 0 #7a4a00;
+  text-align: center;
+  line-height: 1.05;
+}
+
+/* a short screen (a phone on its side): smaller title and cards so everything fits without scrolling */
+@media (max-height: 520px) and (min-width: 641px) {
+  #cards {
+    padding-top: calc(var(--st) + 8px);
+    padding-bottom: calc(var(--sb) + 8px);
+  }
+  #cards h2 {
+    font-size: 30px;
+  }
+  #cards > p {
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  #cardRow {
+    gap: 10px;
+  }
+  .card {
+    min-height: 0;
+    padding: 10px 10px 10px;
+    gap: 5px;
+    border-radius: 14px;
+  }
+  .card .ic {
+    width: 54px;
+    height: 54px;
+    font-size: 28px;
+  }
+  .card h3 {
+    font-size: 19px;
+  }
+  .card p {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .card .body {
+    gap: 4px;
+  }
+  .card .st,
+  .card .lv,
+  .card .syn {
+    font-size: 11px;
+  }
+  .card .lv {
+    padding-top: 4px;
+  }
+  #reroll {
+    margin-top: 8px;
+  }
+}
+/* the card's level: a bar of points like the shop's (lit = yours, glowing = what this card adds) */
+.card .cpips {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  direction: ltr;
+  align-self: stretch;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 8px;
+}
+.card .cpips i {
+  flex: 0 1 22px;
+  height: 8px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.card .cpips i.on {
+  background: linear-gradient(180deg, #ffe2a0, var(--gold2));
+  box-shadow: 0 0 6px rgba(246, 196, 90, 0.6);
+}
+.card .cpips i.next {
+  background: linear-gradient(180deg, #b6ff9a, #4fdc6a);
+  box-shadow: 0 0 10px rgba(80, 230, 120, 0.9);
+  animation: pipNext 0.9s ease-in-out infinite;
+}
+@keyframes pipNext {
+  50% {
+    opacity: 0.45;
+  }
+}
+/* a card you don't have yet */
+.card .cNew {
+  position: absolute;
+  top: 10px;
+  inset-inline-start: 10px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #10240f;
+  background: linear-gradient(180deg, #b6ff9a, #4fdc6a);
+  box-shadow: 0 0 10px rgba(80, 230, 120, 0.6);
+  z-index: 2;
+}
+
+/* the evolution scene */
+#evoFx {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+  text-align: center;
+  background: radial-gradient(circle at 50% 45%, rgba(120, 40, 160, 0.55), rgba(4, 2, 10, 0.75) 70%);
+  opacity: 0;
+}
+#evoFx.on {
+  animation: efBox 3.2s ease-out forwards;
+}
+@keyframes efBox {
+  0% {
+    opacity: 0;
+  }
+  8%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+#evoFx .efRays {
+  position: absolute;
+  width: 140vmax;
+  height: 140vmax;
+  background: repeating-conic-gradient(rgba(255, 200, 255, 0.16) 0 6deg, transparent 6deg 18deg);
+  mask: radial-gradient(circle, #000 10%, transparent 55%);
+  -webkit-mask: radial-gradient(circle, #000 10%, transparent 55%);
+  animation: efSpin 6s linear infinite;
+  opacity: 0;
+}
+#evoFx.on .efRays {
+  animation:
+    efSpin 6s linear infinite,
+    efRaysIn 3.2s ease-out forwards;
+}
+@keyframes efSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes efRaysIn {
+  0%,
+  30% {
+    opacity: 0;
+  }
+  40%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+#evoFx .efIcons {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 84px;
+  line-height: 1;
+}
+#evoFx .efIcons i {
+  font-style: normal;
+  filter: drop-shadow(0 0 18px rgba(255, 180, 255, 0.9));
+}
+#evoFx .efFrom {
+  animation: efFrom 3.2s ease-in forwards;
+}
+@keyframes efFrom {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  10% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  15%,
+  21%,
+  27% {
+    transform: translateX(-5px) rotate(-6deg);
+  }
+  18%,
+  24%,
+  30% {
+    transform: translateX(5px) rotate(6deg);
+    filter: drop-shadow(0 0 30px #fff) brightness(2);
+  }
+  36% {
+    transform: scale(1.3);
+    opacity: 1;
+    filter: brightness(4);
+  }
+  42%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.25;
+  }
+}
+#evoFx .efArrow {
+  font-size: 40px;
+  color: #ffd27a;
+  opacity: 0;
+  animation: efPop 3.2s ease-out forwards;
+  animation-delay: 0.1s;
+}
+#evoFx .efTo {
+  opacity: 0;
+  animation: efTo 3.2s cubic-bezier(0.2, 1.4, 0.3, 1) forwards;
+}
+@keyframes efTo {
+  0%,
+  36% {
+    transform: scale(0.2) rotate(-40deg);
+    opacity: 0;
+  }
+  48% {
+    transform: scale(1.5) rotate(8deg);
+    opacity: 1;
+  }
+  58%,
+  100% {
+    transform: scale(1.25) rotate(0);
+    opacity: 1;
+  }
+}
+@keyframes efPop {
+  0%,
+  34% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  46%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+#evoFx small,
+#evoFx h3,
+#evoFx p {
+  position: relative;
+  opacity: 0;
+  animation: efPop 3.2s ease-out forwards;
+}
+#evoFx small {
+  color: #f2b6ff;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+#evoFx h3 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 40px;
+  background: linear-gradient(180deg, #fff, #f2b6ff 50%, #b04aff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 0 #2a0640);
+}
+#evoFx p {
+  max-width: min(520px, 90vw);
+  color: #f3e8ff;
+  font-weight: 700;
+}

@@ -1,4 +1,5 @@
 """Preview-only integration for the campaign bosses' special attacks."""
+import re
 def apply(path, text, replace):
     def sub(before, after):
         nonlocal text
@@ -7,6 +8,11 @@ def apply(path, text, replace):
     if path == 'js/game/enemy-ai.js':
         sub('    if (e.boss) {', '    if (e.boss && updateBossSpecial(e, p, dt)) continue;\n    if (e.boss) {')
         sub('e.ult <= 0 && d < 34', 'e.ult <= 0 && d < 34 && !bossSpecialActive()')
+        text = apply_campaign_pacing(text, replace, path)
+    if path == 'js/game/boss-ults.js':
+        sub('  e.stT = 1;\n  e.lx = p.x;', '  e.stT = e.previewCadence ? 1.42 : 1;\n  e.lx = p.x;')
+        sub('  zone(p.x, p.z, 5, 1, e.dmg * 1.5, false);',
+            '  zone(p.x, p.z, e.previewCadence ? 4 : 5, e.stT, e.dmg * 1.5, false);')
     if path == 'js/game/spawning.js':
         sub('  G.bossOn = true;', '  strengthenPreviewBoss(e);\n  G.bossOn = true;')
     if path == 'js/audio/sound.js':
@@ -36,7 +42,12 @@ def apply(path, text, replace):
           shake(0.3);
         }""")
         sub('if (!p.dead && (z.x - p.x) ** 2 + (z.z - p.z) ** 2 < z.r * z.r) hurt(z.dmg);',
-            'if (!p.dead && (z.bossGround ? bossSpecialContains(z, p.x, p.z) : (z.x - p.x) ** 2 + (z.z - p.z) ** 2 < z.r * z.r)) hurt(z.dmg);')
+            '''if (!p.dead && (z.bossGround ? bossSpecialContains(z, p.x, p.z) :
+          (z.x - p.x) ** 2 + (z.z - p.z) ** 2 < z.r * z.r) &&
+          (!z.bossCast || (!z.bossCast.hitPlayer && p.inv <= 0))) {
+          if (z.bossCast) z.bossCast.hitPlayer = true;
+          hurt(z.dmg);
+        }''')
     if path == 'js/render/renderer.js':
         sub('  // enemies\n', "  drawBossSpecialImpacts(['play', 'cards', 'paused', 'count'].includes(G.state));\n  // enemies\n")
         sub('      b.scale.set(s, s, s);', '      b.scale.set(s, s, s);\n      poseBossSpecial(b, e);')
@@ -65,7 +76,7 @@ def apply_guardian(text, replace):
         change(a, 'special');
       }
       // A terrain warning and the skeletal slam share the same simulation clock.
-      special.time = Math.min(e.bossSpecial.elapsed, special.getClip().duration - 0.001);
+      special.time = Math.min(bossSpecialPoseTime(e), special.getClip().duration - 0.001);
       a.mixer.update(0);
     } else {
       if (a.role === 'special') {
@@ -155,3 +166,73 @@ def apply_campaign_grave(text, replace):
   }
   if (!graveBossModel) { graveBossModel = gravekeeperModel(); scene.add(graveBossModel); }''',
                    'campaign boss grave visual')
+
+
+def apply_campaign_pacing(text, replace, path):
+    start = text.index('    if (e.boss) {')
+    end = text.index("    } else if (e.type === 'grunt'", start)
+    block = text[start:end]
+
+    def sub(before, after):
+        nonlocal block
+        block = replace(block, before, after, 'boss pacing:' + path)
+
+    sub('e.hp < e.maxHp * 0.5 ? 1.45 : 1', 'e.hp < e.maxHp * 0.5 ? (e.previewCadence ? 1.16 : 1.45) : 1')
+    sub('e.a4 <= 0 && e.st === 0 && d < 32', 'e.a4 <= 0 && e.st === 0 && d < 32 && (!e.previewCadence || d > 5.4)')
+    sub('e.a4 = 2.6;', 'e.a4 = e.previewCadence ? 4.3 : 2.6;')
+    sub('aa, 1, 0.13, 15,', 'aa, 1, 0.13, e.previewCadence ? 10 : 15,')
+    sub('          e.stT = 0.85;', '          e.stT = e.previewCadence ? 0.57 : 0.85;')
+    sub('        spd = 18;', '        spd = e.previewCadence ? 14 : 18;')
+    sub('        e.stT -= dt;\n        e.flash = 0.05;', '        if (e.previewCadence) e.face = Math.atan2(e.cx, e.cz);\n        e.stT -= dt;\n        e.flash = 0.05;')
+    sub('        mx = e.cx;\n        mz = e.cz;', '        mx = e.cx;\n        mz = e.cz;\n        if (e.previewCadence) e.face = Math.atan2(mx, mz);')
+    sub('Math.sin(Math.max(0, e.stT) * Math.PI) * 9', 'Math.sin(Math.max(0, e.stT) / (e.previewCadence ? 1.42 : 1) * Math.PI) * (e.previewCadence ? 6 : 9)')
+    sub('e.stT = 0.75;', 'e.stT = e.previewCadence ? 1.1 : 0.75;')
+    sub('e.stT = 0.7;', 'e.stT = e.previewCadence ? 1.07 : 0.7;')
+    sub("spawnPack('fast', 5,", "spawnPack('fast', e.previewCadence ? 2 : 5,")
+    sub("spawnPack('wolf', 4,", "spawnPack('wolf', e.previewCadence ? 2 : 4,")
+    sub("spawnPack('bomber', 3,", "spawnPack('bomber', e.previewCadence ? 2 : 3,")
+    sub("spawnPack('shield', 4,", "spawnPack('shield', e.previewCadence ? 2 : 4,")
+    sub('14, 7.5, e.dmg * 0.6, e.t', '(e.previewCadence ? 10 : 14), 7.5, e.dmg * 0.6, e.t')
+    sub('e.spiral = 2.2;', 'e.spiral = e.previewCadence ? 1.3 : 2.2;')
+    sub('e.spiral = 2.4;', 'e.spiral = e.previewCadence ? 1.3 : 2.4;')
+    for interval in ('0.06', '0.07'):
+        sub(f'          while (e.spAcc > {interval}) {{\n            e.spAcc -= {interval};',
+            f'          const interval = e.previewCadence ? 0.135 : {interval};\n'
+            '          while (e.spAcc > interval) {\n            e.spAcc -= interval;')
+    sub('16, 5.5, e.dmg', '(e.previewCadence ? 11 : 16), 5.5, e.dmg')
+    sub('16, 7, e.dmg', '(e.previewCadence ? 11 : 16), 7, e.dmg')
+    sub('2.7, 0.7 + j * 0.16,', '2.7, (e.previewCadence ? 1.0 : 0.7) + j * 0.16,')
+    sub('zoneBarrage(p.x, p.z, 3, 5, 3.4, 1, 0.2,',
+        'zoneBarrage(p.x, p.z, e.previewCadence ? 2 : 3, 5, 3.4, e.previewCadence ? 1.35 : 1, 0.2,')
+    sub('zoneBarrage(p.x, p.z, 4, 6, 3.2, 1.05, 0.16,',
+        'zoneBarrage(p.x, p.z, e.previewCadence ? 3 : 4, 6, 3.2, e.previewCadence ? 1.42 : 1.05, 0.16,')
+    sub('e.burst = 3;', 'e.burst = e.previewCadence ? 2 : 3;')
+    sub('e.spAcc = 0.28;', 'e.spAcc = e.previewCadence ? 0.43 : 0.28;')
+    sub('Math.atan2(dz, dx), 3, 0.15, 11,',
+        'Math.atan2(dz, dx), e.previewCadence ? 2 : 3, 0.15, e.previewCadence ? 9.5 : 11,')
+    block, count = re.subn(r'if \(e\.a([1-4]) <= 0([^\n]*)\) \{',
+                          lambda m: f'if (e.a{m[1]} <= 0{m[2]} && campaignBossAttack(e, {m[1]})) {{', block)
+    if count != 16:
+        raise RuntimeError(f'Boss cooldown anchors changed: {count}')
+    block += '      if (campaignBossResting(e)) spd = 0;\n'
+    text = text[:start] + block + text[end:]
+    text = replace(text, 'G.contactCd <= 0 && !(e.boss && e.st === 3)',
+        'G.contactCd <= 0 && !(e.boss && (e.st === 3 || campaignBossResting(e) || (e.previewCadence && e.st === 1)))', path)
+    text = replace(text, "      hurt(e.dmg);\n      if (G.ups.thorns",
+        "      hurt(e.dmg * (e.previewCadence ? .58 : 1));\n      if (G.ups.thorns", path)
+    # The Gravebound source patch also updates contact-damage attribution.
+    return text
+
+
+def apply_grave_pacing(text, replace):
+    def sub(before, after):
+        nonlocal text
+        text = replace(text, before, after, 'grave boss pacing')
+    sub('  if (e.graveDig <= 0) {', '  if (e.graveDig <= 0 && campaignBossAttack(e, 1)) {')
+    sub('  if (e.graveSlam <= 0) {', '  if (e.graveSlam <= 0 && campaignBossAttack(e, 2)) {')
+    sub('    e.graveSwingUntil = G.t + 1;', '    const wind = e.previewCadence ? 1.28 : 1;\n    e.graveSwingUntil = G.t + wind;')
+    sub('    zone(p.x, p.z, 2.8, 1,', '    zone(p.x, p.z, 2.8, wind,')
+    sub('  if (!(e.graveSwingUntil > G.t) && d > 3.4) {',
+        '  if (!(e.graveSwingUntil > G.t) && !campaignBossResting(e) && d > 3.4) {')
+    sub('  if (d < e.r + p.r && e.hitCd <= 0)', '  if (d < e.r + p.r && e.hitCd <= 0 && !campaignBossResting(e))')
+    return text

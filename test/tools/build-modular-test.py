@@ -198,6 +198,8 @@ if GRAVEBOUND:
     for filename in ['data.js', 'gameplay.js', 'models.js', 'ui.js']:
         source = TEST / 'expansions' / 'gravebound' / filename
         code = source.read_text()
+        if BOSS_SPECIALS and filename == 'gameplay.js':
+            code = boss_specials_build.apply_grave_pacing(code, replace_once)
         if BOSS_SPECIALS and filename == 'models.js':
             code = boss_specials_build.apply_grave_model(code, replace_once)
             if CAMPAIGN_ACTORS:

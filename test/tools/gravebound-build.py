@@ -4,7 +4,10 @@ def apply(path, text, replace):
         nonlocal text
         text = replace(text, before, after, 'gravebound:' + path)
     if path == 'js/game/enemy-ai.js':
-        sub('hurt(e.dmg);','hurt(e.dmg, e);')
+        if 'hurt(e.dmg * (e.previewCadence ? .58 : 1));' in text:
+            sub('hurt(e.dmg * (e.previewCadence ? .58 : 1));', 'hurt(e.dmg * (e.previewCadence ? .58 : 1), e);')
+        else:
+            sub('hurt(e.dmg);','hurt(e.dmg, e);')
         sub('    if (e.boss) {\n', '    if (e.boss && e.kind === 6) { graveBossAI(e, p, dt); continue; }\n    if (e.boss) {\n')
     if path == 'js/game/progression.js':
         sub('else if (G.stage >= 5)', 'else if (G.stage >= STAGES.findIndex(s => s.abyss) - 1)')

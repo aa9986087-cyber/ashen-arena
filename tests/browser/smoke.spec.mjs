@@ -635,7 +635,8 @@ test('preview: seven boss specials warn, animate, hit on cue and leave ground ma
           firesAfterHorn: silentAtStart && !!boss.bossSpecial.hornCalled && !ball.visible,
         };
       }
-      while (boss.bossSpecial.elapsed < skill.wind * .8) update(step);
+      const beforeImpact = hornCue ? Math.max(skill.wind * .8, skill.wind - BOSS_SHELL_FLIGHT + .035) : skill.wind * .8;
+      while (boss.bossSpecial.elapsed < beforeImpact) update(step);
       poseBossSpecial(pose, boss);
       const poseBefore = [pose.position.y, pose.rotation.x, pose.rotation.y, pose.rotation.z];
       const safeDuringWarning = p.hp === hpBefore;
@@ -667,9 +668,22 @@ test('preview: seven boss specials warn, animate, hit on cue and leave ground ma
       const clip = actorKey && ACTOR_MODELS.diagnostics()[actorKey]?.clips.special;
       const jointShift = hornCue ? hornCue.lift > 1 : skeleton?.bones.some((bone, i) => bone.quaternion.toArray()
         .some((value, axis) => Math.abs(value - jointsBefore[i][axis]) > .03));
+      const hit = hpBefore > p.hp;
+      const landed = kind !== 2 || boss.y < .1;
+      const followUp = G.zones.find(z => z.bossCast === boss.bossSpecial);
+      const afterHit = p.hp;
+      Object.assign(p, { x: followUp.x, z: followUp.z, inv: 0 });
+      while (!followUp.done) update(step);
+      const oneHit = p.hp === afterHit;
+      while (boss.bossSpecial) update(step);
+      Object.assign(boss, { a1: 0, a2: 0, a3: 0, a4: 0, graveDig: 0, graveSlam: 0 });
+      const recoveryStarted = G.t;
+      const pendingShots = G.eshots.length;
+      while (G.t - recoveryStarted < .75) update(step);
+      const recovery = campaignBossResting(boss) && !G.zones.some(z => !z.f) && G.eshots.length <= pendingShots;
       results.push({
         kind, actorKey, clip, jointShift, hornCue, matchCenter, matchEdges, warning, silhouette, name: skill.name, health: boss.maxHp, warningDamage, safeDuringWarning, froze, poseBefore,
-        hit: hpBefore > p.hp, marks, landed: kind !== 2 || boss.y < .1,
+        hit, marks, landed, oneHit, recovery, wind: skill.wind,
       });
       // Resume the loop with the visual on the last boss for a phone-sized screenshot.
       G.state = 'paused';
@@ -688,6 +702,8 @@ test('preview: seven boss specials warn, animate, hit on cue and leave ground ma
     expect(row.warningDamage).toBeGreaterThan(20);
     expect(row.safeDuringWarning && row.hit && row.froze && row.landed).toBe(true);
     expect(row.marks).toBeGreaterThan(0);
+    expect(row.wind).toBeGreaterThanOrEqual(1.4);
+    expect(row.oneHit && row.recovery).toBe(true);
     if (row.kind === 3) {
       expect(row.hornCue?.firesAfterHorn && row.hornCue?.shellDropped).toBe(true);
       expect(row.hornCue.lift).toBeGreaterThan(1);
@@ -742,17 +758,17 @@ test('preview: ancient forest guardian raises its arms and slams on the root war
       const hips = skinned.skeleton.bones.find(bone => bone.name === 'Hips');
       return hand.getWorldPosition(new THREE.Vector3()).y - hips.getWorldPosition(new THREE.Vector3()).y;
     };
-    const armed = measure();
-    while (boss.bossSpecial.elapsed < .92) update(step);
+    const armed = measure(), wind = BOSS_SPECIALS[0].wind;
+    while (boss.bossSpecial.elapsed < wind * .88) update(step);
     const raised = measure();
     const warningsBeforeHit = G.zones.filter(z => z.kind === 'boss-special').length;
-    while (boss.bossSpecial.elapsed < 1.05) update(step);
+    while (boss.bossSpecial.elapsed < wind) update(step);
     const landed = measure();
     const marks = bossImpactScar.count;
     const clock = boss.bossSpecial.elapsed;
     G.state = 'paused';
     const paused = measure();
-    return { armed, raised, landed, paused, warningsBeforeHit, marks, clock };
+    return { armed, raised, landed, paused, warningsBeforeHit, marks, clock, wind };
   });
   expect(loads).toHaveLength(1);
   expect(loads[0]).toContain('/ancient-tree.glb');
@@ -761,6 +777,6 @@ test('preview: ancient forest guardian raises its arms and slams on the root war
   expect(result.paused).toBeCloseTo(result.landed, 4);
   expect(result.warningsBeforeHit).toBeGreaterThan(0);
   expect(result.marks).toBeGreaterThan(0);
-  expect(result.clock).toBeLessThan(1.08);
+  expect(result.clock).toBeLessThan(result.wind + .03);
   await page.screenshot({ path: testInfo.outputPath('ancient-tree-root-slam.png') });
 });

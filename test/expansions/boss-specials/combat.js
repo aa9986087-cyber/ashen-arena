@@ -28,41 +28,41 @@ function bossSpecialContains(zone, x, z) {
 /* Each site is [sideways, forward, size, impact offset, angle offset, optional alternate shape]. */
 const BOSS_SPECIALS = [
   {
-    name: 'زحف الجذور', form: 'root', hint: 'اخرج عن مسار الجذور', hp: 1.12, damage: 1.08, cd: 13, wind: 1.05, power: 1.15,
+    name: 'زحف الجذور', form: 'root', hint: 'اخرج عن مسار الجذور', hp: 1.12, damage: 1.08, cd: 13, wind: 1.4, clipImpact: 1.05, power: 1.15,
     pattern: [[0, 3, 2.0, 0], [0, 6.5, 2.0, .12], [0, 10, 2.1, .24], [0, 13.5, 2.2, .36],
       [-3.6, 9, 1.9, .24, -.72], [3.6, 9, 1.9, .24, .72], [-6, 11.8, 2.0, .42, -.72], [6, 11.8, 2.0, .42, .72]],
   },
   {
-    name: 'طوق العاصفة', form: 'wind', hint: 'اترك مركز العاصفة أو ادخل بين الأعمدة', hp: 1.16, damage: 1.10, cd: 13, wind: 1.1, power: 1.2,
+    name: 'طوق العاصفة', form: 'wind', hint: 'اترك مركز العاصفة أو ادخل بين الأعمدة', hp: 1.16, damage: 1.10, cd: 13, wind: 1.48, clipImpact: 1.1, power: 1.2,
     target: true,
     pattern: [[0, 0, 2.5, 0], [-4.5, 0, 2.0, .22, -Math.PI / 2], [4.5, 0, 2.0, .22, Math.PI / 2], [0, 4.5, 2.0, .22, Math.PI], [0, -4.5, 2.0, .22]],
   },
   {
-    name: 'شقّ القلعة', form: 'cross', hint: 'راوغ عن نقطة الهبوط ثم ابتعد عن الشقوق', hp: 1.21, damage: 1.12, cd: 12, wind: 1.15, power: 1.35,
+    name: 'شقّ القلعة', form: 'cross', hint: 'راوغ عن نقطة الهبوط ثم ابتعد عن الشقوق', hp: 1.21, damage: 1.12, cd: 12, wind: 1.52, clipImpact: 1.15, power: 1.35,
     target: true, leap: true,
     pattern: [[0, 0, 3.5, 0, Math.PI / 4], [-3.5, -3.5, 2.0, .19, Math.PI / 4, 'fissure'],
       [3.5, -3.5, 2.0, .19, -Math.PI / 4, 'fissure'], [-3.5, 3.5, 2.0, .19, -Math.PI / 4, 'fissure'],
       [3.5, 3.5, 2.0, .19, Math.PI / 4, 'fissure']],
   },
   {
-    name: 'نداء القصف', form: 'shell', hornAt: .82, hint: 'مرّ من الممر بين خطوط القصف', hp: 1.19, damage: 1.11, cd: 14, wind: 1.25, power: 1.25,
+    name: 'نداء القصف', form: 'shell', hornAt: 1.05, hint: 'مرّ من الممر بين خطوط القصف', hp: 1.19, damage: 1.11, cd: 14, wind: 1.6, clipImpact: 1.25, power: 1.25,
     target: true,
     pattern: [[-4, -6, 2.35, 0], [-4, -2, 2.35, .13], [-4, 2, 2.35, .26], [-4, 6, 2.35, .39],
       [4, -6, 2.35, .39], [4, -2, 2.35, .26], [4, 2, 2.35, .13], [4, 6, 2.35, 0],
       [0, 0, 2.0, .56]],
   },
   {
-    name: 'صدع الجليد', form: 'ice', hint: 'تحرّك لجانب موجة الجليد', hp: 1.18, damage: 1.10, cd: 13, wind: 1.15, power: 1.24,
+    name: 'صدع الجليد', form: 'ice', hint: 'تحرّك لجانب موجة الجليد', hp: 1.18, damage: 1.10, cd: 13, wind: 1.52, clipImpact: 1.15, power: 1.24,
     pattern: [[-1.8, 4, 2.4, 0], [1.8, 4, 2.4, 0], [-3, 7.5, 2.5, .15], [3, 7.5, 2.5, .15],
       [-4.6, 11, 2.7, .3], [4.6, 11, 2.7, .3], [0, 12.5, 2.8, .43]],
   },
   {
-    name: 'نفَس الجحيم', form: 'flame', hint: 'راوغ جانبًا قبل أن ينفث النار', hp: 1.23, damage: 1.14, cd: 12, wind: 1.1, power: 1.29,
+    name: 'نفَس الجحيم', form: 'flame', hint: 'راوغ جانبًا قبل أن ينفث النار', hp: 1.23, damage: 1.14, cd: 12, wind: 1.48, clipImpact: 1.1, power: 1.29,
     pattern: [[0, 4, 2.5, 0], [-1.8, 7.5, 2.8, .11], [1.8, 7.5, 2.8, .11], [-4.6, 11, 2.9, .23],
       [0, 11, 3.0, .23], [4.6, 11, 2.9, .23], [-5.8, 15, 2.9, .35], [0, 15, 3.2, .35], [5.8, 15, 2.9, .35]],
   },
   {
-    name: 'نهضة الشواهد', form: 'grave', hint: 'ابتعد عن الأرض المتشققة قبل أن تنهض الشواهد', hp: 1.25, damage: 1.15, cd: 12, wind: 1.2, power: 1.3,
+    name: 'نهضة الشواهد', form: 'grave', hint: 'ابتعد عن الأرض المتشققة قبل أن تنهض الشواهد', hp: 1.25, damage: 1.15, cd: 12, wind: 1.55, clipImpact: 1.2, power: 1.3,
     target: true,
     pattern: [[0, 0, 2.8, 0], [-4.2, 2.8, 2.1, .21], [4.2, 2.8, 2.1, .21],
       [-3.0, -3.8, 2.1, .35], [3.0, -3.8, 2.1, .35], [0, 5.3, 2.2, .44]],
@@ -80,7 +80,36 @@ function strengthenPreviewBoss(e) {
   e.hp = e.maxHp;
   e.dmg *= special.damage;
   e.bossSpecialCd = 7.5;
+  e.previewCadence = true;
 }
+/* Busy time covers the attack's last projectile launch or impact; recovery follows it. */
+const CAMPAIGN_ATTACK_TIME = [
+  [1.68, .18, 0],
+  [.15, 1.35, 0],
+  [1.42, .15, 0],
+  [1.78, .79, .18],
+  [.62, 1.88, .18],
+  [1.65, 1.63, 1.35],
+  [1.8, 1.54, 0],
+];
+
+function campaignBossAttack(e, slot) {
+  if (!e.previewCadence) return true;
+  if (e.bossAttackGap > 0 || e.st !== 0) return false;
+  e.bossAttackBusy = CAMPAIGN_ATTACK_TIME[e.kind][slot - 1] ?? .12;
+  e.bossAttackGap = e.bossAttackBusy + 1.1;
+  return true;
+}
+
+function campaignBossResting(e) {
+  return e.previewCadence && e.bossAttackGap > 0 && !(e.bossAttackBusy > 0) && e.st === 0;
+}
+
+function bossSpecialPoseTime(e) {
+  const { wind, clipImpact } = BOSS_SPECIALS[e.kind], t = e.bossSpecial.elapsed;
+  return t < wind ? t * clipImpact / wind : clipImpact + t - wind;
+}
+
 function startBossSpecial(e, p, special) {
   const face = Math.atan2(p.x - e.x, p.z - e.z);
   const destination = clampToCircle({ x: p.x, z: p.z }, ARENA - 4);
@@ -109,8 +138,11 @@ function updateBossSpecial(e, p, dt) {
   const special = BOSS_SPECIALS[e.kind];
   if (!special || !bossSpecialActive()) return false;
   if (!e.bossSpecial) {
-    e.bossSpecialCd = (e.bossSpecialCd ?? 7.5) - dt * (e.hp < e.maxHp * .5 ? 1.32 : 1);
-    if (e.bossSpecialCd > 0 || e.st !== 0 || e.gravePhase || Math.hypot(p.x - e.x, p.z - e.z) > 28) return false;
+    e.bossAttackGap = Math.max(0, (e.bossAttackGap || 0) - dt);
+    e.bossAttackBusy = Math.max(0, (e.bossAttackBusy || 0) - dt);
+    e.bossSpecialCd = (e.bossSpecialCd ?? 7.5) - dt * (e.hp < e.maxHp * .5 ? 1.15 : 1);
+    if (e.bossSpecialCd > 0 || e.bossAttackGap > 0 || e.st !== 0 || e.gravePhase ||
+        Math.hypot(p.x - e.x, p.z - e.z) > 28) return false;
     startBossSpecial(e, p, special);
     return true;
   }
@@ -133,10 +165,8 @@ function updateBossSpecial(e, p, dt) {
     e.bossSpecial = null;
     e.st = 0;
     e.y = 0;
-    // Give the player a clean recovery window before a regular dash/shot can fire.
-    e.a1 = Math.max(e.a1, .65);
-    e.a4 = Math.max(e.a4, .65);
-    if (e.kind === 6) e.graveSlam = Math.max(e.graveSlam, .65);
+    e.bossAttackBusy = 0;
+    e.bossAttackGap = 1.35;
   }
   return true;
 }
