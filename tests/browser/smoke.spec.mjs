@@ -799,6 +799,10 @@ test('preview: eight arena maps load by touch and clear their decor on stage cha
       G.p.x = G.p.z = 0;
       G.enemies.length = 0;
       const visible = decor.filter(item => item.mesh.name.startsWith('arena-map-'));
+      const treeModels = ['oak', 'fir', 'palm'];
+      const isTree = ({ mesh }) => treeModels.includes(mesh.name.slice('arena-map-'.length));
+      const cappedProps = visible.filter(item => !isTree(item));
+      const treeLandmarks = arenaStageStyle(stage).landmarks.filter(([model]) => treeModels.includes(model));
       const previousClear = (window.previousArenaMeshes || []).every(mesh => mesh.parent !== scene);
       window.previousArenaMeshes = decor.map(item => item.mesh);
       const isOpen = (x, z) => !OBST.some(o => Math.hypot(x - o.x, z - o.z) < o.r + G.p.r);
@@ -812,14 +816,23 @@ test('preview: eight arena maps load by touch and clear their decor on stage cha
         return sum + (geo.index?.count || geo.attributes.position.count) * mesh.count / 3;
       }, 0);
       let maxPlayHeight = 0, maxPlayWidth = 0;
+      let restoredTrees = 0;
       const matrix = new THREE.Matrix4(), position = new THREE.Vector3(), scale = new THREE.Vector3();
-      for (const { mesh } of visible) {
+      for (const item of visible) {
+        const { mesh } = item;
+        const tree = isTree(item);
         const size = mesh.geometry.boundingBox.getSize(new THREE.Vector3());
         for (let i = 0; i < mesh.count; i++) {
           mesh.getMatrixAt(i, matrix);
           position.setFromMatrixPosition(matrix);
-          if (Math.hypot(position.x, position.z) >= ARENA + 4) continue;
           scale.setFromMatrixScale(matrix);
+          if (tree) {
+            const landmark = treeLandmarks.find(([model, x, z]) => mesh.name === 'arena-map-' + model &&
+              Math.abs(x - position.x) < .001 && Math.abs(z - position.z) < .001);
+            if (landmark && Math.abs(landmark[3] - scale.y) < .001) restoredTrees++;
+            continue;
+          }
+          if (Math.hypot(position.x, position.z) >= ARENA + 4) continue;
           maxPlayHeight = Math.max(maxPlayHeight, size.y * scale.y);
           maxPlayWidth = Math.max(maxPlayWidth, Math.hypot(size.x * scale.x, size.z * scale.z));
         }
@@ -832,11 +845,12 @@ test('preview: eight arena maps load by touch and clear their decor on stage cha
       const torso = new THREE.Vector3(G.p.x, 1.25, G.p.z);
       const direction = torso.sub(camera.position);
       const ray = new THREE.Raycaster(camera.position, direction.clone().normalize(), 0, direction.length());
-      const actorVisible = !ray.intersectObjects(visible.map(({ mesh }) => mesh), false).length;
+      const cappedPropsLeaveHeroVisible = !ray.intersectObjects(cappedProps.map(({ mesh }) => mesh), false).length;
       G.p.x = G.p.z = 0;
       render(0, performance.now());
       return {
-        maxPlayHeight, maxPlayWidth, actorVisible,
+        maxPlayHeight, maxPlayWidth, cappedPropsLeaveHeroVisible,
+        treeSizesRestored: restoredTrees === treeLandmarks.length,
         stage: stage.n, key: arenaStageStyle(stage).terrain, current: visible.map(o => o.mesh.name),
         routes, previousClear, clearStart: isOpen(0, 0), collisionWorks: probe.x > collider.x + .15,
         triangles, image: renderer.domElement.toDataURL('image/jpeg', .78),
@@ -848,7 +862,8 @@ test('preview: eight arena maps load by touch and clear their decor on stage cha
     expect(snap.current.length).toBeGreaterThanOrEqual(4);
     expect(snap.maxPlayHeight).toBeLessThanOrEqual(2.21);
     expect(snap.maxPlayWidth).toBeLessThanOrEqual(3.61);
-    expect(snap.actorVisible, `${name}: hero visibility`).toBe(true);
+    expect(snap.treeSizesRestored, `${name}: original tree sizes`).toBe(true);
+    expect(snap.cappedPropsLeaveHeroVisible, `${name}: hero visibility near capped decor`).toBe(true);
     expect(snap.triangles).toBeLessThan(42000);
     await fs.writeFile(testInfo.outputPath(snap.key + '.jpg'), Buffer.from(snap.image.split(',')[1], 'base64'));
     summaries.push({ terrain: snap.key, routes: snap.routes, triangles: snap.triangles, maxHeight: snap.maxPlayHeight });

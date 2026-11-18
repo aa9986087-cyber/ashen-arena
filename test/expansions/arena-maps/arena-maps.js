@@ -93,6 +93,7 @@ const ARENA_MAPS = {
   },
 };
 const arenaMapMeshCache = new Map();
+const ARENA_TREE_MODELS = new Set(['oak', 'fir', 'palm']);
 function arenaStageStyle(stage) {
   const art = ARENA_MAPS[stage.abyss ? 'abyss' : stage.bk];
   return art ? { ...stage, ...art } : stage;
@@ -238,13 +239,15 @@ function mountArenaMap(st) {
   const occupied = [];
   const surface = st.surface || 'natural';
   const add = (model, x, z, size, yaw, solid, variation = 1) => {
-    const { min, max } = openArenaGeometry(model, surface).boundingBox;
-    const skyline = Math.hypot(x, z) >= ARENA + 4;
-    // Limit the display bounds in world units, rather than applying the same shrink to every model.
-    const height = max.y - min.y;
-    const span = Math.hypot(max.x - min.x, max.z - min.z);
-    const scale = Math.min(size, (skyline ? 5.5 : 2.2) / height, (skyline ? 9 : 3.6) / span);
-    if (solid > 0) solid *= scale / size;
+    let scale = size;
+    if (!ARENA_TREE_MODELS.has(model)) {
+      const { min, max } = openArenaGeometry(model, surface).boundingBox;
+      const skyline = Math.hypot(x, z) >= ARENA + 4;
+      const height = max.y - min.y;
+      const span = Math.hypot(max.x - min.x, max.z - min.z);
+      scale = Math.min(size, (skyline ? 5.5 : 2.2) / height, (skyline ? 9 : 3.6) / span);
+      if (solid > 0) solid *= scale / size;
+    }
     if (!items.has(model)) items.set(model, []);
     items.get(model).push([x,z,scale,yaw,variation]);
     if (solid > 0) {
