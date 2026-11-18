@@ -13,10 +13,11 @@ CFG = json.loads((TEST / 'modular-config.json').read_text())
 EXPANSIONS = CFG.get('enabledExpansions', [])
 GRAVEBOUND = 'gravebound' in EXPANSIONS
 BOSS_SPECIALS = 'boss-specials' in EXPANSIONS
+ARENA_MAPS_ENABLED = 'arena-maps' in EXPANSIONS
 campaign_path = TEST / 'expansions' / 'boss-specials' / 'assets'
 campaign_manifest = campaign_path / 'manifest.json'
 CAMPAIGN_ACTORS = BOSS_SPECIALS and campaign_manifest.exists()
-if any(name not in {'gravebound', 'boss-specials'} for name in EXPANSIONS):
+if any(name not in {'gravebound', 'boss-specials', 'arena-maps'} for name in EXPANSIONS):
     raise SystemExit('Unknown expansion in enabledExpansions')
 def load_expansion(name):
     spec = importlib.util.spec_from_file_location(name, TEST / 'tools' / (name + '-build.py'))
@@ -68,6 +69,9 @@ def patch(path, text):
             "function buildWeapon(R = PM, wep) {\n  if (typeof actorWeaponWillRebuild === 'function') actorWeaponWillRebuild(R);\n  const w = R.wp;", path)
         text = replace_once(text, '  const model = weaponModel(id, t, ev, tc);',
             "  if (ASHEN_ADDONS.weapon(R, id, t, ev, tc, em, s)) return;\n  const model = weaponModel(id, t, ev, tc);", path)
+    if ARENA_MAPS_ENABLED and path == 'js/render/world.js':
+        text = replace_once(text, '  const st = STAGES[i];', '  const st = arenaStageStyle(STAGES[i]);', path)
+        text = replace_once(text, '  st.decor.forEach((k, j) => {', '  if (!mountArenaMap(st)) st.decor.forEach((k, j) => {', path)
     if path == 'js/render/renderer.js':
         text = replace_once(text, 'function poseRig(R, p, wepId, playing, now) {',
             "function poseRig(R, p, wepId, playing, now) {\n  if (typeof actorRigPose === 'function' && actorRigPose(R, p, wepId, playing, now)) return;", path)
@@ -209,6 +213,10 @@ if BOSS_SPECIALS:
     for filename in ['combat.js', 'visuals.js']:
         source = TEST / 'expansions' / 'boss-specials' / filename
         extra += '\n;\n/* boss-specials/' + filename + ' */\n' + source.read_text()
+if ARENA_MAPS_ENABLED:
+    for filename in ['props.js', 'arena-maps.js']:
+        source = TEST / 'expansions' / 'arena-maps' / filename
+        extra += '\n;\n/* arena-maps/' + filename + ' */\n' + source.read_text()
 parts = [preamble]
 for match in SCRIPT.finditer(html):
     src = match.group(1).split('?', 1)[0]

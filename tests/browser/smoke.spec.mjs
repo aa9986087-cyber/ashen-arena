@@ -780,3 +780,52 @@ test('preview: ancient forest guardian raises its arms and slams on the root war
   expect(result.clock).toBeLessThan(result.wind + .03);
   await page.screenshot({ path: testInfo.outputPath('ancient-tree-root-slam.png') });
 });
+
+test('preview: eight arena maps load by touch and clear their decor on stage changes', async ({ page }, testInfo) => {
+  test.skip(!enabledExpansions.includes('arena-maps'), 'The arena map expansion is disabled.');
+  test.setTimeout(100000);
+  await page.goto('/test/#lab', { waitUntil: 'load' });
+  await expect.poll(() => page.evaluate(() => typeof window.__game), { timeout: 45000 }).toBe('object');
+  await page.evaluate(() => window.__game.ready);
+  await page.locator('#mLab').tap();
+  const stageNames = await page.evaluate(() => STAGES.map(s => s.n));
+  expect(stageNames).toHaveLength(8);
+  const summaries = [];
+  for (const name of stageNames) {
+    await page.locator('#labBtn').tap();
+    await page.locator('#labStage').getByRole('button', { name, exact: true }).tap();
+    const snap = await page.evaluate(() => {
+      const stage = STAGES[G.stage];
+      G.p.x = G.p.z = 0;
+      G.enemies.length = 0;
+      const visible = decor.filter(item => item.mesh.name.startsWith('arena-map-'));
+      const previousClear = (window.previousArenaMeshes || []).every(mesh => mesh.parent !== scene);
+      window.previousArenaMeshes = decor.map(item => item.mesh);
+      const isOpen = (x, z) => !OBST.some(o => Math.hypot(x - o.x, z - o.z) < o.r + G.p.r);
+      const routes = Array.from({ length: 8 }, (_, i) => i * TAU / 8)
+        .filter(a => [2,4,6,8,10,12,14].every(r => isOpen(Math.sin(a) * r, Math.cos(a) * r))).length;
+      const collider = OBST[0];
+      const probe = { x: collider.x + .15, z: collider.z };
+      pushOutOfObstacles(probe, G.p.r);
+      const triangles = decor.reduce((sum, { mesh }) => {
+        const geo = mesh.geometry;
+        return sum + (geo.index?.count || geo.attributes.position.count) * mesh.count / 3;
+      }, 0);
+      render(0, performance.now());
+      return {
+        stage: stage.n, key: arenaStageStyle(stage).terrain, current: visible.map(o => o.mesh.name),
+        routes, previousClear, clearStart: isOpen(0, 0), collisionWorks: probe.x > collider.x + .15,
+        triangles, image: renderer.domElement.toDataURL('image/jpeg', .78),
+      };
+    });
+    expect(snap.stage).toBe(name);
+    expect(snap.previousClear && snap.clearStart && snap.collisionWorks).toBe(true);
+    expect(snap.routes).toBeGreaterThanOrEqual(4);
+    expect(snap.current.length).toBeGreaterThanOrEqual(4);
+    expect(snap.triangles).toBeLessThan(42000);
+    await fs.writeFile(testInfo.outputPath(snap.key + '.jpg'), Buffer.from(snap.image.split(',')[1], 'base64'));
+    summaries.push({ terrain: snap.key, routes: snap.routes, triangles: snap.triangles });
+  }
+  expect(new Set(summaries.map(s => s.terrain)).size).toBe(8);
+  await testInfo.attach('arena-geometry', { body: JSON.stringify(summaries, null, 2), contentType: 'application/json' });
+});

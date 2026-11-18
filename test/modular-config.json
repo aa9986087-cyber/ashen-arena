@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "release": "clean-20261118-v30",
+  "release": "clean-20261118-v31",
   "baseRevision": "ab6798e6a4ed2cfd7f71a77e0e00f10505d393d3",
   "addonSourceRevision": "c0c1701",
   "enabledAddons": [
@@ -8,10 +8,11 @@
     "ranger",
     "forest-guardian"
   ],
-  "notes": "إيقاع أهدأ لمعارك الزعماء. تمهيد أطول، هجمة واحدة كل مرة وفرصة للرد.",
+  "notes": "ثماني ساحات مع ديكور مفتوح الترخيص وأرضيات خاصة بكل مرحلة.",
   "enabledExpansions": [
     "gravebound",
-    "boss-specials"
+    "boss-specials",
+    "arena-maps"
   ],
   "forestDefault": "ancient"
 }
