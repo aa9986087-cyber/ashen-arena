@@ -52,8 +52,8 @@ async function profileSync() {
 }
 /** How far a player got, in words. */
 function profileReach(s) {
-  if ((s.mb | 0) >= 6) return 'أنهى المراحل الست' + (s.ab ? '، ونزل الهاوية ' + s.ab + ' مرة' : '');
-  const i = Math.min(5, s.mb | 0);
+  if ((s.mb | 0) >= STAGES.length - 1) return 'أنهى المراحل السبع' + (s.ab ? '، ونزل الهاوية ' + s.ab + ' مرة' : '');
+  const i = Math.min(STAGES.length - 2, s.mb | 0);
   return 'وصل المرحلة ' + (i + 1) + ': ' + STAGES[i].n;
 }
 /** Open the card of the player called `name` (the newest profile with that name). */

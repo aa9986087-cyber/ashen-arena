@@ -1,0 +1,28 @@
+/* Keep the warning above the arena centre on portrait touch screens. */
+#banner.boss-move {
+  top: 19%;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 5px 12px;
+  border: 1px solid #d19358;
+  border-radius: 9px;
+  background: #201912ed;
+}
+#banner.boss-move h2 {
+  font: 800 16px var(--body);
+  color: #ffe4b5;
+  background: none;
+  filter: none;
+  transform: none;
+}
+#banner.boss-move h2::before,
+#banner.boss-move h2::after {
+  display: none;
+}
+#banner.boss-move p {
+  font-size: 12px;
+  margin-top: 1px;
+}

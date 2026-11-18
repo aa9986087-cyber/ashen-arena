@@ -100,7 +100,7 @@ const DECOR_SOLID = {
 /** Solid circles { x, z, r } inside the arena for the current stage (see pushOutOfObstacles). */
 const OBST = [];
 function setStage(i) {
-  const st = STAGES[i];
+  const st = arenaStageStyle(STAGES[i]);
   ground.material.color.setHex(st.ground).multiplyScalar(0.86);
   scene.fog.color.setHex(st.fog);
   scene.background.setHex(st.fog);
@@ -121,7 +121,7 @@ function setStage(i) {
   }
   decor = [];
   OBST.length = 0;
-  st.decor.forEach((k, j) => {
+  if (!mountArenaMap(st)) st.decor.forEach((k, j) => {
     const n = j ? 46 : 60,
       I = inst(GEO[k], lamV, n, true);
     I.mesh.receiveShadow = true;

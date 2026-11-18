@@ -2,6 +2,8 @@
 /* Boot: build the initial scene, open the menu, start the music and the frame loop. */
 let last = performance.now();
 function frame(now) {
+  resumeAddonBossIntro();
+  if (G.state !== 'play' || G.p.dead || G.cardsOpen || CINE.on || CINE.pending) ASHEN_ADDONS.clearMelee();
   requestAnimationFrame(frame);
   const gap = frameGap();
   if (gap && now - last < gap) return; // a calm screen or a 60 fps cap: skip this display frame

@@ -22,7 +22,9 @@ function buildPlayer() {
 }
 /** Build a hero rig (body, limbs, held weapon) into R: the local hero is PM; co-op teammates get their own. */
 function buildRig(R, charId, wep) {
-  if (R.g) scene.remove(R.g);
+  if (typeof buildActorRig === 'function' && buildActorRig(R, charId, wep)) return;
+  if (typeof actorReleaseRig === 'function') actorReleaseRig(R);
+  else if (R.g) scene.remove(R.g);
   if (!CHARS[charId]) charId = 'knight';
   R.char = charId;
   const ch = CHARS[charId],
@@ -164,7 +166,7 @@ const WEP_MODELS = {};
   const done = () => {
     if (--left === 0) {
       // all settled: redraw the weapon in hand and the heroes' portraits
-      for (const k in PORTRAITS) delete PORTRAITS[k];
+      if (typeof PORTRAITS !== 'undefined') for (const k in PORTRAITS) delete PORTRAITS[k];
       if (typeof G !== 'undefined' && G && PM.wp) buildWeapon();
     }
   };
@@ -208,6 +210,7 @@ function weaponModel(id, t, ev, tc) {
   return g;
 }
 function buildWeapon(R = PM, wep) {
+  if (typeof actorWeaponWillRebuild === 'function') actorWeaponWillRebuild(R);
   const w = R.wp;
   while (w.children.length) w.remove(w.children[0]);
   const cur = wep || (R === PM && G && G.weapons && G.weapons[0]),
@@ -219,6 +222,7 @@ function buildWeapon(R = PM, wep) {
     tc = ev ? 0xd070ff : [0xc3cad6, 0x62d0ff, 0xffc53d][t],
     em = ev ? 0x5a1488 : [0, 0x0a3a55, 0x7a4a00][t],
     s = ev ? 1.6 : 1 + t * 0.18;
+  if (ASHEN_ADDONS.weapon(R, id, t, ev, tc, em, s)) return;
   const model = weaponModel(id, t, ev, tc);
   if (model) {
     w.add(model);

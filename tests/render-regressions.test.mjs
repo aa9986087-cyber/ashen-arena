@@ -54,6 +54,7 @@ function weaponContext({ loader = true, active = true } = {}) {
       } } : {}),
     },
     PM: { wp, char: 'knight' },
+    ASHEN_ADDONS: { weapon: () => false },
     PORTRAITS: portraits,
     G: active ? { weapons: [{ id: 'sword', lvl: 1 }] } : null,
     S: { char: 'knight' },

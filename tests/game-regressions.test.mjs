@@ -14,6 +14,7 @@ const files = [
   'js/game/enemy-ai.js',
   'js/game/update.js',
   'js/game/run.js',
+  'js/content/actors/registry.js',
 ];
 const sources = files.map(file => [file, fs.readFileSync(new URL(file, root), 'utf8')]);
 const noop = () => {};
@@ -25,6 +26,8 @@ function fixture() {
   const events = { deaths: 0, phoenix: 0 };
   const context = vm.createContext({
     COOP: { on: false, host: true, hpMul: 1, cntMul: 1 },
+    CINE: {}, PM: {}, graveSaveRun: () => null, graveRestoreRun: noop,
+    graveAbsorb: damage => damage,
     CHARS: { hero: { wep: 'sword', hp: 100, dmg: 1, spd: 6, crit: 0 } },
     WEP: { sword: {} },
     STAGES: [{ n: 'Fixture arena' }],

@@ -8,7 +8,6 @@ function bossIntroEligible() {
   return G.state === 'play' && !COOP.on && !DUEL.on;
 }
 function bossIntroStart(e) {
-  if (G.state === 'lab' && typeof closeLab === 'function') closeLab(); // the lab spawns in a live run
   if (!bossIntroEligible() || CINE.on) return false;
   Object.assign(CINE, { on: true, freeze: true, t: 0, boss: e, landed: false });
   e.y = -10;

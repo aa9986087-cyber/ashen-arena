@@ -30,6 +30,7 @@ const PCOL = [
 ];
 /** Pose a hero rig from a player state {x, z, face, moving, walk, swing}: model animation frame or limb swing. */
 function poseRig(R, p, wepId, playing, now) {
+  if (typeof actorRigPose === 'function' && actorRigPose(R, p, wepId, playing, now)) return;
   const g = R.g,
     H = R.anim;
   g.position.set(p.x, H ? 0 : Math.abs(Math.sin(p.walk)) * 0.12 * p.moving, p.z);
@@ -73,11 +74,7 @@ function render(dt, now) {
     lastMenu = !playing;
     resize(); // in or out of the menu: its sharpness differs
   }
-  // the living menu's giant and fire belong to the menu only
-  if (playing && M2.boss) {
-    M2.boss.visible = false;
-    M2.light.intensity = M2.rim.intensity = 0;
-  }
+  if (playing) hideLivingMenu();
   // camera
   if (typeof CINE !== 'undefined' && CINE.on) bossIntroCamera();
   else if (playing) {
@@ -106,9 +103,14 @@ function render(dt, now) {
     const g = PM.g,
       sup = G.superT > 0;
     poseRig(PM, p, (G.weapons[0] || PM.lastWep || {}).id, playing, now);
+    if (M2.active) {
+      g.position.x += W < H ? 1.05 : 1.8;
+      const towardCamera = Math.atan2(camera.position.x - g.position.x, camera.position.z - g.position.z);
+      g.rotation.y = towardCamera + (PM.actor?.key === 'knight' ? -Math.PI / 2 : 0) + 0.17;
+    }
     if (COOP.on) coopRender(now); // teammates
     g.visible = !(p.inv > 0 && p.dashT <= 0 && ((now / 60) | 0) % 2 === 0 && G.state === 'play') && !p.dead;
-    const s = sup ? 1.25 : 1;
+    const s = M2.active ? M2.heroScale : sup ? 1.25 : 1;
     g.scale.set(s, s, s);
     glow.intensity = sup ? 2.2 : 0;
     glow.position.set(p.x, 3, p.z);
@@ -124,7 +126,9 @@ function render(dt, now) {
       auraMesh.material.opacity = 0.13 + 0.06 * Math.sin(now * 0.01);
     }
   }
+  drawBossSpecialImpacts(['play', 'cards', 'paused', 'count'].includes(G.state));
   // enemies
+  if (typeof actorBossFrame === 'function') actorBossFrame(now);
   bossAura.visible = false;
   if (G.tslowT > 0) TINT.splice(0, 3, 0.7, 0.85, 1.4);
   const fxOn = G.state === 'play';
@@ -147,24 +151,30 @@ function render(dt, now) {
     if (e.boss) {
       const s = e.scale,
         b = bossMesh;
-      const A = ANIM['boss' + e.kind];
-      if (A) {
-        // wind-ups (charge, leap, ultimate) play the attack clip, otherwise it walks
-        const atk = A.attack && (e.st === 1 || e.st === 3 || e.st === 4);
-        b.geometry = e.frz > 0 ? A.walk[0] : animFrame(atk ? A.attack : A.walk, e.t * (atk ? 1.1 : 0.9));
+      if (CINE.pending && G.boss === e) { b.visible = false; continue; }
+      const actorBody = typeof actorBossRender === 'function' && actorBossRender(e, now);
+      b.visible = !actorBody;
+      if (!actorBody) {
+        const A = ANIM['boss' + e.kind];
+        if (A) {
+          // Wind-ups play the attack clip. Otherwise the boss walks.
+          const atk = A.attack && (e.st === 1 || e.st === 3 || e.st === 4);
+          b.geometry = e.frz > 0 ? A.walk[0] : animFrame(atk ? A.attack : A.walk, e.t * (atk ? 1.1 : 0.9));
+        }
+        b.position.set(e.x, (e.y || 0) + (A ? 0 : Math.abs(Math.sin(e.t * 3)) * 0.15), e.z);
+        b.rotation.set(0, e.face, Math.sin(e.t * 3) * 0.05);
+        b.scale.set(s, s, s);
+        poseBossSpecial(b, e);
+        const ab = G.abyss ? 0.14 : 0; // the abyss "shadow" versions glow purple
+        bossMat.emissive.setRGB(
+          e.flash > 0 ? 0.8 : e.hp < e.maxHp * 0.5 ? 0.25 : ab,
+          e.flash > 0 ? 0.8 : e.frz > 0 ? 0.3 : 0,
+          e.flash > 0 ? 0.8 : e.frz > 0 ? 0.7 : ab * 0.9
+        );
       }
-      b.position.set(e.x, (e.y || 0) + (A ? 0 : Math.abs(Math.sin(e.t * 3)) * 0.15), e.z);
-      b.rotation.set(0, e.face, Math.sin(e.t * 3) * 0.05);
-      b.scale.set(s, s, s);
-      const ab = G.abyss ? 0.14 : 0; // the abyss "shadow" versions glow purple
-      bossMat.emissive.setRGB(
-        e.flash > 0 ? 0.8 : e.hp < e.maxHp * 0.5 ? 0.25 : ab,
-        e.flash > 0 ? 0.8 : e.frz > 0 ? 0.3 : 0,
-        e.flash > 0 ? 0.8 : e.frz > 0 ? 0.7 : ab * 0.9
-      );
       const c = BOSS_ULTS[e.kind].col,
         R = 3.2 + 0.25 * Math.sin(e.t * 4) + (e.st === 4 ? 1.5 : 0);
-      bossAura.visible = true;
+      bossAura.visible = !e.bossSpecial;
       bossAura.position.set(e.x, 0.07, e.z);
       bossAura.scale.set(R, R, 1);
       bossAura.material.color.setRGB(c[0], c[1], c[2]);
@@ -373,17 +383,18 @@ function render(dt, now) {
     const q = G.zones[i],
       b = ballPool[i];
     m.visible = !!q;
-    b.visible = !!q && q.kind !== 'sky';
+    const shell = q?.bossGround?.form === 'shell';
+    b.visible = !!q && q.kind !== 'sky' && (q.kind !== 'boss-special' || (shell && q.d - q.l <= BOSS_SHELL_FLIGHT));
     if (q) {
-      const k = q.l / q.d;
-      m.position.set(q.x, 0.1, q.z);
-      m.scale.set(q.r, q.r, 1);
+      const k = clamp(q.l / q.d, 0, 1);
+      drawBossWarning(m, q, k);
       const zc = q.f ? 0xffa020 : q.sty ? BOSS_ULTS[q.sty - 1].zone : 0xff2a1a;
       m.material.color.setHex(zc);
-      m.material.opacity = 0.18 + 0.4 * k;
-      const y = (1 - k) * 26 + 1,
+      b.geometry = shell ? bossShellGeometry : SPH;
+      const flight = shell ? clamp(1 - (q.d - q.l) / BOSS_SHELL_FLIGHT, 0, 1) : k;
+      const y = (1 - flight) * 26 + 1,
         bs = q.f ? 1.6 : 0.9;
-      b.position.set(q.x + (1 - k) * 6, y, q.z - (1 - k) * 4);
+      b.position.set(q.x + (1 - flight) * 6, y, q.z - (1 - flight) * 4);
       b.scale.set(bs, bs, bs);
       b.material.color.setHex(q.f ? 0xff8a20 : q.sty ? zc : 0xff4030);
     }

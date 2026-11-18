@@ -57,8 +57,10 @@ function updEnemies(dt) {
       e.offT = (e.offT || 0) + dt;
       if (e.offT > 3) recycleEnemy(e, p); // left far behind for a while: it comes back (beside or behind you)
     } else e.offT = 0;
+    if (e.boss && updateBossSpecial(e, p, dt)) continue;
+    if (e.boss && e.kind === 6) { graveBossAI(e, p, dt); continue; }
     if (e.boss) {
-      const rage = e.hp < e.maxHp * 0.5 ? 1.45 : 1,
+      const rage = e.hp < e.maxHp * 0.5 ? (e.previewCadence ? 1.16 : 1.45) : 1,
         k = e.kind;
       e.a1 -= dt * rage;
       e.a2 -= dt * rage;
@@ -67,18 +69,18 @@ function updEnemies(dt) {
       mz = uz;
       e.y = 0;
       e.a4 -= dt * rage;
-      if (e.a4 <= 0 && e.st === 0 && d < 32) {
-        e.a4 = 2.6;
+      if (e.a4 <= 0 && e.st === 0 && d < 32 && (!e.previewCadence || d > 5.4) && campaignBossAttack(e, 4)) {
+        e.a4 = e.previewCadence ? 4.3 : 2.6;
         const ld = d / 15,
           tx = p.x + (lead.mvx || 0) * p.speed * ld,
           tz = p.z + (lead.mvz || 0) * p.speed * ld,
           aa = Math.atan2(tz - e.z, tx - e.x);
-        eFan(e.x, e.z, aa, 1, 0.13, 15, e.dmg * 0.45);
+        eFan(e.x, e.z, aa, 1, 0.13, e.previewCadence ? 10 : 15, e.dmg * 0.45);
         AU.play('eshot');
       }
       e.ult -= dt * rage;
       bossTick(e, p, dt);
-      if (e.st === 0 && e.ult <= 0 && d < 34) startUlt(e);
+      if (e.st === 0 && e.ult <= 0 && d < 34 && !bossSpecialActive()) startUlt(e);
       if (e.st === 4) {
         // ultimate wind-up (see js/game/boss-ults.js)
         spd = 0;
@@ -89,17 +91,19 @@ function updEnemies(dt) {
           BOSS_ULTS[k].f(e, p);
         }
       } else if (e.st === 1) {
+        if (e.previewCadence) e.face = Math.atan2(e.cx, e.cz);
         e.stT -= dt;
         e.flash = 0.05;
         spd = 0;
         if (e.stT <= 0) {
           e.st = 2;
-          e.stT = 0.85;
+          e.stT = e.previewCadence ? 0.57 : 0.85;
         }
       } else if (e.st === 2) {
         mx = e.cx;
         mz = e.cz;
-        spd = 18;
+        if (e.previewCadence) e.face = Math.atan2(mx, mz);
+        spd = e.previewCadence ? 14 : 18;
         e.stT -= dt;
         if (e.stT <= 0) {
           e.st = 0;
@@ -109,7 +113,7 @@ function updEnemies(dt) {
       } else if (e.st === 3) {
         spd = 0;
         e.stT -= dt;
-        e.y = Math.sin(Math.max(0, e.stT) * Math.PI) * 9;
+        e.y = Math.sin(Math.max(0, e.stT) / (e.previewCadence ? 1.42 : 1) * Math.PI) * (e.previewCadence ? 6 : 9);
         e.x += (e.lx - e.x) * Math.min(1, dt * 5);
         e.z += (e.lz - e.z) * Math.min(1, dt * 5);
         if (e.stT <= 0) {
@@ -123,17 +127,17 @@ function updEnemies(dt) {
           }
         }
       } else if (k === 0) {
-        if (e.a1 <= 0 && d < 17) {
+        if (e.a1 <= 0 && d < 17 && campaignBossAttack(e, 1)) {
           e.a1 = 4.6;
           e.st = 1;
-          e.stT = 0.75;
+          e.stT = e.previewCadence ? 1.1 : 0.75;
           e.cx = ux;
           e.cz = uz;
           AU.play('boss');
         }
-        if (e.a2 <= 0) {
+        if (e.a2 <= 0 && campaignBossAttack(e, 2)) {
           e.a2 = 9;
-          spawnPack('fast', 5, e.x, e.z, 3);
+          spawnPack('fast', e.previewCadence ? 2 : 5, e.x, e.z, 3);
           ring(e.x, e.z, 0.5, 4, 0.4, [0.4, 1, 0.3]);
         }
       } else if (k === 1) {
@@ -144,40 +148,41 @@ function updEnemies(dt) {
           mx = -uz;
           mz = ux;
         }
-        if (e.a1 <= 0) {
+        if (e.a1 <= 0 && campaignBossAttack(e, 1)) {
           e.a1 = 2.5;
-          eRing(e.x, e.z, 14, 7.5, e.dmg * 0.6, e.t);
+          eRing(e.x, e.z, (e.previewCadence ? 10 : 14), 7.5, e.dmg * 0.6, e.t);
           AU.play('eshot');
         }
-        if (e.a2 <= 0) {
+        if (e.a2 <= 0 && campaignBossAttack(e, 2)) {
           e.a2 = 8;
-          e.spiral = 2.2;
+          e.spiral = e.previewCadence ? 1.3 : 2.2;
         }
         if (e.spiral > 0) {
           e.spiral -= dt;
           e.spAcc += dt;
           spd *= 0.3;
-          while (e.spAcc > 0.06) {
-            e.spAcc -= 0.06;
+          const interval = e.previewCadence ? 0.135 : 0.06;
+          while (e.spAcc > interval) {
+            e.spAcc -= interval;
             e.spA += 0.4;
             eShot(e.x, e.z, e.spA, 8.5, e.dmg * 0.5);
             eShot(e.x, e.z, e.spA + Math.PI, 8.5, e.dmg * 0.5);
           }
         }
       } else if (k === 2) {
-        if (e.a1 <= 0) {
+        if (e.a1 <= 0 && campaignBossAttack(e, 1)) {
           e.a1 = 4.6;
           bossLeap(e, p);
         }
-        if (e.a2 <= 0 && d < 19) {
+        if (e.a2 <= 0 && d < 19 && campaignBossAttack(e, 2)) {
           e.a2 = 3;
           eFan(e.x, e.z, Math.atan2(dz, dx), 2, 0.2, 11, e.dmg * 0.6);
           AU.play('eshot');
         }
       } else if (k === 4) {
-        if (e.a1 <= 0) {
+        if (e.a1 <= 0 && campaignBossAttack(e, 1)) {
           e.a1 = 3.6;
-          eRing(e.x, e.z, 16, 5.5, e.dmg * 0.55, e.t);
+          eRing(e.x, e.z, (e.previewCadence ? 11 : 16), 5.5, e.dmg * 0.55, e.t);
           e.burst = 1;
           e.spAcc = 0.5;
           AU.play('eshot');
@@ -186,71 +191,73 @@ function updEnemies(dt) {
           e.spAcc -= dt;
           if (e.spAcc <= 0) {
             e.burst = 0;
-            eRing(e.x, e.z, 16, 7, e.dmg * 0.55, e.t, 0.5);
+            eRing(e.x, e.z, (e.previewCadence ? 11 : 16), 7, e.dmg * 0.55, e.t, 0.5);
           }
         }
-        if (e.a2 <= 0) {
+        if (e.a2 <= 0 && campaignBossAttack(e, 2)) {
           e.a2 = 6;
           for (let j = 1; j <= 5; j++)
-            zone(e.x + ux * j * 3.4, e.z + uz * j * 3.4, 2.7, 0.7 + j * 0.16, e.dmg * 1.2, false);
+            zone(e.x + ux * j * 3.4, e.z + uz * j * 3.4, 2.7, (e.previewCadence ? 1.0 : 0.7) + j * 0.16, e.dmg * 1.2, false);
           AU.play('boss');
         }
-        if (e.a3 <= 0) {
+        if (e.a3 <= 0 && campaignBossAttack(e, 3)) {
           e.a3 = 11;
-          spawnPack('wolf', 4, e.x, e.z, 4);
+          spawnPack('wolf', e.previewCadence ? 2 : 4, e.x, e.z, 4);
         }
       } else if (k === 5) {
-        if (e.a1 <= 0 && d < 18) {
+        if (e.a1 <= 0 && d < 18 && campaignBossAttack(e, 1)) {
           e.a1 = 4.4;
           e.st = 1;
-          e.stT = 0.7;
+          e.stT = e.previewCadence ? 1.07 : 0.7;
           e.cx = ux;
           e.cz = uz;
           AU.play('boss');
         }
-        if (e.a2 <= 0) {
+        if (e.a2 <= 0 && campaignBossAttack(e, 2)) {
           e.a2 = 2.8;
-          zoneBarrage(p.x, p.z, 3, 5, 3.4, 1, 0.2, e.dmg * 1.2);
+          zoneBarrage(p.x, p.z, e.previewCadence ? 2 : 3, 5, 3.4, e.previewCadence ? 1.35 : 1, 0.2, e.dmg * 1.2);
         }
-        if (e.a3 <= 0) {
+        if (e.a3 <= 0 && campaignBossAttack(e, 3)) {
           e.a3 = 10;
-          e.spiral = 2.4;
-          spawnPack('bomber', 3, e.x, e.z, 4);
+          e.spiral = e.previewCadence ? 1.3 : 2.4;
+          spawnPack('bomber', e.previewCadence ? 2 : 3, e.x, e.z, 4);
         }
         if (e.spiral > 0) {
           e.spiral -= dt;
           e.spAcc += dt;
-          while (e.spAcc > 0.07) {
-            e.spAcc -= 0.07;
+          const interval = e.previewCadence ? 0.135 : 0.07;
+          while (e.spAcc > interval) {
+            e.spAcc -= interval;
             e.spA += 0.5;
             for (let q = 0; q < 3; q++) eShot(e.x, e.z, e.spA + (q * TAU) / 3, 8, e.dmg * 0.5);
           }
         }
       } else {
-        if (e.a1 <= 0) {
+        if (e.a1 <= 0 && campaignBossAttack(e, 1)) {
           e.a1 = 3.4;
-          zoneBarrage(p.x, p.z, 4, 6, 3.2, 1.05, 0.16, e.dmg * 1.2);
+          zoneBarrage(p.x, p.z, e.previewCadence ? 3 : 4, 6, 3.2, e.previewCadence ? 1.42 : 1.05, 0.16, e.dmg * 1.2);
           AU.play('rocket');
         }
-        if (e.a2 <= 0) {
+        if (e.a2 <= 0 && campaignBossAttack(e, 2)) {
           e.a2 = 5;
-          e.burst = 3;
+          e.burst = e.previewCadence ? 2 : 3;
           e.spAcc = 0;
         }
         if (e.burst > 0) {
           e.spAcc -= dt;
           if (e.spAcc <= 0) {
-            e.spAcc = 0.28;
+            e.spAcc = e.previewCadence ? 0.43 : 0.28;
             e.burst--;
-            eFan(e.x, e.z, Math.atan2(dz, dx), 3, 0.15, 11, e.dmg * 0.5);
+            eFan(e.x, e.z, Math.atan2(dz, dx), e.previewCadence ? 2 : 3, 0.15, e.previewCadence ? 9.5 : 11, e.dmg * 0.5);
             AU.play('eshot');
           }
         }
-        if (e.a3 <= 0) {
+        if (e.a3 <= 0 && campaignBossAttack(e, 3)) {
           e.a3 = 13;
-          spawnPack('shield', 4, e.x, e.z, 4);
+          spawnPack('shield', e.previewCadence ? 2 : 4, e.x, e.z, 4);
         }
       }
+      if (campaignBossResting(e)) spd = 0;
     } else if (e.type === 'grunt' || e.type === 'shield') {
       if (e.flank && d > 5) {
         const tx = p.x + Math.cos(e.slot) * 4.5 - e.x,
@@ -338,10 +345,7 @@ function updEnemies(dt) {
         let n = 0;
         for (const o of E) {
           if (o.dead || o === e || o.boss) continue;
-          if ((o.x - e.x) ** 2 + (o.z - e.z) ** 2 < 49 && o.hp < o.maxHp) {
-            o.hp = Math.min(o.maxHp, o.hp + o.maxHp * 0.3);
-            n++;
-          }
+          if (healShamanAlly(e, o)) n++;
         }
         if (n) ring(e.x, e.z, 0.5, 7, 0.5, [0.3, 1, 0.5]);
       }
@@ -442,13 +446,13 @@ function updEnemies(dt) {
       e.x *= (ARENA + 4) / er;
       e.z *= (ARENA + 4) / er;
     }
-    if (p === P0 && !P0.dead && d < e.r + p.r && e.hitCd <= 0 && G.contactCd <= 0 && !(e.boss && e.st === 3)) {
+    if (p === P0 && !P0.dead && d < e.r + p.r && e.hitCd <= 0 && G.contactCd <= 0 && !(e.boss && (e.st === 3 || campaignBossResting(e) || (e.previewCadence && e.st === 1)))) {
       // (a teammate's contact damage is judged on his own device, against what he sees)
       // fair crowds: bodies touching you land at most one blow every half second, however many there are
       G.contactCd = CONTACT_CD;
       e.hitCd = 0.5;
       e.atkT = ATK_T;
-      hurt(e.dmg);
+      hurt(e.dmg * (e.previewCadence ? .58 : 1), e);
       if (G.ups.thorns && !e.dead) hit(e, e.dmg * 0.4 * G.ups.thorns, { aoe: 1, quiet: 1, noCrit: 1 });
       if (G.state !== 'play') return;
     }

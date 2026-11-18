@@ -9,6 +9,7 @@ const files = [
   'js/game/state.js', 'js/game/fx.js', 'js/game/spawning.js', 'js/game/combat.js',
   'js/game/specials.js', 'js/game/boss-ults.js', 'js/game/update.js',
   'js/game/enemy-ai.js', 'js/game/cards.js', 'js/game/run.js',
+  'js/content/actors/registry.js',
 ];
 const sources = files.map(file => [file, fs.readFileSync(new URL(file, root), 'utf8')]);
 const noop = () => {};
@@ -21,7 +22,7 @@ function fixture() {
   function node(id) {
     if (!nodes.has(id)) nodes.set(id, {
       textContent: '', hidden: false, dataset: {},
-      classList: { add: noop, remove: noop },
+      classList: { add: noop, remove: noop, toggle: noop },
       querySelector: sel => node(`${id}:${sel}`),
     });
     return nodes.get(id);
@@ -41,6 +42,7 @@ function fixture() {
     $: node, pop: noop, dailyTrack: noop, checkAch: noop,
     vfxClear: noop, vfxP: noop, vfxMuzzle: noop, vfxKill: noop,
     vfxHit: (...args) => sparks.push(args), vfxSparks: noop,
+    graveSaveRun: () => null, graveRestoreRun: noop,
     coopDmgF: () => 1, coopHitOut: (...args) => remoteHits.push(args),
     r1: v => Math.round(v * 10) / 10,
   });

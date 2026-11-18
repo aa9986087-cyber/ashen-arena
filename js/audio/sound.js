@@ -346,6 +346,12 @@ const SFX = {
     a.noise(0.035, 0.1, 1100);
     a.tone(150, 0.045, 'sine', 0.06, 80);
   },
+  warhorn: a => {
+    a.str(115, 0.49, 0.12, 0, a.sg, 710);
+    a.tone(115, 0.36, 'triangle', 0.071, 105);
+    a.tone(227, 0.27, 'triangle', 0.04, 207);
+    a.noise(0.18, 0.027, 410, 0, null, 'bandpass');
+  },
   rocket: a => {
     a.noise(0.4, 0.2, 400);
     a.tone(90, 0.35, 'sine', 0.13, 45);

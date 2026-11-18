@@ -159,7 +159,7 @@ function special() {
   const sp = heroSpecial();
   G.specCd = specCdMax();
   AU.play('special');
-  shake(0.7);
+  if (S.char !== 'reaper') shake(0.7);
   sp.f(p, 60 * p.dmgMul * (1 + G.lvl * 0.06) * (S.tree.S3 ? 1.4 : 1));
   if (S.tree.S4) p.inv = Math.max(p.inv, 2);
   if (S.tree.S5) heal(p.maxHp * 0.15);

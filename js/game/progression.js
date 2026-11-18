@@ -47,7 +47,7 @@ function bossDown(e) {
 }
 function nextStage() {
   if (G.abyss) G.depth++;
-  else if (G.stage >= 5) {
+  else if (G.stage >= STAGES.findIndex(s => s.abyss) - 1) {
     if (COOP.on) {
       coopEnd(true); // co-op: the last boss falls, the whole team wins together
       return true;

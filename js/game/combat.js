@@ -33,6 +33,17 @@ function heal(v, fromCard) {
   if (choosingCards() && !fromCard) return;
   p.hp = Math.min(p.maxHp, p.hp + v);
 }
+/** Combat healing (vampire/leech) is capped at 8% max HP per second. */
+function healCombat(v) {
+  const p = G.p;
+  if (!p || !(v > 0) || choosingCards()) return;
+  if (!(G.healSecT >= 0) || G.t - G.healSecT >= 1) { G.healSecT = G.t; G.healSec = 0; }
+  const cap = Math.max(2, p.maxHp * 0.08), left = cap - (G.healSec || 0);
+  if (left <= 0) return;
+  const a = Math.min(v, left);
+  G.healSec = (G.healSec || 0) + a;
+  heal(a);
+}
 function nearest(x, z, range, skip) {
   let best = null,
     bd = range * range;
@@ -60,7 +71,6 @@ function hit(e, dmg, o) {
   if (G.superT > 0) dmg *= 2;
   dmg *= buffMul('dmg');
   if (G.ups.rage && G.p.hp < G.p.maxHp * 0.35) dmg *= 1 + 0.25 * G.ups.rage;
-  if (crit && G.ups.vamp) heal(G.ups.vamp);
   if (e.boss || e.elite) dmg *= G.p.bossMul || 1;
   const iceL = (G.ups.ice || 0) + (G.ups.frost || 0), // frost freezes on a critical (the old ice card)
     shockL = (G.ups.shock || 0) + Math.ceil((G.ups.bolt || 0) / 2); // lightning pulses (the old shock card)
@@ -106,6 +116,7 @@ function hit(e, dmg, o) {
   if (COOP.on && !COOP.host) coopHitOut(e, dmg, o); // our damage, worked out here: the host applies it for real
   e.hp -= dmg;
   e.flash = 0.1;
+  if (crit && G.ups.vamp && dmg > 0) healCombat(G.ups.vamp);
   if (o.kb && !e.boss && e.type !== 'brute' && e.type !== 'golem') {
     e.kx += Math.cos(o.ang) * o.kb * (G.p.kbMul || 1);
     e.kz += Math.sin(o.ang) * o.kb * (G.p.kbMul || 1);
@@ -141,7 +152,7 @@ function kill(e) {
     mine = !COOP.remoteKill; // a teammate's kill applied by the host: none of our on-kill upgrades
   if (COOP.on && !COOP.host) COOP.predDead.set(e.nid, performance.now()); // gone here at once; the host confirms
   if (COOP.on && COOP.host && !e.boss) COOP.kd.push(e.nid); // the clients drop its corpse
-  if (mine && p.leech && !e.boss) heal(p.leech);
+  if (mine && p.leech && !e.boss) healCombat(p.leech);
   parts(e.x, 1, e.z, e.boss ? 60 : e.elite ? 12 : 4, 1, 0.35, 0.25, e.boss ? 14 : 7, e.boss ? 0.4 : 0.22);
   vfxKill(e.x, e.z, e.boss || e.elite);
   AU.play(e.boss ? 'boom' : 'kill');
@@ -334,8 +345,12 @@ function fire(w, ang) {
     dmg = d.dmg * (1 + 0.22 * (L - 1)) * p.dmgMul * (ev ? 1.5 : 1),
     col = ev ? EVOC : TIERC[t];
   p.swing = 1;
-  AU.play(w.id);
+  p.swingT = (p.swingT || 0) + 1;
+  if (typeof actorNotify === 'function') actorNotify(p, 'attack');
+  if (!d.melee) AU.play(w.id);
   if (d.melee) {
+    ASHEN_ADDONS.queueMelee(() => {
+      AU.play(w.id);
     // a blow in front: the katana is quick and light, the club heavy and sends them flying
     const club = w.id === 'hammer',
       full = ev && club,
@@ -383,6 +398,8 @@ function fire(w, ang) {
         kind: 5,
         col,
       });
+
+    });
   } else if (d.chain) {
     // lightning whip: chains that jump between enemies (frozen for a moment when evolved)
     const jumps = 3 + t + (ev ? 2 : 0),
@@ -659,12 +676,14 @@ function dash() {
   parts(p.x, 1, p.z, 10, 0.8, 0.9, 1, 5, 0.2, 0.35);
 }
 const HIT_CAP = 0.4;
-function hurt(d) {
+function hurt(d, source) {
   const p = G.p;
   if (p.inv > 0 || G.state !== 'play' || G.god || p.dead || choosingCards()) return;
   d *= (1 - p.armor) * (p.taken || 1) * (G.superT > 0 ? 0.5 : 1) * buffMul('taken');
   // fair play: no single blow takes more than 40% of your health (you die of mistakes, not of one unlucky hit)
   d = Math.min(d, p.maxHp * HIT_CAP);
+  d = graveAbsorb(d, source);
+  if (d <= 0) { p.inv = 0.2; return; }
   p.shieldRe = 5;
   if (p.shield > 0) {
     const a = Math.min(p.shield, d);

@@ -256,6 +256,7 @@ function openCards(mode) {
     G.cardsOpen = true; // co-op: the world keeps going for the others
   else G.state = 'cards';
   G.cardMode = mode;
+  G.cardPicked = false;
   const n = mode === 'boss' ? 3 : S.tree.U1 ? 4 : 3;
   curCards = rollCards(n, mode === 'boss' ? 2 : 0);
   $('cardTitle').textContent = mode === 'boss' ? 'غنيمة الزعيم' : 'ارتفع مستواك!';
@@ -305,7 +306,13 @@ function drawCards() {
 const RESUME_T = 0.8;
 function chooseCard(i) {
   const c = curCards[i];
-  if (!c || (G.state !== 'cards' && !G.cardsOpen)) return;
+  if (!c || G.cardPicked || (G.state !== 'cards' && !G.cardsOpen)) return;
+  if (c.k === 'up' && (G.ups[c.id] || 0) >= UP[c.id].max) return;
+  if (c.k === 'wup') { const w = G.weapons.find(x => x.id === c.id); if (!w || w.lvl >= 5) return; }
+  if (c.k === 'evo') { const w = G.weapons.find(x => x.id === c.id); if (!w || w.evo) return; }
+  if (c.k === 'wnew' && G.weapons.some(x => x.id === c.id)) return;
+  if (c.k === 'pact' && G.pacts[c.id]) return;
+  G.cardPicked = true;
   const p = G.p;
   if (c.k === 'up') {
     G.ups[c.id] = (G.ups[c.id] || 0) + 1;

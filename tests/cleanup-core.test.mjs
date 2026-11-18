@@ -176,9 +176,10 @@ test('cleanup core: touch joystick clamps distance and cancellation clears only 
 
 function mainRuntime() {
   const calls = [], frames = [], timers = [];
-  const G = { state: 'play', resumeT: 0, slow: 0, slowmo: false }, S = { name: 'فارس', _mig: 1 };
+  const G = { state: 'play', p: {}, resumeT: 0, slow: 0, slowmo: false }, S = { name: 'فارس', _mig: 1 };
   const boundary = { performance: { now: () => 100 }, window: {}, G, S, RESUME_T: 1,
     DUEL: { on: false }, COOP: { on: false }, frameGap: () => 0,
+    CINE: {}, resumeAddonBossIntro() {}, ASHEN_ADDONS: { clearMelee() {} },
     requestAnimationFrame: fn => frames.push(fn), setTimeout: (fn, delay) => timers.push({ fn, delay }),
     AU: { ctx: null, music: () => calls.push(['music']) }, CM: { set: key => calls.push(['track', key]), tick: () => calls.push(['cm']), prefetch: keys => calls.push(['prefetch', ...keys]) },
     refreshPlayerPenalty() { calls.push(['refreshPlayerPenalty']); return Promise.resolve(null); },

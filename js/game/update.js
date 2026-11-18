@@ -218,6 +218,7 @@ function forOrbitBlades(fn) {
   }
 }
 function update(dt) {
+  if (CINE.pending) return;
   if (typeof CINE !== 'undefined' && CINE.on) {
     bossIntroUpdate(dt); // the boss entrance: every enemy, shot and timer stays exactly where it was
     if (CINE.freeze) return;
@@ -225,6 +226,7 @@ function update(dt) {
   const p = G.p,
     cc = COOP.on && !COOP.host; // a co-op client mirrors the world (coopMirror), it doesn't run it
   G.t += dt;
+  ASHEN_ADDONS.updateMelee();
   // input → move
   let mx = 0,
     mz = 0;
@@ -324,8 +326,11 @@ function update(dt) {
   const tgt = manual ? null : nearest(p.x, p.z, 14);
   let fa = p.face;
   if (manual) fa = Math.atan2(Math.cos(mAng), Math.sin(mAng));
+  else if (S.char === 'reaper' && p.dashT > 0) fa = Math.atan2(p.dx, p.dz);
+  else if (S.char === 'reaper' && p.moving) fa = Math.atan2(mx, mz);
   else if (tgt) fa = Math.atan2(tgt.x - p.x, tgt.z - p.z);
   else if (p.moving) fa = Math.atan2(mx, mz);
+  if (PM.actor && p.moving) fa = Math.atan2(mx, mz);
   p.face += wrapAng(fa - p.face) * Math.min(1, dt * 14);
   // abilities
   const u = G.ups,
@@ -697,7 +702,7 @@ function update(dt) {
     const dx = s.x - p.x,
       dz = s.z - p.z;
     if (dx * dx + dz * dz < 0.75 && p.inv <= 0 && !p.dead) {
-      hurt(s.dmg);
+      hurt(s.dmg, s);
       s.life = 0;
       if (cc) COOP.usedES.add(s.id); // the host's copy flies on: don't let it hit us twice
     } else if (s.x * s.x + s.z * s.z > (ARENA + 8) ** 2) s.life = 0;
@@ -707,18 +712,29 @@ function update(dt) {
   // zones
   for (const z of G.zones) {
     if (z.m) continue; // a co-op client's copy of the host's zone: the host detonates it
-    z.l += dt;
+    if (z.bossCast) {
+      if (z.bossCast.owner.dead) { z.done = true; continue; }
+      z.l = z.bossCast.elapsed;
+    } else z.l += dt;
     if (z.l >= z.d) {
       z.done = true;
       if (z.f) {
         if (z.kind === 'sky') vfxSkyBolt(z.x, z.z, { w: 1.6, col: G.ups.thunderlord ? [1.3, 0.8, 1.9] : undefined });
         explode(z.x, z.z, z.r, z.dmg, false, z.kind === 'sky' ? 'elec' : 'fire');
       } else {
-        ring(z.x, z.z, 0.3, z.r, 0.3, [1, 0.3, 0.2]);
-        parts(z.x, 0.6, z.z, 14, 1, 0.4, 0.2, 9, 0.3);
-        AU.play('boom');
-        shake(0.3);
-        if (!p.dead && (z.x - p.x) ** 2 + (z.z - p.z) ** 2 < z.r * z.r) hurt(z.dmg);
+        if (z.bossCast) bossSpecialImpact(z);
+        else {
+          ring(z.x, z.z, 0.3, z.r, 0.3, [1, 0.3, 0.2]);
+          parts(z.x, 0.6, z.z, 14, 1, 0.4, 0.2, 9, 0.3);
+          AU.play('boom');
+          shake(0.3);
+        }
+        if (!p.dead && (z.bossGround ? bossSpecialContains(z, p.x, p.z) :
+          (z.x - p.x) ** 2 + (z.z - p.z) ** 2 < z.r * z.r) &&
+          (!z.bossCast || (!z.bossCast.hitPlayer && p.inv <= 0))) {
+          if (z.bossCast) z.bossCast.hitPlayer = true;
+          hurt(z.dmg, z);
+        }
         coopEvent('zb', [r1(z.x), r1(z.z), r1(z.r), Math.round(z.dmg)]); // the others check themselves
       }
     }

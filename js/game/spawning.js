@@ -1,7 +1,7 @@
 'use strict';
 /* Enemy and boss spawning, wave timing. */
 function gwave() {
-  return G.abyss ? 36 + G.depth * 6 + G.wave : G.cycle * 36 + G.stage * 6 + G.wave;
+  return G.abyss ? (STAGES.length - 1) * 6 + G.depth * 6 + G.wave : G.cycle * 36 + G.stage * 6 + G.wave;
 }
 /* ---------- balance ---------- */
 /** Enemies grow with the hero: from level 4, +4.5% health per level (cards stack up fast; without this a good
@@ -154,10 +154,10 @@ function makeBoss(k, x, z) {
     hp: hp * (G.p.enemyMul || 1),
     maxHp: hp * (G.p.enemyMul || 1),
     r: 2.1,
-    spd: [3.3, 3, 4.2, 2.6, 3.2, 3.6][k],
+    spd: [3.3, 3, 4.2, 2.6, 3.2, 3.6, 1.8][k],
     dmg: (20 + si * 5) * 1.2 * (1 + G.cycle * 0.8) * bossEase(si),
     xp: 120,
-    scale: [2.6, 2.3, 2.2, 2.5, 2.4, 2.7][k],
+    scale: [2.6, 2.3, 2.2, 2.5, 2.4, 2.7, 2.25][k],
     a1: 3,
     a2: 6,
     a3: 9,
@@ -173,9 +173,10 @@ function makeBoss(k, x, z) {
     lz: 0,
     y: 0,
   });
+  strengthenPreviewBoss(e);
   G.bossOn = true;
   G.boss = e;
-  bossMesh.geometry = GEO['boss' + k];
+  bossMesh.geometry = GEO['boss' + k] || GEO.boss0;
   bossMesh.visible = true;
   $('bossbar').hidden = false;
   $('bossbar').querySelector('span').textContent = G.bossName;

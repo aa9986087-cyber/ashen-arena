@@ -11,7 +11,6 @@ addEventListener('keydown', e => {
     if (e.code === 'KeyQ' || e.code === 'KeyE') special();
     if (e.code === 'KeyR' || e.code === 'KeyH') potion();
     if (e.code === 'Escape' || e.code === 'KeyP') pause(true);
-    if (e.code === 'KeyL' && LAB) openLab();
   } else if (G.state === 'paused' && (e.code === 'Escape' || e.code === 'KeyP')) {
     show('settings', false);
     pause(false);

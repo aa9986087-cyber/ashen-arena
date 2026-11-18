@@ -10,7 +10,7 @@ const source = file => fs.readFileSync(path.join(ROOT, file), 'utf8');
 const html = source('index.html');
 
 // Small DOM/timer/network boundaries; application functions below execute their actual sources.
-function boundary(extra = {}) {
+function boundary(extra = {}, markup = html) {
   const all = [],
     ids = new Map(),
     timers = new Map(),
@@ -142,7 +142,7 @@ function boundary(extra = {}) {
     all.push(n);
     return n;
   }
-  for (const [index, { tag, attrs }] of tags(html).entries()) {
+  for (const [index, { tag, attrs }] of tags(markup).entries()) {
     const n = element(tag);
     n.className = attrs.class || '';
     n.hidden = 'hidden' in attrs;
@@ -439,6 +439,8 @@ test('UI cleanup: pause settings and chat return to pause; menu entry returns to
 });
 
 test('UI cleanup: lab is gated, builds real tools when enabled, and labels touched runs unranked', () => {
+  const { release } = JSON.parse(source('test/modular-config.json'));
+  const preview = `test/releases/${release}`;
   const spawned = [],
     b = boundary({
       LAB: false,
@@ -453,12 +455,12 @@ test('UI cleanup: lab is gated, builds real tools when enabled, and labels touch
       rand: () => 11,
       banner() {},
       hideBoss() {},
-    });
+    }, source(preview + '/index.html'));
   const src = source('js/ui/screens.js'),
     ast = parse(src, { ecmaVersion: 'latest' });
   const show = ast.body.find(n => n.type === 'FunctionDeclaration' && n.id.name === 'show');
   b.run(src.slice(show.start, show.end));
-  b.load('js/ui/lab.js');
+  b.load(preview + '/js/ui/lab.js');
   b.ctx.G.state = 'play';
   b.ids.get('labBtn').click();
   assert.equal(b.ctx.G.state, 'play');

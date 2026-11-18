@@ -119,10 +119,10 @@ let eSrc = 0;
 /** Leap onto the player's current spot (the Black Knight's slam). Chains while e.leaps > 0. */
 function bossLeap(e, p) {
   e.st = 3;
-  e.stT = 1;
+  e.stT = e.previewCadence ? 1.42 : 1;
   e.lx = p.x;
   e.lz = p.z;
-  zone(p.x, p.z, 5, 1, e.dmg * 1.5, false);
+  zone(p.x, p.z, e.previewCadence ? 4 : 5, e.stT, e.dmg * 1.5, false);
   AU.play('boss');
 }
 /** A ring of ice bullets around the player flying inward, with an 8-bullet gap to slip through. */

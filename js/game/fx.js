@@ -33,7 +33,8 @@ function shake(v) {
   if (S.set.shake) G.shake = Math.max(G.shake, v);
 }
 let bannerT = 0;
-function banner(h, sub, dur) {
+function banner(h, sub, dur, bossMove = false) {
+  $('banner').classList.toggle('boss-move', bossMove);
   $('banner').querySelector('h2').textContent = h;
   $('banner').querySelector('p').textContent = sub || '';
   $('banner').classList.add('on');

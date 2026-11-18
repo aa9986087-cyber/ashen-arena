@@ -36,6 +36,39 @@ body.m2 #hero .tag {
   letter-spacing: 0.08em;
   animation: m2In 1.2s 0.25s cubic-bezier(0.2, 1, 0.3, 1) backwards;
 }
+@media (max-width: 640px) and (orientation: portrait) {
+  body.m2 #menu h1 {
+    font-size: clamp(46px, 13.5vw, 66px);
+  }
+  body.m2 #mPlay {
+    min-height: 76px;
+    font-size: clamp(17px, 5vw, 23px);
+    gap: 7px;
+    padding: 10px 6px;
+  }
+  body.m2 #mPlay svg {
+    flex: none;
+    width: 23px;
+    height: 23px;
+  }
+}
+@media (max-width: 640px) and (max-height: 740px) and (orientation: portrait) {
+  body.m2 #menu {
+    padding-top: calc(var(--st) + 10px);
+    gap: 6px;
+  }
+  body.m2 #menuTop {
+    gap: 6px;
+  }
+  body.m2 #menu h1 {
+    font-size: clamp(42px, 12.5vw, 54px);
+  }
+  body.m2 #mResume {
+    padding-block: 6px;
+    font-size: 16px;
+    line-height: 1.35;
+  }
+}
 @keyframes m2Molten {
   0%,
   100% {

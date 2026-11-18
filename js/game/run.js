@@ -12,6 +12,7 @@ function saveRun() {
       JSON.stringify({
         v: 1,
         char: S.char,
+        grave: graveSaveRun(),
         t: G.t,
         kills: G.kills,
         coins: G.coins,
@@ -85,7 +86,7 @@ function resumeRun() {
     lvl: Math.max(1, o.lvl | 0),
     xp: +o.xp || 0,
     pending: o.pending | 0,
-    stage: o.stage | 0,
+    stage: o.abyss ? STAGES.length - 1 : o.stage | 0,
     wave: clamp(o.wave | 0, 0, 5),
     waveT: +o.waveT || 0,
     sk: o.sk | 0,
@@ -102,6 +103,7 @@ function resumeRun() {
     potCd: +o.potCd || 0,
     pots: clamp(o.pots | 0, 0, POT_MAX),
   });
+  graveRestoreRun(o.grave);
   G.need = xpNeed(G.lvl);
   G.weapons = o.weapons
     .filter(w => WEP[w.id])

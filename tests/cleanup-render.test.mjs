@@ -39,6 +39,7 @@ function weaponContext() {
       },
     },
     PM: { wp: new Group(), char: 'knight' },
+    ASHEN_ADDONS: { weapon: () => false },
     S: { char: 'knight' }, G: { weapons: [{ id: 'sword', lvl: 1 }] },
     CHARS: { knight: { wep: 'sword' } },
     wTier: lvl => lvl >= 5 ? 2 : lvl >= 3 ? 1 : 0,
@@ -99,9 +100,12 @@ test('weaponModel retains window[name] duel weapons and missing-model procedural
 });
 
 test('living menu remains driven by dt and preserves hash/menu guards and camera positioning', () => {
-  const events = new Map(), classes = new Set(), positions = [], effects = [];
+  const events = new Map(), classes = new Set(), positions = [], effects = [], bosses = [];
   const c = vm.createContext({
-    location: { hash: '' }, G: { state: 'menu', p: { swing: 0 } }, ANIM: {}, W: 390, H: 844,
+    location: { hash: '' }, G: { state: 'menu', p: { swing: 0 } }, W: 390, H: 844,
+    THREE: { PointLight: class { position = { set() {} }; } }, scene: { add() {} },
+    loadBossActor: kind => bosses.push(kind),
+    ACTOR_MODELS: { presentMenuKnight() {}, releaseMenuKnight: () => bosses.push('release') },
     Math: Object.assign(Object.create(Math), { random: () => 1 }),
     rand: (a, b) => (a + b) / 2, VT: { smoke: 7 },
     vfxP: p => effects.push(p), vfxFlame: () => effects.push('flame'),
@@ -115,10 +119,12 @@ test('living menu remains driven by dt and preserves hash/menu guards and camera
   assert.equal(run(c, 'M2.t'), 0.25);
   assert.equal(run(c, 'M2.swingT'), 1.75);
   assert.equal(effects.find(p => p.t === 7).smoke, 1);
-  assert.deepEqual(positions.at(-1), [0, 1.7, -4]);
+  assert.deepEqual(bosses, [2]);
+  assert.deepEqual(positions.at(-1), [0, 2.22, -4]);
   c.G.state = 'paused';
   assert.equal(run(c, 'menu2Frame(0.5)'), false);
   assert.equal(run(c, 'M2.t'), 0.25);
+  assert.deepEqual(bosses, [2, 'release']);
   c.G.state = 'menu'; c.location.hash = '#menu1'; events.get('hashchange')();
   assert.equal(classes.has('m2'), false);
   assert.equal(run(c, 'menu2Frame(0.5)'), false);

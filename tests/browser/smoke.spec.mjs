@@ -29,6 +29,7 @@ const test = base.extend({
       };
       // Use each targeted device in an isolated browser, never its real storage or production API.
       const profile = structuredClone(fixtureProfile);
+      const officialCampaign = testInfo.title.startsWith('official:');
       profile.pid = testInfo.project.name === 'mobile' ? 'fixture-penalty-two' : 'fixture-penalty-one';
       profile.pkey = "local-browser-fixture-key";
       profile.coins = 9000;
@@ -37,6 +38,11 @@ const test = base.extend({
       profile.tree = Object.fromEntries(rules.json('TREE.flatMap(b=>b.nodes.map(n=>n.id))').map(id=>[id,1]));
       profile.perm = rules.json('Object.fromEntries(Object.entries(PERM).map(([k,v])=>[k,v.max]))');
       profile.stats = {...profile.stats,bestLvl:67,kills:76650,bosses:102,bestTime:2403};
+      if (officialCampaign) {
+        profile.tree = {};
+        profile.perm = {};
+        profile.dev = 1; // A stored developer flag must not restore the old tools.
+      }
       if (testInfo.title.startsWith('preview:')) {
         // The pinned preview can have an older bulletin than production.
         profile.newsSeen = previewLatestNews;
@@ -72,7 +78,7 @@ const test = base.extend({
         if (url.pathname === '/rest/v1/rpc/get_player_penalty') {
           const body = request.postDataJSON();
           await route.fulfill({status:200,contentType:'application/json',
-            body:JSON.stringify(body.p_pid === profile.pid && body.p_key === profile.pkey
+            body:JSON.stringify(!officialCampaign && body.p_pid === profile.pid && body.p_key === profile.pkey
               ? {id:'2026-11-17-fair-play',skill_nodes:4,shop_levels:4,heroes:3,reset_coins:true} : null)});
           return;
         }
@@ -287,6 +293,60 @@ test('screens, penalties, backup restore, voice and real play/movement/pause/sav
   await checkOldPenaltyBackup(page);
 });
 
+test('official: Black Knight menu and Warden special without developer tools', async ({ page }, testInfo) => {
+  test.setTimeout(120000);
+  await page.goto('/#lab');
+  await expect.poll(() => page.evaluate(() => typeof window.__game)).toBe('object');
+  await page.evaluate(() => window.__game.ready);
+  await expect(page.locator('#devBox, #lab, #mLab, #labBtn')).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => {
+    const knight = scene.getObjectByName('ashenMenuBlackKnight');
+    return knight?.visible && knight.userData.actor === 'boss2';
+  }), { timeout: 20000 }).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('black-knight-menu.png') });
+  await page.locator('#menu [data-go="chars"]').click();
+  const warden = page.locator('#charGrid .item').filter({ has: page.locator('img[alt="حارس العهد"]') });
+  await warden.getByRole('button', { name: /افتح/ }).click();
+  await page.locator('#chars [data-go="menu"]').click();
+  await page.locator('#menu [data-go="shop"]').click();
+  await expect(page.locator('#graveShop')).toBeVisible();
+  await expect(page.locator('#graveDemo')).toHaveCount(0);
+  await page.locator('#shop [data-go="menu"]').click();
+  await page.locator('#mPlay').click();
+  await expect.poll(() => page.evaluate(() => G.state === 'play' && !!PM.warden)).toBe(true);
+  expect(await page.evaluate(() => scene.getObjectByName('ashenMenuBlackKnight'))).toBeUndefined();
+  await expect(page.locator('#graveMeter')).toBeHidden();
+  const stage = await page.evaluate(() => ({
+    names: STAGES.map(s => s.n),
+    trees: decor.find(({ mesh }) => mesh.name === 'arena-map-oak')?.mesh.count,
+  }));
+  expect(stage.names).toHaveLength(8);
+  expect(stage.names[6]).toBe('مقبرة العهود');
+  expect(stage.trees).toBeGreaterThan(0);
+  await page.evaluate(() => { G.noWaves = true; G.enemies.length = 0; });
+  if (await page.evaluate(() => IN.touch)) await page.locator('#bSpec').tap();
+  else await page.keyboard.press('KeyQ');
+  await expect.poll(() => page.evaluate(() => !!wardenState().scar)).toBe(true);
+  await expect(page.locator('#hud')).not.toContainText('قفزة وضربة أرضية');
+  await page.locator('#pauseBtn').click();
+  await page.locator('#pSave').click();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem(RUN_KEY)).char)).toBe('reaper');
+  await page.locator('#mResume').click();
+  await expect.poll(() => page.evaluate(() => G.state), { timeout: 15000 }).toBe('play');
+  await page.evaluate(async () => {
+    await loadBossActor(6);
+    G.noWaves = true;
+    G.god = true;
+    G.stage = 5;
+    nextStage();
+    spawnBoss();
+  });
+  await expect.poll(() => page.evaluate(() => {
+    const body = scene.getObjectByName('ashenActor-boss6');
+    return G.boss.kind === 6 && Number.isFinite(G.boss.scale) && !!body?.visible;
+  }), { timeout: 30000 }).toBe(true);
+});
+
 // Controlled combat fixture, real preview bundle/AI/damage/rendering; every production request remains blocked.
 test('preview: overlapping shamans remain killable in a long solo run and after save/resume', async ({page}) => {
   test.setTimeout(120000);
@@ -393,12 +453,11 @@ test('preview: gravebound purchases, reaper touch special, save/resume and seven
   await expect.poll(()=>page.evaluate(()=>G.state),{timeout:15000}).toBe('play');
   expect(await page.evaluate(()=>G.grave.relic)).toBe('lantern');
   await page.evaluate(()=>{G.god=true;G.noWaves=true;G.enemies=[];G.picks=[];G.pending=0;G.stage=5;nextStage();spawnBoss();});
-  await expect.poll(()=>page.evaluate(()=>CINE.on),{timeout:45000}).toBe(false);
-  await expect(page.locator('#bossbar')).toContainText('حفّار القبور');
-  expect(await page.evaluate(() => {
+  await expect.poll(() => page.evaluate(() => {
     const body = scene.getObjectByName('ashenActor-boss6') || graveBossModel;
-    return G.stage === 6 && G.boss.kind === 6 && body?.visible;
-  })).toBe(true);
+    return !CINE.pending && !CINE.on && G.stage === 6 && G.boss.kind === 6 && !!body?.visible;
+  }), { timeout: 45000 }).toBe(true);
+  await expect(page.locator('#bossbar')).toContainText('حفّار القبور');
   await page.evaluate(()=>{G.boss.x=G.p.x;G.boss.z=G.p.z-4;G.boss.graveDig=9;G.boss.graveSlam=5;bannerT=0;$('banner').classList.remove('on');$('count').hidden=true;G.texts=[];});
   await expect.poll(()=>page.evaluate(()=>Math.abs((scene.getObjectByName('ashenActor-boss6') || graveBossModel).position.z - G.boss.z))).toBeLessThan(1);
   await page.screenshot({path:testInfo.outputPath('gravekeeper.png')});
