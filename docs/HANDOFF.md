@@ -106,10 +106,10 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-18T06:14:45.767Z.
-- مرجع العمل: [`975f8721f8858d03bb49af0baa897f5f0668933d`](https://github.com/aa9986087-cyber/ashen-arena/commit/975f8721f8858d03bb49af0baa897f5f0668933d).
-- آخر تعديل: تجربة v36 لخامات الساحات وبطاقات إعدادات الجودة.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44249022320/attempts/1).
+- وقت التسجيل (UTC): 2026-11-18T08:25:54.650Z.
+- مرجع العمل: [`ea545d2711a39ff27b4b119c63a756f71a615ad3`](https://github.com/aa9986087-cyber/ashen-arena/commit/ea545d2711a39ff27b4b119c63a756f71a615ad3).
+- آخر تعديل: نشر جرافيكس v36 والعرض الأفقي وإصلاح تفعيل أدوات المطوّر.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44266191464/attempts/1).
 - بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
 - مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
@@ -117,28 +117,28 @@
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`a3dea790b280`: 269 ملفًا.
+مقارنةً بـ`288ce4b8b96d`: 22 ملفًا.
+- `css/base.css`
+- `css/hud.css`
+- `css/screens.css`
 - `docs/HANDOFF.md`
-- `test/releases/graphics-20261118-v36/.nojekyll`
-- `test/releases/graphics-20261118-v36/assets/audio/duel/block0.mp3`
-- `test/releases/graphics-20261118-v36/assets/audio/duel/block1.mp3`
-- `test/releases/graphics-20261118-v36/assets/audio/duel/block2.mp3`
-- `test/releases/graphics-20261118-v36/assets/audio/duel/break0.mp3`
-- `test/releases/graphics-20261118-v36/assets/audio/duel/clash0.mp3`
-- `test/releases/graphics-20261118-v36/assets/audio/duel/clash1.mp3`
-- `test/releases/graphics-20261118-v36/assets/audio/duel/clash2.mp3`
-- `test/releases/graphics-20261118-v36/assets/audio/duel/hit0.mp3`
-- `test/releases/graphics-20261118-v36/assets/audio/duel/hit1.mp3`
-- `test/releases/graphics-20261118-v36/assets/audio/duel/hit2.mp3`
-- وبقية 257 ملفًا في رابط commit أعلاه.
+- `index.html`
+- `js/content/maps/arena-maps.js`
+- `js/core/config.js`
+- `js/core/save.js`
+- `js/duel/duel-lobby.js`
+- `js/input.js`
+- `js/render/atmosphere.js`
+- `js/render/renderer.js`
+- وبقية 10 ملفًا في رابط commit أعلاه.
 
 ### أحدث خمس دفعات على main
 
+- ea545d2 نشر جرافيكس v36 والعرض الأفقي وإصلاح تفعيل أدوات المطوّر
+- 288ce4b docs: تحديث آلي لملف التسليم
 - 975f872 تجربة v36 لخامات الساحات وبطاقات إعدادات الجودة
 - a3dea79 docs: تحديث آلي لملف التسليم
 - 26ebe0a تجربة v35 لجودة الرسم والعرض الأفقي
-- 3647f48 docs: تحديث آلي لملف التسليم
-- 8c8965d نشر v34 رسميًا مع حارس العهد وساحات الزعماء والقائمة الجديدة
 
 الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
