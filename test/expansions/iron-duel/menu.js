@@ -3,7 +3,7 @@
 function forgeBuildMenu() {
   const wrap = $('duelMenu').querySelector('.wrap');
   const headings = [...wrap.querySelectorAll(':scope > h4')];
-  wrap.querySelector('.head h2').textContent = 'مِصهر الرماد';
+  wrap.querySelector('.head h2').textContent = 'حلبة النغالة';
   const art = el('div', 'forgeArt');
   art.append(el('span', '', 'مبارزة ساحة الرماد'), el('strong', '', 'الفولاذ يحسمها'), el('p', '', 'حرّك قدمك قبل تضرب. قرّب النصل كفاية، وخل لك نَفَس للصدّ.'));
   wrap.querySelector('.head').after(art);
@@ -42,6 +42,9 @@ function forgeBuildMenu() {
   gore.append(el('span', '', 'مؤثرات الإصابة'), gorePicker);
   $('dmTrain').before(gore);
   $('dmTrain').textContent = 'ابدأ تدريب المبارزة';
+  wrap.querySelector('.head + .forgeArt')?.setAttribute('aria-label', 'حلبة النغالة');
+  const weaponLabel = $('dmWeapons').previousElementSibling;
+  if (weaponLabel) weaponLabel.textContent = 'ترسانة الحلبة';
   $('ffaTrain').textContent = 'تدريب جماعي · ضد ثلاثة خصوم';
 
   const online = el('section', 'forgeOnline'), row = el('div', 'forgeRoomRow');
@@ -74,7 +77,7 @@ function forgeBuildMenu() {
     }
     host.disabled = join.disabled = true;
     const kind = local ? 'local' : 'live';
-    return duelStartOnline('iron-' + kind + '-' + id, mine, 'خصم المبارزة')
+    return duelStartOnline('iron-v2-' + kind + '-' + id, mine, 'خصم المبارزة')
       .finally(() => { host.disabled = join.disabled = false; });
   };
   host.onclick = async () => {

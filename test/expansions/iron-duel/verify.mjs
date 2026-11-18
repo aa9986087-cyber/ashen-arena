@@ -33,7 +33,7 @@ try {
     window.BroadcastChannel = class extends Original {
       constructor(name) { super(name); this.nameForTest = name; }
       postMessage(data) {
-        if (this.nameForTest.startsWith('ashen-iron-v1:duel-iron-local-')) {
+        if (this.nameForTest.startsWith('ashen-iron-v2:duel-iron-v2-local-')) {
           const drop = window.__ironDrop;
           if (drop?.has(data.e)) { drop.delete(data.e); return; }
         }
@@ -52,12 +52,17 @@ try {
       document.getElementById('news').hidden = true;
     });
     await p.locator('#mDuel').tap();
-    await p.getByRole('heading', {name:'مِصهر الرماد'}).waitFor();
+    await p.getByRole('heading', {name:'حلبة النغالة'}).waitFor();
     return p;
   };
 
   const p1 = await page();
-  await p1.getByRole('button',{name:'نصل السرو'}).tap();
+  assert.equal(await p1.locator('.forgeWeaponCard').count(), 13);
+  await p1.getByRole('button',{name:'طعن',exact:true}).tap();
+  assert.equal(await p1.locator('.forgeWeaponCard').count(), 3);
+  await p1.getByRole('button',{name:/الخنجر الطويل/}).tap();
+  await p1.waitForFunction(() => Array.from(document.querySelectorAll('.forgeWeaponVisual')).every(n => n.style.backgroundImage));
+  await p1.getByRole('button',{name:'مقاتل الحلبة',exact:true}).tap();
   await p1.locator('#dmTrain').tap();
   await p1.waitForFunction(() => DUEL.on && DUEL.ready && DUEL.round===1);
   await p1.evaluate(() => {
@@ -68,8 +73,16 @@ try {
   });
   assert.equal(await p1.evaluate(() => DUEL.phase),'fight');
   console.log('Training loaded and the first round started');
-  assert.equal(await p1.evaluate(() => DUEL.me.forgeStyle), 1);
-  assert.equal(await p1.evaluate(() => DUEL.me.forgeArmor.materials.steel.color.getHex()), 0x2d5550);
+  assert.equal(await p1.evaluate(() => DUEL.me.forgeStyle), 3);
+  assert.equal(await p1.evaluate(() => DUEL.me.wpId), 'dirk');
+  assert.ok(await p1.evaluate(() => DUEL.me.forgeFigure.pieces.every(p => p.isSkinnedMesh && p.visible)));
+  assert.ok(await p1.evaluate(() => DUEL.me.forgeFigure.legacy.every(p => !p.visible)));
+  assert.ok(await p1.evaluate(() => DUEL.me.sword.getObjectByName('dirk')));
+  const weapons = await p1.evaluate(() => DUEL_WEAPON_IDS.map(id => {
+    DUEL.me.setWeapon(id);
+    return DUEL.me.sword.name === id && forgeReadBlade(DUEL.me).every(v => v.toArray().every(Number.isFinite));
+  }));
+  assert.ok(weapons.every(Boolean));
   const results = await p1.evaluate(() => {
     DUEL.bot = null;
     DUEL.view = 'tps';
@@ -86,7 +99,7 @@ try {
       for(let i=0;i<68;i++){a.update(1/120,d);d.update(1/120,a);}
       return d.hp;
     };
-    const near=swing(1.15), far=swing(3.4);
+    const near=swing(1.15), marks=d.forgeInjuries?.length || 0, far=swing(3.4);
     const drops=GORE.drops.length;
     setup(3);
     a.want.mz=1;
@@ -95,12 +108,12 @@ try {
     for(let i=0;i<18;i++)a.update(1/60,d);
     const moving=a.vz;
     a.want.mz=0;a.update(1/60,d);
-    return {near,far,drops,first,moving,coasting:a.vz};
+    return {near,far,drops,marks,first,moving,coasting:a.vz};
   });
   console.log('Contact and movement',results);
   assert.ok(results.near < 100, JSON.stringify(results));
   assert.equal(results.far, 100);
-  assert.ok(results.drops>0);
+  assert.ok(results.drops>0 && results.marks>0);
   assert.ok(results.first>0 && results.first<results.moving && results.coasting>0);
   if (output) await p1.screenshot({path:output});
   await p1.evaluate(() => duelExit());

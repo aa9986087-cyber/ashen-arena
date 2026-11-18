@@ -44,3 +44,32 @@
 #dForgeRoom:empty { display: none; }
 #dForgeGrip.tired { color: #ff8d67; }
 #dAtk, #dBlock { touch-action: none; }
+
+#dmWeapons { display: block; }
+.forgeWeaponTabs { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 7px; margin-bottom: 8px; }
+.forgeWeaponTab {
+  border: 1px solid #544039; border-radius: 8px; min-height: 38px; color: #dbcabe;
+  font: 700 14px var(--ui, sans-serif); background: #201c22;
+}
+.forgeWeaponTab.on { color: #ffe2b4; border-color: #b78955; background: #493029; }
+.forgeWeaponCards { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; max-height: min(49vh, 410px); overflow: auto; overscroll-behavior: contain; padding: 1px 1px 6px; }
+.forgeWeaponCard {
+  min-width: 0; border: 1px solid #443a40; padding: 0 7px 8px; background: #171921; color: #ecdcc8; border-radius: 10px;
+  overflow: hidden; text-align: start; display: grid; gap: 4px; font: 600 12px var(--ui, sans-serif);
+}
+.forgeWeaponCard.on { border-color: #d8aa74; background: #30252b; }
+.forgeWeaponVisual {
+  height: 66px; display: grid; place-items: center; font-size: 24px; background-position: center; background-repeat: no-repeat;
+  background-size: min(125px,100%) auto; background-color: #18161d; border-radius: 7px; margin: 4px -3px 0;
+}
+.forgeWeaponDetail { display: grid; gap: 1px; }
+.forgeWeaponDetail b { color: #f5d1a5; }
+.forgeWeaponDetail small { color: #c6bbaf; padding-bottom: 3px; }
+.forgeWeaponStats { display: grid; gap: 3px; }
+.forgeWeaponStat { display: grid; grid-template-columns: 40px 1fr; align-items: center; font-size: 10px; gap: 5px; }
+.forgeWeaponStat i { display: block; height: 3px; border-radius: 2px; background: linear-gradient(to left,#b88157 var(--rate), #3b333c var(--rate)); }
+.forgeStyles { grid-template-columns: repeat(5,minmax(0,1fr)); }
+@media (max-width: 510px) {
+  .forgeStyles { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .forgeWeaponCards { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}

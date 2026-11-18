@@ -4,10 +4,12 @@ const FORGE_STYLES = [
   { id: 'ember', name: 'حارس الفحم', title: 'فولاذ أسود ونحاس محروق', steel: 0x393c45, edge: 0xb37c43, cloth: 0x331f24, lens: 0xffb06c },
   { id: 'cypress', name: 'نصل السرو', title: 'درع زمردي بصفائح فضية', steel: 0x2d5550, edge: 0x9daeae, cloth: 0x143734, lens: 0x93d5bc },
   { id: 'copper', name: 'جلاد النحاس', title: 'خوذة مقفلة وصفائح نحاسية', steel: 0x673632, edge: 0xc49a58, cloth: 0x462724, lens: 0xff9959 },
+  { id: 'pit', name: 'مقاتل الحلبة', title: 'جذع مكشوف وسروال فحمي يوضح أثر الضربة', steel: 0x593629, edge: 0xc48c67, cloth: 0x33282e, lens: 0xe4a97e, skin: 0xa36649, trousers: 0x342e36, belt: 0x584032 },
+  { id: 'gate', name: 'حارس البوابة', title: 'سترة خفيفة بلا أكمام وسروال جلدي', steel: 0x526052, edge: 0xc1a378, cloth: 0x25342f, lens: 0x8cb59f, skin: 0xc48e68, tunic: 0x313d34, trousers: 0x504033, belt: 0x745742 },
 ];
 function forgeStyle() {
   const idx = FORGE_STYLES.findIndex(style => style.id === S.forgeStyle);
-  return Math.max(0, idx);
+  return idx < 0 ? 3 : idx;
 }
 
 function forgeDress(f, id) {
@@ -21,6 +23,8 @@ function forgeDress(f, id) {
   f.forgeArmor.horns.visible = id === 2;
   f.forgeArmor.crest.visible = id === 1;
   f.forgeArmor.visor.scale.set(id === 1 ? 0.94 : 1, id === 2 ? 1.23 : 1, 1);
+  forgeStyleFigure(f, style);
+  for (const part of f.fpHide) part.visible = forgeFighterVisible(f, part);
 }
 
 function forgeArmor(f) {
@@ -54,6 +58,7 @@ function forgeArmor(f) {
     part.position.add(new THREE.Vector3(dx, dy, dz));
     f.root.updateMatrixWorld(true);
     bone.attach(part);
+    part.userData.forgeWear = 'armored';
     f.fpHide.push(part);
   };
 

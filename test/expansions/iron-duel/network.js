@@ -1,6 +1,6 @@
 'use strict';
 
-const FORGE_VERSION = 1;
+const FORGE_VERSION = 2;
 const FORGE_STATES = new Set(['idle','block','light','heavy','kick','dodge','hit','knock','kicked','stagger','dead']);
 const FORGE_RESULTS = new Set(['hit','riposte','combo','exec','kick','kickbreak','block','parry','break','miss','none','clash']);
 const forgeInt = (x, min, max) => Number.isSafeInteger(x) && x >= min && x <= max;
