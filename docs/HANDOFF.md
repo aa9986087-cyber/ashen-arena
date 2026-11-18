@@ -92,39 +92,39 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-18T04:14:13.784Z.
-- مرجع العمل: [`ddc6955c64477c650ad7289c1a2fbd4dfa821da6`](https://github.com/aa9986087-cyber/ashen-arena/commit/ddc6955c64477c650ad7289c1a2fbd4dfa821da6).
-- آخر تعديل: تجربة v31 للساحات الثماني بديكور مفتوح الترخيص.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44235078994/attempts/1).
+- وقت التسجيل (UTC): 2026-11-18T04:53:01.347Z.
+- مرجع العمل: [`a0d31b926dd35443431942c4ddd9d669282b4b72`](https://github.com/aa9986087-cyber/ashen-arena/commit/a0d31b926dd35443431942c4ddd9d669282b4b72).
+- آخر تعديل: تجربة v33 تعيد أحجام الأشجار الأصلية.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44239698261/attempts/1).
 - بوابة check: **فشل**؛ الاختبارات السريعة: **ناجح**.
 - مسار الفحص: mobile؛ متصفح الجوال: **فشل**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
-- إصدار التجربة المسجل: `clean-20261118-v31`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
+- إصدار التجربة المسجل: `clean-20261118-v33`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`54ad1a602cd3`: 248 ملفًا.
+مقارنةً بـ`705f62bafa80`: 244 ملفًا.
 - `docs/HANDOFF.md`
-- `test/expansions/arena-maps/SOURCES.md`
 - `test/expansions/arena-maps/arena-maps.js`
-- `test/expansions/arena-maps/prepare-props.py`
-- `test/expansions/arena-maps/props.js`
 - `test/index.html`
 - `test/modular-config.json`
-- `test/releases/clean-20261118-v31/app.js`
-- `test/releases/clean-20261118-v31/app.min.js`
-- `test/releases/clean-20261118-v31/assets/audio/duel/block0.mp3`
-- `test/releases/clean-20261118-v31/assets/audio/duel/block1.mp3`
-- `test/releases/clean-20261118-v31/assets/audio/duel/block2.mp3`
-- وبقية 236 ملفًا في رابط commit أعلاه.
+- `test/releases/clean-20261118-v33/app.js`
+- `test/releases/clean-20261118-v33/app.min.js`
+- `test/releases/clean-20261118-v33/assets/audio/duel/block0.mp3`
+- `test/releases/clean-20261118-v33/assets/audio/duel/block1.mp3`
+- `test/releases/clean-20261118-v33/assets/audio/duel/block2.mp3`
+- `test/releases/clean-20261118-v33/assets/audio/duel/break0.mp3`
+- `test/releases/clean-20261118-v33/assets/audio/duel/clash0.mp3`
+- `test/releases/clean-20261118-v33/assets/audio/duel/clash1.mp3`
+- وبقية 232 ملفًا في رابط commit أعلاه.
 
 ### أحدث خمس دفعات على main
 
+- a0d31b9 تجربة v33 تعيد أحجام الأشجار الأصلية
+- 705f62b تجربة v32 لتصغير ديكور الساحات ووضوح الرؤية
+- 6e58957 docs: تحديث آلي لملف التسليم
 - ddc6955 تجربة v31 للساحات الثماني بديكور مفتوح الترخيص
 - 54ad1a6 docs: تحديث آلي لملف التسليم
-- 824c971 تجربة v30 لتوازن إيقاع هجمات الزعماء
-- c040587 docs: تحديث آلي لملف التسليم
-- 4da3f52 تجربة v29 للجنرال الحديدي وبوق القصف
 
 ابدأ بمراجعة سجل الفحوص لهذا المرجع؛ لا تفترض نجاح التعديل أو نشره.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
