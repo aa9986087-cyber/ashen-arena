@@ -2,12 +2,17 @@
 
 const FORGE_ATTACKS = new Set(['light', 'heavy', 'kick']);
 const FORGE_ZONES = [
-  ['head', 'neck_01', 'Head', 0.14, 1.24],
-  ['body', 'spine_01', 'neck_01', 0.23, 1],
-  ['armR', 'upperarm_r', 'hand_r', 0.12, 0.82],
-  ['armL', 'upperarm_l', 'hand_l', 0.12, 0.82],
-  ['legR', 'thigh_r', 'calf_r', 0.15, 0.76],
-  ['legL', 'thigh_l', 'calf_l', 0.15, 0.76],
+  ['head', 'neck_01', 'Head', .12, 1.27, 'Head'],
+  ['body', 'spine_01', 'neck_01', .225, 1, 'spine_02'],
+  ['body', 'pelvis', 'spine_01', .18, .85, 'pelvis'],
+  ['armR', 'upperarm_r', 'lowerarm_r', .091, .83, 'upperarm_r'],
+  ['armR', 'lowerarm_r', 'hand_r', .075, .76, 'lowerarm_r'],
+  ['armL', 'upperarm_l', 'lowerarm_l', .091, .83, 'upperarm_l'],
+  ['armL', 'lowerarm_l', 'hand_l', .075, .76, 'lowerarm_l'],
+  ['legR', 'thigh_r', 'calf_r', .132, .83, 'thigh_r'],
+  ['legR', 'calf_r', 'foot_r', .092, .77, 'calf_r'],
+  ['legL', 'thigh_l', 'calf_l', .132, .83, 'thigh_l'],
+  ['legL', 'calf_l', 'foot_l', .092, .77, 'calf_l'],
 ];
 const FORGE_STEP = 1 / 120;
 const forgeAxis = new THREE.Vector3();
@@ -19,10 +24,10 @@ const forgeRootAxis = new THREE.Vector3(0, 0, 1);
 function forgeRig(f) {
   if (!f.forgeRig) {
     // Resolve once, after the loaded animation rig is available.
-    f.forgeRig = FORGE_ZONES.flatMap(([key, from, to, radius, power]) => {
+    f.forgeRig = FORGE_ZONES.flatMap(([key, from, to, radius, power, marker]) => {
       const a = goreBone(f, from), b = goreBone(f, to);
       if (!a || !b) return [];
-      return [{ key, a, b, radius, power, p: new THREE.Vector3(), q: new THREE.Vector3() }];
+      return [{ key, a, b, radius, power, bone: goreBone(f, marker) || b, cut: GORE_PARTS[key]?.bone === from ? GORE_PARTS[key].bit : 0, p: new THREE.Vector3(), q: new THREE.Vector3() }];
     });
   }
   return f.forgeRig;
@@ -84,7 +89,8 @@ function forgeManual(f) {
 
 function forgeWeaponPose(f, dt) {
   if (!f.hand || f.armless || !f.sword?.visible) return;
-  if (f.act !== 'light' && f.act !== 'heavy') {
+  const guard = f.act === 'block';
+  if (f.act !== 'light' && f.act !== 'heavy' && !guard) {
     f.forgeMotion = null;
     return;
   }
@@ -92,19 +98,19 @@ function forgeWeaponPose(f, dt) {
     f.forgeGripSword = f.sword;
     f.forgeGrip = f.sword.quaternion.clone().invert();
   }
-  const M = f.M[f.act], heavy = f.act === 'heavy', thrust = f.wp.thrust;
+  const M = f.M[f.act] || f.M.light, heavy = f.act === 'heavy', thrust = f.wp.thrust;
   const gesture = f.forgeGesture;
   const sign = f.forgeDirection || (!heavy && f.combo % 2 === 0 ? -1 : 1);
   const ramp = clamp((f.t - M.hitFrom + .11) / (M.hitTo - M.hitFrom + .04), 0, 1);
   const sweep = 1 - 2 * ramp;
-  const yaw = gesture ? gesture.x * 1.95 : thrust ? sign * sweep * .28 : sign * sweep * (heavy ? .91 : 1.30);
-  const pitch = gesture ? gesture.y * 1.12 + .08 : thrust ? .15 : heavy ? .98 - 1.33 * ramp : .36 - .58 * ramp;
-  const forward = gesture ? .54 + .08 * (1 - Math.abs(gesture.x)) : thrust ? .36 + .31 * Math.sin(ramp * Math.PI) : .46 + .15 * Math.sin(ramp * Math.PI);
+  const yaw = guard ? -.88 : gesture ? gesture.x * 1.95 : thrust ? sign * sweep * .28 : sign * sweep * (heavy ? .91 : 1.30);
+  const pitch = guard ? .68 : gesture ? gesture.y * 1.12 + .08 : thrust ? .15 : heavy ? .98 - 1.33 * ramp : .36 - .58 * ramp;
+  const forward = guard ? .40 : gesture ? .54 + .08 * (1 - Math.abs(gesture.x)) : thrust ? .36 + .31 * Math.sin(ramp * Math.PI) : .46 + .15 * Math.sin(ramp * Math.PI);
   const state = f.forgeMotion || (f.forgeMotion = { pose: [sign * (thrust ? .22 : .94), heavy ? .75 : .28, .45],
     speed: [0, 0, 0], clock: 0, recoil: 0 });
   state.recoil = Math.max(0, state.recoil - dt);
   const stopped = state.recoil > 0;
-  forgeDrive(state, stopped ? [state.pose[0], state.pose[1], .30] : [yaw, pitch, forward], f.wp.mass, dt);
+  forgeDrive(state, stopped ? [state.pose[0], state.pose[1], .30] : [yaw, pitch, forward], f.wp.mass * (1 + forgePenalty(f, 'armR') * .9), dt);
   const [angle, rise, extension] = state.pose;
   const spine = goreBone(f, 'spine_01');
   if (spine) {
@@ -130,7 +136,7 @@ function forgeWeaponPose(f, dt) {
   f.hand.parent.getWorldQuaternion(forgeLocal).invert();
   f.hand.quaternion.copy(forgeLocal.multiply(forgeWorld).multiply(f.forgeGrip));
 
-  if ((heavy || thrust) && !(f.cuts & 8)) {
+  if ((heavy || thrust) && !(f.cuts & GORE_PARTS.armL.bit) && forgePenalty(f, 'armL') < .6) {
     const support = goreBone(f, 'hand_l');
     if (support) {
       const handle = f.sword.getWorldPosition(new THREE.Vector3()).addScaledVector(forgeAxis, -.12);
@@ -154,10 +160,13 @@ function forgeFootwork(f, vx, vz, dt) {
   const mass = f.wp?.mass || 1;
   const accelerating = Math.hypot(vx, vz) > Math.hypot(f.vx || 0, f.vz || 0);
   const rate = (accelerating ? 8.1 : 12.8) / mass;
+  const injury = Math.max(forgePenalty(f, 'legL'), forgePenalty(f, 'legR'));
   const grip = 1 - Math.exp(-rate * dt);
+  vx *= 1 - injury * .43;
+  vz *= 1 - injury * .43;
   f.vx = (f.vx || 0) + (vx - (f.vx || 0)) * grip;
   f.vz = (f.vz || 0) + (vz - (f.vz || 0)) * grip;
-  if (f.act === 'heavy' && f.t >= f.M.heavy.hitFrom && f.t <= f.M.heavy.hitTo) {
+  if (f.act === 'heavy' && f.t >= f.M.heavy.hitFrom && f.t <= f.M.heavy.hitTo && Math.hypot(f.vx, f.vz) > .25) {
     // An attack commits the feet in one direction, followed by recovery.
     return [f.vx + Math.sin(f.face) * 0.78 / mass, f.vz + Math.cos(f.face) * 0.78 / mass];
   }
@@ -181,12 +190,10 @@ function forgeClosest(p, q, a, b) {
   const u = q.clone().sub(p), v = b.clone().sub(a), w = p.clone().sub(a);
   const aa = u.dot(u), bb = u.dot(v), cc = v.dot(v), dd = u.dot(w), ee = v.dot(w);
   const det = aa * cc - bb * bb;
-  let s = aa > 1e-8 && cc > 1e-8 && det > 1e-8 ? clamp((bb * ee - cc * dd) / det, 0, 1) : 0;
-  let t = cc > 1e-8 ? (bb * s + ee) / cc : 0;
-  if (t < 0 || t > 1 || cc <= 1e-8) {
-    t = clamp(t, 0, 1);
-    if (aa > 1e-8) s = clamp((bb * t - dd) / aa, 0, 1);
-  }
+  let s = det > 1e-8 ? clamp((bb * ee - cc * dd) / det, 0, 1) : 0;
+  let t = cc > 1e-8 ? clamp((bb * s + ee) / cc, 0, 1) : 0;
+  if (aa > 1e-8) s = clamp((bb * t - dd) / aa, 0, 1);
+  if (cc > 1e-8) t = clamp((bb * s + ee) / cc, 0, 1);
   const x = p.clone().addScaledVector(u, s), y = a.clone().addScaledVector(v, t);
   return { gap: x.distanceToSquared(y), x, y, s };
 }
@@ -200,15 +207,11 @@ function forgeReadBlade(f) {
 }
 
 function forgeContact(f, o, sweep, blade, strike, dt) {
-  if (strike === 'kick') {
-    const dx = o.x - f.x, dz = o.z - f.z;
-    return Math.hypot(dx, dz) < DM.kick.reach &&
-      Math.abs(wrapAng(Math.atan2(dx, dz) - f.face)) < DM.kick.arc ? {} : null;
-  }
   if (!blade) return null;
+  const boot = strike === 'kick';
   if (Math.hypot(o.x - f.x, o.z - f.z) > 3.7) return null;
   o.root.updateMatrixWorld(true);
-  const zones = forgeRig(o);
+  const zones = forgeRig(o).filter(z => !(o.cuts & z.cut));
   for (const z of zones) {
     z.a.getWorldPosition(z.p);
     z.b.getWorldPosition(z.q);
@@ -216,14 +219,14 @@ function forgeContact(f, o, sweep, blade, strike, dt) {
   const from = sweep || blade;
   const travel = Math.max(from[0].distanceTo(blade[0]), from[1].distanceTo(blade[1]));
   const steps = Math.max(1, Math.min(8, Math.ceil(travel / 0.085)));
-  const radius = f.wp.radius || 0.05;
+  const radius = boot ? .091 : f.wp.radius || .05;
   const impactSpeed = travel / Math.max(dt, 0.009);
   const angularSpeed = Math.hypot(...(f.forgeMotion?.speed.slice(0, 2) || [0, 0]));
   if (!sweep || impactSpeed < (forgeManual(f) ? 1.65 : .65) || (forgeManual(f) && angularSpeed < 1.35)) return null;
   const momentum = clamp(.61 + impactSpeed * f.wp.mass * .065, .68, 1.22);
   const fighting = o.act === 'light' || o.act === 'heavy';
   const guarding = o.act === 'block';
-  const opposing = fighting || guarding ? forgeReadBlade(o) : null;
+  const opposing = !boot && (fighting || guarding) ? forgeReadBlade(o) : null;
   for (let step = 0; step <= steps; step++) {
     const s = step / steps;
     const start = from[0].clone().lerp(blade[0], s), tip = from[1].clone().lerp(blade[1], s);
@@ -236,7 +239,7 @@ function forgeContact(f, o, sweep, blade, strike, dt) {
       const normal = hit.x.clone().sub(hit.y);
       if (normal.lengthSq() < 1e-6) normal.set(Math.sin(f.face + Math.PI), 0, Math.cos(f.face + Math.PI));
       normal.normalize();
-      first = { pos: hit.y.clone().addScaledVector(normal, z.radius * 0.71), normal, gap: hit.gap, zone: z.key, bone: z.b, power: z.power * (0.78 + 0.27 * hit.s) * momentum };
+      first = { pos: hit.y.clone().addScaledVector(normal, z.radius * .88), normal, gap: hit.gap, zone: z.key, bone: z.bone, power: z.power * (0.78 + 0.27 * hit.s) * momentum };
     }
     if (first) {
       first.dir = blade[1].clone().sub(from[1]);
@@ -249,8 +252,12 @@ function forgeContact(f, o, sweep, blade, strike, dt) {
 }
 
 function forgePoseAndStrike(f, foe, strike, dt) {
+  forgeFallPose(f, dt);
   forgeWeaponPose(f, dt);
-  const blade = (strike || FORGE_ATTACKS.has(f.act)) && f.act !== 'kick' ? forgeReadBlade(f) : null;
+  forgeUpdateWounds(f);
+  const blade = f.act === 'kick' && !(f.cuts & GORE_PARTS.legR.bit)
+    ? ['foot_r','ball_leaf_r'].map(name => goreBone(f, name).getWorldPosition(new THREE.Vector3()))
+    : (f.act === 'light' || f.act === 'heavy') ? forgeReadBlade(f) : null;
   const prior = f.forgeSweep;
   f.forgeSweep = blade;
   if (!strike || f.hitDone || DUEL.phase !== 'fight' || DUEL.fin || DUEL.kc || f.hp <= 0) return;
@@ -279,56 +286,4 @@ function forgePoseAndStrike(f, foe, strike, dt) {
     }
     break;
   }
-}
-
-function forgeWound(victim, attacker, kind) {
-  const hit = victim.forgeContact;
-  if (!hit?.pos || !GORE.scene || kind === 'chip') {
-    if (hit && kind === 'chip') goreHit(victim, attacker, kind);
-    return;
-  }
-  const heavy = kind === 'heavy';
-  const strong = S.forgeBlood !== 'light';
-  const weight = attacker.wp?.blood ?? 1;
-  const n = Math.round((strong ? (heavy ? 44 : 24) : 8) * weight);
-  goreSpray(hit.pos, hit.dir, n, heavy ? 5.4 : 3.45, heavy ? 0.31 : 0.25);
-  if (strong) forgeInjury(victim, hit, heavy);
-  if (strong && GORE.jets.length < 12) {
-    GORE.jets.push({ f: victim, bone: hit.bone, t: 0, dur: heavy ? 3.2 : 1.55, rate: 8, drip: 1, acc: 0 });
-    if (heavy) goreStain(hit.pos.x, hit.pos.z, 0.25 + hit.power * 0.12, false);
-  }
-  attacker.blood = Math.min(1, (attacker.blood || 0) + (heavy ? 0.33 : 0.14));
-  goreBlade(attacker);
-}
-
-let forgeMarkGeo = null, forgeMarkMaterial = null;
-
-function forgeInjury(fighter, hit, heavy) {
-  if (!FORGE_STYLES[fighter.forgeStyle]?.skin || !hit.bone) return;
-  if (!forgeMarkGeo) {
-    forgeMarkGeo = new THREE.CircleGeometry(1, 12);
-    forgeMarkMaterial = new THREE.MeshBasicMaterial({
-      color: 0x581824, transparent: true, opacity: .67, side: THREE.DoubleSide, depthWrite: false,
-      polygonOffset: true, polygonOffsetFactor: -2,
-    });
-  }
-  const mark = new THREE.Mesh(forgeMarkGeo, forgeMarkMaterial);
-  const surface = hit.pos.clone().addScaledVector(hit.normal, 0.009);
-  mark.position.copy(hit.bone.worldToLocal(surface));
-  const world = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1), hit.normal);
-  mark.quaternion.copy(hit.bone.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(world));
-  mark.scale.set(heavy ? .058 : .036, heavy ? .018 : .012, 1);
-  hit.bone.add(mark);
-  const list = fighter.forgeInjuries || (fighter.forgeInjuries = []);
-  list.push(mark);
-  if (list.length > 10) {
-    const oldest = list.shift();
-    oldest.parent?.remove(oldest);
-  }
-}
-
-function forgeClearInjuries(fighter) {
-  if (!fighter.forgeInjuries) return;
-  for (const mark of fighter.forgeInjuries) mark.parent?.remove(mark);
-  fighter.forgeInjuries.length = 0;
 }

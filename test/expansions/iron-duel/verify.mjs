@@ -33,7 +33,7 @@ try {
     window.BroadcastChannel = class extends Original {
       constructor(name) { super(name); this.nameForTest = name; }
       postMessage(data) {
-        if (this.nameForTest.startsWith('ashen-iron-v3:duel-iron-v3-local-')) {
+        if (this.nameForTest.startsWith('ashen-iron-v4:duel-iron-v4-local-')) {
           const drop = window.__ironDrop;
           if (drop?.has(data.e)) { drop.delete(data.e); return; }
         }
@@ -45,7 +45,10 @@ try {
     const p = await ctx.newPage();
     p.setDefaultTimeout(60000);
     p.on('pageerror', e => { errors.push(String(e)); console.error(e.stack); });
-    p.on('console', m => { if (m.type() === 'warning' && m.text().startsWith('duel')) console.error(m.text()); });
+    p.on('console', m => {
+      if (m.type() === 'warning' && m.text().startsWith('duel')) console.error(m.text());
+      if (m.type() === 'error' && /shader|WebGLProgram/i.test(m.text())) errors.push(m.text());
+    });
     await p.goto(origin + '/?local=1', {waitUntil:'domcontentloaded'});
     await p.evaluate(() => {
       // The test skips unrelated first-visit prompts; game and battle UI remain real.
@@ -62,9 +65,11 @@ try {
   await p1.getByRole('button',{name:'طعن',exact:true}).tap();
   assert.equal(await p1.locator('.forgeWeaponCard').count(), 3);
   await p1.getByRole('button',{name:/الخنجر الطويل/}).tap();
-  await p1.waitForFunction(() => Array.from(document.querySelectorAll('.forgeWeaponVisual')).every(n => n.style.backgroundImage));
+  await p1.waitForFunction(() => Array.from(document.querySelectorAll('.forgeWeaponVisual')).every(n => n.complete && n.naturalWidth > 1));
+  assert.equal(await p1.locator('.weaponStage h3').textContent(), 'الخنجر الطويل');
   await p1.locator('#forge-tab-fighter').tap();
   await p1.getByRole('button',{name:'مقاتل الحلبة',exact:true}).tap();
+  await p1.waitForFunction(() => document.querySelector('.fighterStage img').naturalWidth > 1);
   await p1.locator('#dmTrain').tap();
   await p1.waitForFunction(() => DUEL.on && DUEL.ready && DUEL.round===1);
   await p1.evaluate(() => {
@@ -101,7 +106,10 @@ try {
       for(let i=0;i<68;i++){a.update(1/120,d);d.update(1/120,a);}
       return d.hp;
     };
-    const near=swing(1.15), marks=d.forgeInjuries?.length || 0, far=swing(3.4);
+    const near=swing(1.15), marks=d.forgeInjuries?.length || 0;
+    const uniformCount=d.forgeWoundUniforms.forgeCount.value;
+    const hitZone=d.forgeInjuries?.[0].zone;
+    const far=swing(3.4);
     const drops=GORE.drops.length;
     setup(3);
     a.want.mz=1;
@@ -110,12 +118,12 @@ try {
     for(let i=0;i<18;i++)a.update(1/60,d);
     const moving=a.vz;
     a.want.mz=0;a.update(1/60,d);
-    return {near,far,drops,marks,first,moving,coasting:a.vz};
+    return {near,far,drops,marks,uniformCount,hitZone,first,moving,coasting:a.vz};
   });
   console.log('Contact and movement',results);
   assert.ok(results.near < 100, JSON.stringify(results));
   assert.equal(results.far, 100);
-  assert.ok(results.drops>0 && results.marks>0);
+  assert.ok(results.drops>0 && results.marks>0 && results.uniformCount>0 && results.hitZone);
   assert.ok(results.first>0 && results.first<results.moving && results.coasting>0);
   if (output) await p1.screenshot({path:output});
   await p1.evaluate(() => {
@@ -150,6 +158,33 @@ try {
   assert.equal(lowered.hit, 100);
   assert.equal(await p1.evaluate(() => DUEL.me.forgeGesture?.held), false);
   await cdp.detach();
+  const injuries = await p1.evaluate(() => {
+    const a = DUEL.me, d = DUEL.foe;
+    const initial = () => { a.reset(0,0,0); d.reset(0,1.14,Math.PI); d.want.mz=1; };
+    initial();
+    for (let i=0;i<18;i++) d.update(1/60, a);
+    const healthy = Math.abs(d.vz);
+    initial();
+    const bone = goreBone(d,'calf_r');
+    d.forgeContact = { bone, pos:bone.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0,0,-.09)),
+      normal:new THREE.Vector3(0,0,-1), dir:new THREE.Vector3(1,-.2,0).normalize(), zone:'legR', power:1 };
+    d.damage(23, a, 'heavy');
+    d.forgeContact = null;
+    const penalty = forgePenalty(d, 'legR');
+    const point = GORE.jets.find(j => j.f === d && j.point);
+    const wet = point?.bone === bone;
+    d.start('idle');
+    d.kx = d.kz = 0;
+    for (let i=0;i<18;i++) d.update(1/60, a);
+    const injured = Math.abs(d.vz);
+    d.hp = 4;
+    d.damage(10, a, 'light');
+    for (let i=0;i<70;i++) d.update(1/120, a);
+    return {healthy, injured, penalty, wet, dead:d.act, tilt:d.forgeFall?.tilt, wound:d.forgeInjuries.length,
+      camera:!!(DUEL.fin || DUEL.kc), ground:d.root.position.y, dropped:GORE.pieces.some(p => p.f === d && p.weapon)};
+  });
+  assert.ok(injuries.penalty > 0 && injuries.injured < injuries.healthy && injuries.wet, JSON.stringify(injuries));
+  assert.ok(injuries.dead === 'dead' && injuries.tilt > .7 && injuries.wound > 0 && !injuries.camera && injuries.dropped, JSON.stringify(injuries));
   await p1.evaluate(() => { duelFrame = window.__ironFrame; });
 
   await p1.evaluate(() => duelExit());
@@ -190,7 +225,12 @@ try {
   await p1.locator('#dAtk').tap();
   await p2.waitForFunction(() => DUEL.me.hp < 100 && DUEL.foe.forgeRemoteAttack > 0);
   const hp = await p2.evaluate(() => DUEL.me.hp);
-  await p1.waitForFunction(value => Math.abs(DUEL.foe.hp-value) <= .5,hp);
+  await p1.waitForFunction(value => Math.abs(DUEL.foe.hp-value) <= .5 && DUEL.foe.forgeInjuries?.length > 0,hp);
+  const woundZones = await Promise.all([
+    p1.evaluate(() => DUEL.foe.forgeInjuries.at(-1).zone),
+    p2.evaluate(() => DUEL.me.forgeInjuries.at(-1).zone),
+  ]);
+  assert.equal(woundZones[0],woundZones[1]);
   await p1.waitForTimeout(300);
   assert.equal(await p2.evaluate(() => DUEL.me.hp),hp,'one attack must never cause two separate hits');
   assert.equal(await p1.evaluate(() => window.__ironDrop.has('mv')), false);

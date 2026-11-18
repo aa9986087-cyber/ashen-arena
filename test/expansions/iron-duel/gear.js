@@ -19,12 +19,12 @@ const FORGE_WEAPON_DATA = {
 const FORGE_CATEGORIES = { all: 'الكل', edge: 'قطع', point: 'طعن', blunt: 'طرق' };
 const forgeGearURL = MODEL_DIR.replace(/models\/$/, 'iron-duel/');
 let forgeGearPromise = null, forgeModels = null, forgeFigureTemplate = null;
-const forgeThumbs = new Map();
+
 
 function forgeLoadGear() {
   if (forgeGearPromise) return forgeGearPromise;
   const load = async file => {
-    const response = await fetch(forgeGearURL + file + '?v=39');
+    const response = await fetch(forgeGearURL + file + '?v=40');
     if (!response.ok) throw new Error('Gear file: ' + file);
     const bytes = await response.arrayBuffer();
     return new Promise((ok, bad) => new THREE.GLTFLoader().parse(bytes, '', ok, bad));
@@ -77,6 +77,32 @@ for (const [id, record] of Object.entries(FORGE_WEAPON_DATA)) {
 }
 DUEL_WEAPON_IDS.splice(0, DUEL_WEAPON_IDS.length, ...Object.keys(FORGE_WEAPON_DATA));
 
+let forgeClothMap;
+function forgeClothRelief() {
+  if (forgeClothMap) return forgeClothMap;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 128;
+  const g = canvas.getContext('2d');
+  g.fillStyle = '#868686';
+  g.fillRect(0, 0, 128, 128);
+  for (let i = 0; i < 128; i += 4) {
+    for (let j = 0; j < 128; j += 4) {
+      const value = (i + j) % 8 ? 121 : 150;
+      g.fillStyle = `rgb(${value},${value},${value})`;
+      g.fillRect(i, j, 4, 2);
+    }
+  }
+  for (let i = 0; i < 128; i += 16) {
+    g.fillStyle = '#4f4f4f';
+    g.fillRect(i, 0, 1, 128);
+    g.fillStyle = '#acacac';
+    g.fillRect(i + 1, 0, 2, 128);
+  }
+  forgeClothMap = arenaTex(canvas, [3,5]);
+  forgeClothMap.encoding = THREE.LinearEncoding;
+  return forgeClothMap;
+}
+
 function forgeAttachFigure(fighter) {
   if (fighter.forgeFigure) return fighter.forgeFigure;
   if (!forgeFigureTemplate) throw new Error('Fighter asset unavailable');
@@ -84,7 +110,7 @@ function forgeAttachFigure(fighter) {
   let binding = null;
   fighter.root.traverse(mesh => {
     if (!mesh.isSkinnedMesh) return;
-    mesh.userData.forgeWear = 'armored';
+    mesh.userData.forgeWear = 'legacy';
     legacy.push(mesh);
     if (mesh.geometry.attributes.position.count === 7281) binding = mesh.skeleton;
   });
@@ -96,11 +122,17 @@ function forgeAttachFigure(fighter) {
     if (bones.some(b => !b)) throw new Error('Incomplete humanoid binding');
     const mesh = new THREE.SkinnedMesh(source.geometry, source.material.clone());
     mesh.name = 'Forge ' + source.material.name;
-    mesh.userData.forgeWear = 'open';
+    mesh.userData.forgeWear = 'figure';
     mesh.castShadow = true;
     mesh.frustumCulled = false;
     fighter.root.add(mesh);
     mesh.bind(new THREE.Skeleton(bones, source.skeleton.boneInverses.map(i => i.clone())), source.bindMatrix.clone());
+    forgeInjuryMaterial(fighter, mesh.material);
+    if (['Tunic','TunicHem','Trousers','Boots','Waist'].includes(mesh.material.name)) {
+      mesh.material.bumpMap = forgeClothRelief();
+      mesh.material.bumpScale = mesh.material.name === 'Tunic' ? .017 : .007;
+      mesh.material.roughness = mesh.material.name === 'Boots' ? .69 : .94;
+    }
     if (source.material.name !== 'SkinArms') fighter.fpHide.push(mesh);
     if (/SkinHead|Eyes|Brows/.test(source.material.name)) fighter.headMeshes.push(mesh);
     pieces.push(mesh);
@@ -111,11 +143,15 @@ function forgeAttachFigure(fighter) {
 
 function forgeIsEquipped(fighter, object) {
   const kind = object.userData.forgeWear;
-  return !kind || kind === (FORGE_STYLES[fighter.forgeStyle]?.skin ? 'open' : 'armored');
+  const plate = FORGE_STYLES[fighter.forgeStyle]?.plate;
+  return !kind || kind === 'figure' || kind === 'both' || (plate ? kind === 'armored' : kind === 'lightCloth');
 }
 
 function forgeFighterVisible(fighter, object, fp = false) {
-  return !fp && !object.userData.cut && forgeIsEquipped(fighter, object);
+  return !fp && !object.userData.cut &&
+    (object.userData.forgeOmitStyle === undefined || object.userData.forgeOmitStyle !== fighter.forgeStyle) &&
+    (object.userData.forgeStyle === undefined || object.userData.forgeStyle === fighter.forgeStyle) &&
+    forgeIsEquipped(fighter, object);
 }
 
 function forgeStyleFigure(fighter, style) {
@@ -123,10 +159,11 @@ function forgeStyleFigure(fighter, style) {
     const figure = forgeAttachFigure(fighter);
     for (const mesh of figure.pieces) {
       const part = mesh.material.name;
-      if (part === 'SkinTorso') mesh.material.color.setHex(style.tunic ?? style.skin);
+      if (part === 'Tunic' || part === 'TunicHem') mesh.material.color.setHex(style.tunic);
       else if (part.startsWith('Skin')) mesh.material.color.setHex(style.skin);
       else if (part === 'Trousers') mesh.material.color.setHex(style.trousers);
-      else if (part === 'Waist') mesh.material.color.setHex(style.belt);
+      else if (part === 'Waist' || part === 'Boots') mesh.material.color.setHex(style.belt);
+      if (['SkinHead','Eyes','Brows'].includes(part)) mesh.userData.forgeWear = style.plate ? 'legacy' : 'figure';
     }
   }
   const figure = fighter.forgeFigure;
@@ -134,51 +171,8 @@ function forgeStyleFigure(fighter, style) {
   for (const mesh of [...figure.pieces, ...figure.legacy]) mesh.visible = forgeFighterVisible(fighter, mesh);
 }
 
-function forgeThumb(id) {
-  if (forgeThumbs.has(id)) return forgeThumbs.get(id);
-  const root = forgeModels?.getObjectByName(id);
-  if (!root) return null;
-  const points = [], faces = [];
-  const angle = 0.57, c = Math.cos(angle), s = Math.sin(angle), v = new THREE.Vector3();
-  const box = new THREE.Box3().setFromObject(root);
-  const height = box.max.y - box.min.y, centre = (box.min.y + box.max.y) * 0.5;
-  root.traverse(mesh => {
-    if (!mesh.isMesh) return;
-    const geo = mesh.geometry, g = geo.attributes.position;
-    const first = points.length;
-    for (let i = 0; i < g.count; i++) {
-      v.fromBufferAttribute(g, i).applyMatrix4(mesh.matrixWorld);
-      const x = v.x * c + (v.y - centre) * s;
-      const y = -(v.y - centre) * c + v.x * s;
-      points.push([x, y, v.z]);
-    }
-    const index = geo.index;
-    const count = index ? index.count : g.count;
-    const color = '#' + mesh.material.color.getHexString();
-    for (let i = 0; i < count; i += 3) {
-      const pp = [0,1,2].map(j => points[first + (index ? index.getX(i+j) : i+j)]);
-      const normalZ = (pp[1][0]-pp[0][0])*(pp[2][1]-pp[0][1]) - (pp[2][0]-pp[0][0])*(pp[1][1]-pp[0][1]);
-      if (normalZ < 0) faces.push({pp,color,depth:(pp[0][2]+pp[1][2]+pp[2][2])/3});
-    }
-  });
-  const image = document.createElement('canvas');
-  image.width = 192;
-  image.height = 124;
-  const ctx = image.getContext('2d');
-  const scale = Math.min(132, 113 / height);
-  for (const f of faces.sort((a,b)=>a.depth-b.depth)) {
-    ctx.beginPath();
-    f.pp.forEach(([x,y], i) => {
-      x = x * scale + 91; y = y * scale + 62;
-      if (i) ctx.lineTo(x,y); else ctx.moveTo(x,y);
-    });
-    ctx.closePath();
-    ctx.fillStyle = f.color;
-    ctx.fill();
-  }
-  const thumb = image.toDataURL();
-  forgeThumbs.set(id, thumb);
-  return thumb;
+function forgeArtURL(id) {
+  return window.ironPicture?.(id) || forgeGearURL + id + '.webp?v=40';
 }
 
 let forgeWeaponFilter = 'all';
@@ -186,7 +180,22 @@ function forgeWeaponPicker() {
   const box = $('dmWeapons');
   box.replaceChildren();
   const current = DUEL_WEAPONS[S.duelW] ? S.duelW : 'sword';
+  const W = DUEL_WEAPONS[current];
   const tabs = el('div', 'forgeWeaponTabs'), cards = el('div', 'forgeWeaponCards');
+  const stage = el('div', 'forgeStage weaponStage'), copy = el('div', 'forgeStageCopy');
+  const preview = document.createElement('img');
+  preview.alt = '';
+  preview.src = forgeArtURL(current);
+  copy.append(el('h3', '', W.n), el('p', '', W.tip));
+  const stats = el('div','forgeWeaponStats');
+  for (const [name, amount] of [['المدى', W.hit[1]/1.76], ['السرعة',.72/W.spd], ['القوة',W.dmg/1.42]]) {
+    const marker = el('span','forgeWeaponStat'), track = el('i');
+    track.style.setProperty('--rate', Math.min(100, Math.round(amount*100))+'%');
+    marker.append(el('span','',name), track);
+    stats.append(marker);
+  }
+  copy.append(stats);
+  stage.append(preview, copy);
   for (const [id, label] of Object.entries(FORGE_CATEGORIES)) {
     const b = el('button', 'forgeWeaponTab' + (forgeWeaponFilter === id ? ' on' : ''), label);
     b.type = 'button';
@@ -195,42 +204,27 @@ function forgeWeaponPicker() {
     tabs.append(b);
   }
   for (const id of DUEL_WEAPON_IDS) {
-    const W = DUEL_WEAPONS[id];
-    if (forgeWeaponFilter !== 'all' && W.category !== forgeWeaponFilter) continue;
+    const weapon = DUEL_WEAPONS[id];
+    if (forgeWeaponFilter !== 'all' && weapon.category !== forgeWeaponFilter) continue;
     const b = el('button', 'forgeWeaponCard' + (id === current ? ' on' : ''));
     b.type = 'button';
     b.setAttribute('aria-pressed', String(id === current));
-    const pic = el('span', 'forgeWeaponVisual', W.i);
-    pic.dataset.weapon = id;
-    pic.setAttribute('aria-hidden','true');
-    const detail = el('span','forgeWeaponDetail');
-    detail.append(el('b','',W.n),el('small','',W.tip));
-    const stats = el('div','forgeWeaponStats');
-    for (const [name, amount] of [['المدى', W.hit[1]/1.76], ['السرعة',.72/W.spd], ['القوة',W.dmg/1.42]]) {
-      const marker = el('span','forgeWeaponStat'), track = el('i');
-      track.style.setProperty('--rate', Math.round(amount*100)+'%');
-      marker.append(el('span','',name), track);
-      stats.append(marker);
-    }
-    b.append(pic,detail,stats);
+    const pic = document.createElement('img');
+    pic.className = 'forgeWeaponVisual';
+    pic.alt = '';
+    pic.src = forgeArtURL(id);
+    b.append(pic, el('b', '', weapon.n));
     b.onclick = () => {
       S.duelW = id;
       save();
       AU.play('select');
       forgeRefreshLoadout();
       forgeWeaponPicker();
+      document.querySelector('#dmWeapons button[aria-pressed="true"].forgeWeaponCard')?.focus({preventScroll:true});
     };
     cards.append(b);
   }
-  box.append(tabs,cards);
-  const draw = () => {
-    for (const node of cards.querySelectorAll('[data-weapon]')) {
-      const thumb = forgeThumb(node.dataset.weapon);
-      if (!thumb) continue;
-      node.replaceChildren();
-      node.style.backgroundImage = 'url("' + thumb + '")';
-    }
-  };
-  if (forgeModels) draw();
-  else forgeLoadGear().then(draw).catch(() => {});
+  const selection = el('div', 'forgeArsenal');
+  selection.append(tabs, cards);
+  box.append(stage, selection);
 }

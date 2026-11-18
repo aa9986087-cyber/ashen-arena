@@ -1,6 +1,6 @@
 'use strict';
 
-const FORGE_VERSION = 3;
+const FORGE_VERSION = 4;
 const FORGE_STATES = new Set(['idle','block','light','heavy','kick','dodge','hit','knock','kicked','stagger','dead']);
 const FORGE_RESULTS = new Set(['hit','riposte','combo','exec','kick','kickbreak','block','parry','break','miss','none','clash']);
 const forgeInt = (x, min, max) => Number.isSafeInteger(x) && x >= min && x <= max;
@@ -15,8 +15,17 @@ function forgePacketGesture(f) {
   return g ? { x: g.x, y: g.y, held: g.held } : null;
 }
 
+function forgeWoundOkay(w) {
+  return w === null || (Array.isArray(w) && w.length === 15 && forgeInt(w[0], 1, 500) &&
+    forgeInt(w[1], 0, FORGE_WOUND_BONES.length - 1) && forgeInt(w[2], 0, FORGE_ANATOMY.length - 1) &&
+    w.slice(3, 6).every(x => forgeNum(x, -.85, .85)) &&
+    w.slice(6, 12).every(x => forgeNum(x, -1, 1)) && forgeNum(w[12], .05, .33) &&
+    [.25,.65,1].includes(w[13]) && forgeNum(w[14], .18, 1.2));
+}
+
 function forgePacketOkay(e, p) {
   if (e === 'st') {
+    if (!forgeWoundOkay(p.wound)) return false;
     return forgeInt(p.r, 0, 99) && forgeNum(p.x, -10.1, 10.1) && forgeNum(p.z, -10.1, 10.1) &&
       Math.hypot(p.x, p.z) < 10.12 && forgeNum(p.f, -4, 4) && FORGE_STATES.has(p.a) &&
       forgeNum(p.hp, 0, 100) && forgeNum(p.st, 0, 100) && forgeNum(p.mx, -1, 1) && forgeNum(p.mz, -1, 1) &&
@@ -115,8 +124,8 @@ function forgeReadMove(f, m, time) {
   if (m.mid <= (f.forgeRemoteAttack || 0)) return;
   f.forgeRemoteAttack = m.mid;
   f.forgeAim = m.md;
-  f.forgeGesture = m.gesture ? { ...m.gesture, release: time ?? 0 } : null;
   f.netMove(m);
+  f.forgeGesture = m.gesture ? { ...m.gesture, release: time ?? 0 } : null;
   f.forgeAttack = m.mid;
   if (time !== undefined) {
     const moves = f.M[m.k] || DM[m.k];
@@ -127,6 +136,7 @@ function forgeReadMove(f, m, time) {
 function forgeReadFighter(f, state) {
   forgeDress(f, state.av);
   if (f.wpId !== state.w) f.setWeapon(state.w);
+  if (state.r === DUEL.round) forgeReadWound(f, state.wound);
   if (DUEL.phase !== 'fight' || DUEL.fin || DUEL.kc) return;
   if (FORGE_ATTACKS.has(state.a) && state.mid > (f.forgeRemoteAttack || 0)) {
     forgeReadMove(f, { k: state.a, mid: state.mid, md: state.md, c: Math.max(1, state.mc), gesture: state.gesture }, state.mt);

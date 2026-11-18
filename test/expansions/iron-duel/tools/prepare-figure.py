@@ -24,6 +24,7 @@ def bake(source, output):
         "SkinTorso": (0.48, 0.23, 0.13), "SkinArms": (0.48, 0.23, 0.13),
         "SkinHead": (0.48, 0.23, 0.13), "SkinFeet": (0.45, 0.20, 0.12),
         "Trousers": (0.05, 0.055, 0.065), "Waist": (0.12, 0.064, 0.035),
+        "Tunic": (.23,.18,.12), "TunicHem": (.23,.18,.12), "Boots": (.08,.05,.03),
         "Eyes": (0.68, 0.66, 0.54), "Brows": (0.045, 0.025, 0.018),
     }
     materials = {}
@@ -85,20 +86,21 @@ def bake(source, output):
     joint = {result["nodes"][node]["name"]: n for n, node in enumerate(result["skins"][0]["joints"])}
 
     def garment(shells, material):
-        positions, normals, joints, weights, triangles = [], [], [], [], []
+        positions, normals, joints, weights, uv, triangles = [], [], [], [], [], []
         slices = 24
         for rings in shells:
             start = len(positions)
-            for r, (y, x, rx, rz, influences) in enumerate(rings):
+            for r, (y, x, rx, rz, influences, *offset) in enumerate(rings):
                 for i in range(slices):
                     a = i * math.tau / slices
                     # Small folds in the fabric, independent of the body mesh.
                     fold = 1 + .038 * math.cos(5 * a + r * .81) + .022 * math.sin(9 * a - r)
                     c, s = math.cos(a), math.sin(a)
-                    positions.append((x + c * rx * fold, y, s * rz * fold - .008))
+                    positions.append((x + c * rx * fold, y, s * rz * fold + (offset[0] if offset else -.008)))
                     nx, nz = c / rx, s / rz
                     length = math.hypot(nx, nz)
                     normals.append((nx / length, 0, nz / length))
+                    uv.append((i / slices, y))
                     joints.append(tuple(joint[name] for name, _ in influences) + (0,) * (4 - len(influences)))
                     weights.append(tuple(value for _, value in influences) + (0,) * (4 - len(influences)))
                     if r < len(rings) - 1:
@@ -107,6 +109,7 @@ def bake(source, output):
                         triangles.extend((a0, b0, a0 + slices, b0, b0 + slices, a0 + slices))
         attrs = {"POSITION": attribute(positions, "f", "VEC3", True),
                  "NORMAL": attribute(normals, "f", "VEC3"),
+                 "TEXCOORD_0": attribute(uv, "f", "VEC2"),
                  "JOINTS_0": attribute(joints, "H", "VEC4"),
                  "WEIGHTS_0": attribute(weights, "f", "VEC4")}
         return {"attributes": attrs, "indices": index(triangles), "material": materials[material]}
@@ -135,11 +138,30 @@ def bake(source, output):
             (.137, .103, .061, .071, [(calf, .66), (foot, .34)]),
         ]])
 
+    hem = [(1.060, 0, .216, .144, pelvis),
+           (1.013, 0, .243, .155, pelvis),
+           (.990, 0, .255, .163, pelvis),
+           (.983, 0, .254, .161, pelvis)]
+    boots = []
+    for side, direction in [("l", 1), ("r", -1)]:
+        calf, foot = "calf_" + side, "foot_" + side
+        boots.append([(y, direction * .115, rx, rz, weights, z) for y, rx, rz, weights, z in [
+            (.369, .092, .105, [(calf, 1)], -.013),
+            (.350, .100, .112, [(calf, 1)], -.013),
+            (.302, .092, .103, [(calf, 1)], -.013),
+            (.214, .087, .096, [(calf, .85), (foot, .15)], -.019),
+            (.134, .082, .094, [(calf, .25), (foot, .75)], -.027),
+            (.082, .081, .119, [(foot, 1)], -.014),
+            (.046, .088, .152, [(foot, 1)], -.010),
+            (.011, .091, .153, [(foot, 1)], -.010),
+            (.009, .003, .003, [(foot, 1)], -.010),
+        ]])
+
     for skin in result["skins"]:
         skin["inverseBindMatrices"] = access(skin["inverseBindMatrices"])
     for no, mesh in enumerate(old["meshes"]):
         primitive = mesh["primitives"][0]
-        attrs = {key: access(primitive["attributes"][key]) for key in ("POSITION", "NORMAL", "JOINTS_0", "WEIGHTS_0")}
+        attrs = {key: access(primitive["attributes"][key]) for key in ("POSITION", "NORMAL", "TEXCOORD_0", "JOINTS_0", "WEIGHTS_0")}
         if no < 2:
             parts = [{"attributes": attrs, "indices": access(primitive["indices"]),
                       "material": materials["Brows" if no == 0 else "Eyes"]}]
@@ -147,17 +169,21 @@ def bake(source, output):
             pos = values(primitive["attributes"]["POSITION"], "f", 3)
             code = {5121: "B", 5123: "H", 5125: "I"}[old["accessors"][primitive["indices"]]["componentType"]]
             ids = [v[0] for v in values(primitive["indices"], code, 1)]
-            grouped = {key: [] for key in ("SkinTorso","SkinArms","SkinHead","SkinFeet","Trousers","Waist")}
+            grouped = {key: [] for key in ("SkinTorso","SkinArms","SkinHead","SkinFeet","Trousers","Waist","Tunic")}
             for i in range(0, len(ids), 3):
                 tri = ids[i:i+3]
                 xx, yy, _ = [sum(pos[j][k] for j in tri) / 3 for k in range(3)]
                 region = ("SkinFeet" if yy < 0.145 else "Trousers" if yy < 0.99 else "Waist" if yy < 1.042
                     else "SkinHead" if yy > 1.54 and abs(xx) < 0.17 else "SkinArms" if abs(xx) > 0.235
                     else "SkinTorso")
+                # Reuse the original skin weights here, so the sleeves flex with the shoulders.
+                if (region == "SkinTorso" and yy < 1.515) or (region == "SkinArms" and abs(xx) < .385):
+                    region = "Tunic"
                 grouped[region].extend(tri)
             parts = [{"attributes": attrs, "indices": index(ids), "material": materials[name]}
-                     for name, ids in grouped.items() if ids and name not in ("Trousers", "Waist")]
-            parts.extend([garment([hips, *legs], "Trousers"), garment([belt], "Waist")])
+                     for name, ids in grouped.items() if ids and name not in ("Trousers", "Waist", "SkinFeet")]
+            parts.extend([garment([hips, *legs], "Trousers"), garment([belt], "Waist"),
+                          garment([hem], "TunicHem"), garment(boots, "Boots")])
         result["meshes"].append({"name": mesh["name"],"primitives": parts})
 
     while len(payload) % 4:

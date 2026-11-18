@@ -26,28 +26,42 @@ function forgeBuildMenu() {
   const actions = el('div', 'forgeActions');
   wrap.querySelector('.head').after(loadout, tabs, gear, weapons, rooms, actions);
   show(0);
-  const styles = el('div', 'forgeStyles'), look = el('p', 'forgeHint');
-  gear.append(styles, look);
+  const styles = el('div', 'forgeStyles');
+  const stage = el('div', 'forgeStage fighterStage');
+  const portrait = document.createElement('img');
+  portrait.alt = '';
+  const bio = el('div', 'forgeStageCopy'), name = el('h3'), look = el('p');
+  bio.append(name, look);
+  stage.append(portrait, bio);
+  const selection = el('div', 'forgeWardrobe');
+  gear.append(stage, selection);
+  selection.append(styles);
   weapons.append($('dmWeapons'));
   headings[0].hidden = true;
   actions.append($('dmTrain'), $('ffaTrain'));
   const draw = () => {
     styles.replaceChildren();
+    const selected = FORGE_STYLES[forgeStyle()];
+    portrait.src = forgeArtURL(selected.id);
+    stage.style.setProperty('--outfit', '#' + selected.tunic.toString(16).padStart(6, '0'));
+    name.textContent = selected.name;
+    look.textContent = selected.title;
     FORGE_STYLES.forEach((theme, i) => {
       const b = el('button', 'forgePick' + (forgeStyle() === i ? ' on' : ''));
-      const icon = el('i', 'forgeHelm');
-      icon.style.setProperty('--metal', '#' + theme.steel.toString(16).padStart(6, '0'));
-      icon.style.setProperty('--trim', '#' + theme.edge.toString(16).padStart(6, '0'));
-      b.append(icon, el('b', '', theme.name));
+      const figure = document.createElement('img');
+      figure.src = forgeArtURL(theme.id);
+      figure.alt = '';
+      b.type = 'button';
+      b.append(figure, el('b', '', theme.name));
       b.setAttribute('aria-pressed', String(forgeStyle() === i));
       b.onclick = () => {
         S.forgeStyle = theme.id;
         save();
         draw();
+        styles.children[i].focus({preventScroll:true});
       };
       styles.append(b);
     });
-    look.textContent = FORGE_STYLES[forgeStyle()].title;
     forgeRefreshLoadout();
   };
   draw();
@@ -63,7 +77,7 @@ function forgeBuildMenu() {
   gorePicker.value = S.forgeBlood === 'light' ? 'light' : 'full';
   gorePicker.onchange = () => { S.forgeBlood = gorePicker.value; save(); };
   gore.append(el('span', '', 'مؤثرات الإصابة'), gorePicker);
-  gear.append(gore);
+  selection.append(gore);
   $('dmTrain').textContent = 'ابدأ مبارزة تدريبية';
   $('ffaTrain').textContent = 'تدريب ضد ٣ خصوم';
 
@@ -101,7 +115,7 @@ function forgeBuildMenu() {
     }
     host.disabled = join.disabled = true;
     const kind = local ? 'local' : 'live';
-    return duelStartOnline('iron-v3-' + kind + '-' + id, mine, 'خصم المبارزة')
+    return duelStartOnline('iron-v4-' + kind + '-' + id, mine, 'خصم المبارزة')
       .finally(() => { host.disabled = join.disabled = false; });
   };
   host.onclick = async () => {
@@ -122,7 +136,11 @@ function forgeBuildMenu() {
   duelHud = function () {
     hud();
     showInvite();
-    $('dForgeGrip').classList.toggle('tired', DUEL.me.st < DUEL.me.M.light.st);
+    const grip = $('dForgeGrip');
+    const recent = DUEL.phase === 'fight' ? DUEL.me.forgeImpact : null;
+    grip.textContent = recent ? FORGE_ANATOMY_LABEL[recent.zone] : DUEL.me.st < DUEL.me.M.light.st ? 'استعد نَفَسك' :
+      DUEL.round === 1 && DUEL.clock > 53 && DUEL.phase === 'fight' ? 'اسحب النصل لتوجيه الضربة' : '';
+    grip.classList.toggle('tired', !!recent || DUEL.me.st < DUEL.me.M.light.st);
   };
   const top = el('div', 'forgeDuelExtras');
   const invite = el('b', '', '');
@@ -156,14 +174,15 @@ const forgeAttackButton = $('dAtk');
 let forgePointer = null;
 forgeAttackButton.addEventListener('pointerdown', event => {
   if (forgePointer) return;
-  forgePointer = { id: event.pointerId, x: event.clientX, y: event.clientY, drag: false };
+  forgePointer = { id: event.pointerId, ...duelPt(event), drag: false };
 });
 forgeAttackButton.addEventListener('pointermove', event => {
   const f = DUEL.me;
   if (!f || forgePointer?.id !== event.pointerId || DUEL.phase !== 'fight') return;
-  const dx = event.clientX - forgePointer.x, dy = event.clientY - forgePointer.y;
-  const x = clamp((duelRotated() ? dy : dx) / 78, -1, 1);
-  const y = clamp((duelRotated() ? dx : -dy) / 69, -1, 1);
+  const position = duelPt(event);
+  const dx = position.x - forgePointer.x, dy = position.y - forgePointer.y;
+  const x = clamp(-dx / 78, -1, 1);
+  const y = clamp(-dy / 69, -1, 1);
   if (!forgePointer.drag) {
     if (DUEL.heavyFired || Math.hypot(dx, dy) < 9) return;
     f.forgeAim = -Math.sign(x);
