@@ -15,12 +15,15 @@ function devButton(parent, label, action) {
 function lockDeveloperMode() {
   developerKey = '';
   $('devBox').hidden = true;
+  $('mLab').hidden = true;
   $('devTools').replaceChildren();
+  if (G?.lab) toMenu();
 }
 
 function showDeveloperTools() {
   const tools = $('devTools');
   tools.replaceChildren();
+  devButton(tools, 'فتح المختبر', startLab);
   const action = (label, apply) => devButton(tools, label, () => {
     if (!developerKey) return;
     apply();
@@ -39,6 +42,7 @@ function showDeveloperTools() {
     toast('توقّف وضع المطوّر');
   });
   $('devBox').hidden = false;
+  $('mLab').hidden = false;
 }
 
 async function tryDevCode(value) {

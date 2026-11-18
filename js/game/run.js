@@ -165,6 +165,7 @@ function startRun() {
 }
 function endRun() {
   if (G.state === 'over') return;
+  if (G.lab && typeof labProfile !== 'undefined' && labProfile) return toMenu();
   if (COOP.on) coopClose();
   G.state = 'over';
   clearRun();
@@ -221,6 +222,7 @@ function endRun() {
   show('over', true);
 }
 function toMenu() {
+  const restoreLabSettings = typeof leaveLab === 'function' && leaveLab();
   G.state = 'menu';
   MUS.on = false;
   $('hud').hidden = true;
@@ -228,6 +230,7 @@ function toMenu() {
   newRun();
   setStage(0);
   buildPlayer();
+  if (restoreLabSettings) drawSet();
   go('menu');
 }
 /** Freeze the game and count n..1 before play resumes (after a pause). */

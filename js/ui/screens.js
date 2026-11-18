@@ -12,6 +12,7 @@ const SCREENS = [
   'over',
   'board',
   'ending',
+  'lab',
   'chat',
   'duelMenu',
   'coopMenu',

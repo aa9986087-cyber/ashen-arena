@@ -62,6 +62,7 @@ try {
   }
 } catch {}
 function save() {
+  if (typeof labProfile !== 'undefined' && labProfile) return;
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(savedProfile()));
   } catch {}

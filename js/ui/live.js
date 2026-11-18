@@ -172,7 +172,7 @@ function liveSnap() {
 }
 /** Called every frame by the main loop: our status, the stream while watched, and the 👁️ viewer count. */
 function liveTick(dt) {
-  const inRun = G.state === 'play' || G.state === 'cards' || G.state === 'paused' || G.state === 'count';
+  const inRun = !G.lab && (G.state === 'play' || G.state === 'cards' || G.state === 'paused' || G.state === 'count');
   if (LIVE.ch && !DUEL.on && G.state !== 'watch')
     liveSet(
       inRun ? { k: 'run', lvl: G.lvl, st: G.stage, boss: G.bossOn ? G.bossName : '', ch: S.char } : { k: 'idle' }
@@ -195,7 +195,7 @@ function liveTick(dt) {
   }
   if (!LIVE.stream) return;
   if (now > LIVE.until || !inRun) {
-    if (!inRun) LIVE.stream.send('end', { l: G.lvl, k: G.kills, t: Math.round(G.t) });
+    if (!inRun && !G.lab) LIVE.stream.send('end', { l: G.lvl, k: G.kills, t: Math.round(G.t) });
     const st = LIVE.stream;
     LIVE.stream = null;
     setTimeout(() => st.close(), 300);

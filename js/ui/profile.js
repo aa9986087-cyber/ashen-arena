@@ -40,7 +40,8 @@ function profileStats() {
 }
 let profileBusy = false;
 async function profileSync() {
-  if (!playerPenaltyReady || !S.name || profileBusy || (typeof NET_LOCAL !== 'undefined' && NET_LOCAL)) return;
+  if (!playerPenaltyReady || !S.name || profileBusy || (typeof G !== 'undefined' && G?.lab) ||
+      (typeof NET_LOCAL !== 'undefined' && NET_LOCAL)) return;
   profileBusy = true;
   try {
     await api('/rest/v1/rpc/save_profile', {

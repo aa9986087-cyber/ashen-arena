@@ -1,0 +1,218 @@
+'use strict';
+/* A separate developer round, using a copy of the profile. */
+let labProfile = null;
+function labBtn(parent, label, fn, isOn) {
+  const b = el('button', 'btn' + (isOn && isOn() ? ' on' : ''), label);
+  b.onclick = () => {
+    fn();
+    if (isOn) b.classList.toggle('on', !!isOn());
+  };
+  parent.appendChild(b);
+  return b;
+}
+function clearField() {
+  for (const e of G.enemies) e.dead = true;
+  G.enemies.length = 0;
+  G.eshots.length = 0;
+  G.zones = G.zones.filter(z => z.f);
+  if (G.boss) hideBoss();
+}
+function buildLab() {
+  const M = $('labMon'),
+    B = $('labBoss'),
+    St = $('labStage'),
+    T = $('labTools');
+  M.innerHTML = B.innerHTML = St.innerHTML = T.innerHTML = '';
+  for (const k in EN)
+    labBtn(M, MON_N[k] || k, () => {
+      for (let i = 0; i < 3; i++) spawnAround(k, false, rand(9, 13));
+      closeLab();
+    });
+  labBtn(M, '⭐ نخبة عشوائي', () => {
+    spawnAround(pick(Object.keys(EN)), true, 11);
+    closeLab();
+  });
+  // try a weapon: its card at level 1, at 5, or evolved
+  const Wp = $('labWep');
+  Wp.innerHTML = '';
+  for (const id in WEP)
+    labBtn(Wp, WEP[id].i + ' ' + WEP[id].n, () => {
+      closeLab();
+      G.state = 'cards';
+      G.cardPicked = false;
+      G.cardMode = 'level';
+      curCards = [
+        { k: 'labw', id, lvl: 1, r: 1 },
+        { k: 'labw', id, lvl: 5, r: 2 },
+        { k: 'labw', id, lvl: 5, evo: 1, r: 3 },
+      ];
+      $('cardTitle').textContent = 'جرّب ' + WEP[id].n;
+      $('cardSub').textContent = 'اختر المستوى اللي تبي تجربه';
+      drawCards();
+      show('cards', true);
+    });
+  STAGES.filter(q => !q.abyss).forEach(q =>
+    labBtn(B, q.boss, () => {
+      clearField();
+      G.forceBoss = q.bk;
+      closeLab(); // the entrance plays in a live run, not behind the lab panel
+      spawnBoss();
+      G.forceBoss = null;
+      G.wave = 5;
+    })
+  );
+  STAGES.forEach((q, i) =>
+    labBtn(St, q.n, () => {
+      clearField();
+      G.abyss = !!q.abyss;
+      G.depth = 0;
+      G.stage = i;
+      G.wave = 0;
+      G.waveT = 0;
+      G.sk = 0;
+      G.bossDone = false;
+      setStage(i);
+      banner(q.n, '', 1.5);
+      closeLab();
+    })
+  );
+  labBtn(
+    T,
+    '🛡️ لا تموت',
+    () => {
+      G.god = !G.god;
+    },
+    () => G.god
+  );
+  labBtn(
+    T,
+    '⏸ إيقاف الموجات',
+    () => {
+      G.noWaves = !G.noWaves;
+    },
+    () => G.noWaves
+  );
+  labBtn(
+    T,
+    '🐢 حركة بطيئة',
+    () => {
+      G.slowmo = !G.slowmo;
+    },
+    () => G.slowmo
+  );
+  labBtn(T, '🧹 امسح الأعداء', () => {
+    clearField();
+    closeLab();
+  });
+  labBtn(T, '⬆️ +3 مستويات', () => {
+    G.pending += 3;
+    closeLab();
+  });
+  labBtn(T, '💥 أعطني صفقة', () => {
+    closeLab();
+    G.state = 'cards';
+    G.cardPicked = false;
+    G.cardMode = 'level';
+    curCards = Object.keys(PACT)
+      .filter(k => !G.pacts[k])
+      .slice(0, 3)
+      .map(id => ({ k: 'pact', id, r: 1 }));
+    if (!curCards.length) {
+      G.state = 'play';
+      return;
+    }
+    $('cardTitle').textContent = 'صفقات للتجربة';
+    $('cardSub').textContent = '';
+    drawCards();
+    show('cards', true);
+  });
+  labBtn(T, '⚔️ طوّر السلاح', () => {
+    const w = G.weapons[0];
+    if (w.lvl < 5) {
+      w.lvl++;
+      buildWeapon();
+      refreshLoadout();
+    }
+  });
+  labBtn(T, '🧬 تطور كامل', () => {
+    const w = G.weapons[0];
+    w.lvl = 5;
+    G.ups[EVO[w.id].up] = Math.max(1, G.ups[EVO[w.id].up] || 0);
+    w.evo = 1;
+    recalc();
+    buildWeapon();
+    refreshLoadout();
+  });
+  labBtn(T, '🌟 كل الـ72 تطوير', () => {
+    for (const k in UP) G.ups[k] = UP[k].max;
+    recalc();
+    refreshLoadout();
+    closeLab();
+  });
+  labBtn(T, '✨ كل التطويرات الجديدة', () => {
+    for (const k of Object.keys(UP).slice(Object.keys(UP).indexOf('hole') + 1)) G.ups[k] = UP[k].max;
+    recalc();
+    refreshLoadout();
+    closeLab();
+  });
+  labBtn(T, '🔁 بدّل السلاح', () => {
+    const ids = Object.keys(WEP),
+      w = G.weapons[0];
+    w.id = ids[(ids.indexOf(w.id) + 1) % ids.length];
+    w.evo = 0;
+    buildWeapon();
+    refreshLoadout();
+    toast(WEP[w.id].i + ' ' + WEP[w.id].n);
+  });
+  labBtn(T, '🏁 شاشة النهاية', () => {
+    show('lab', false);
+    G.state = 'ending';
+    showEnding();
+  });
+  labBtn(T, '❤️ صحة كاملة', () => {
+    G.p.hp = G.p.maxHp;
+  });
+}
+function openLab() {
+  if (!developerKey || !G.lab || G.state !== 'play') return;
+  G.state = 'lab';
+  buildLab();
+  show('lab', true);
+}
+function closeLab() {
+  show('lab', false);
+  if (G.state === 'lab') G.state = 'play';
+}
+function leaveLab() {
+  if (!labProfile) return false;
+  S = labProfile;
+  labProfile = null;
+  closeLab();
+  $('labBtn').hidden = true;
+  return true;
+}
+async function startLab() {
+  await window.__game.ready;
+  if (!developerKey || COOP.on || DUEL.on) return;
+  if (!labProfile) {
+    saveRun();
+    labProfile = S;
+    S = structuredClone(S);
+    AU.init();
+    newRun();
+    G.lab = true;
+    G.god = true;
+    G.noWaves = true;
+    G.state = 'play';
+    enterArena();
+  } else {
+    hideScreens();
+    G.state = 'play';
+  }
+  $('labBtn').hidden = false;
+  openLab();
+}
+$('labBtn').onclick = openLab;
+$('labClose').onclick = closeLab;
+$('labExit').onclick = toMenu;
+$('mLab').onclick = startLab;
