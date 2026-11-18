@@ -76,39 +76,39 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-17T23:15:24.992Z.
-- مرجع العمل: [`8b5c4350b68a31772d12c5b71a22604ce7d08fb1`](https://github.com/aa9986087-cyber/ashen-arena/commit/8b5c4350b68a31772d12c5b71a22604ce7d08fb1).
-- آخر تعديل: تجربة v27 لمجسمات الزعماء الستة وحركاتهم الخاصة.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44196624424/attempts/1).
+- وقت التسجيل (UTC): 2026-11-18T03:16:39.077Z.
+- مرجع العمل: [`1262ed6bdf1b2e583c974b1bc98bc675b0ec429b`](https://github.com/aa9986087-cyber/ashen-arena/commit/1262ed6bdf1b2e583c974b1bc98bc675b0ec429b).
+- آخر تعديل: تجربة v28 لأشكال تحذير وآثار الزعماء السبعة.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44228391201/attempts/1).
 - بوابة check: **فشل**؛ الاختبارات السريعة: **ناجح**.
 - مسار الفحص: mobile؛ متصفح الجوال: **فشل**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
-- إصدار التجربة المسجل: `clean-20261117-v27`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
+- إصدار التجربة المسجل: `clean-20261117-v28`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`94f378be5954`: 255 ملفًا.
+مقارنةً بـ`a3dc36d17915`: 246 ملفًا.
 - `docs/HANDOFF.md`
-- `test/addons/forest-guardian/config.js`
-- `test/addons/forest-guardian/manifest.json`
-- `test/expansions/boss-specials/assets/LICENSE.md`
-- `test/expansions/boss-specials/assets/fire.glb`
-- `test/expansions/boss-specials/assets/frost.glb`
-- `test/expansions/boss-specials/assets/grave.glb`
-- `test/expansions/boss-specials/assets/knight.glb`
-- `test/expansions/boss-specials/assets/manifest.json`
-- `test/expansions/boss-specials/assets/sand.glb`
-- `test/expansions/boss-specials/prepare-boss.py`
+- `test/expansions/boss-specials/combat.js`
+- `test/expansions/boss-specials/visuals.js`
 - `test/index.html`
-- وبقية 243 ملفًا في رابط commit أعلاه.
+- `test/modular-config.json`
+- `test/releases/clean-20261117-v28/app.js`
+- `test/releases/clean-20261117-v28/app.min.js`
+- `test/releases/clean-20261117-v28/assets/audio/duel/block0.mp3`
+- `test/releases/clean-20261117-v28/assets/audio/duel/block1.mp3`
+- `test/releases/clean-20261117-v28/assets/audio/duel/block2.mp3`
+- `test/releases/clean-20261117-v28/assets/audio/duel/break0.mp3`
+- `test/releases/clean-20261117-v28/assets/audio/duel/clash0.mp3`
+- وبقية 234 ملفًا في رابط commit أعلاه.
 
 ### أحدث خمس دفعات على main
 
+- 1262ed6 تجربة v28 لأشكال تحذير وآثار الزعماء السبعة
+- a3dc36d docs: تحديث آلي لملف التسليم
 - 8b5c435 تجربة v27 لمجسمات الزعماء الستة وحركاتهم الخاصة
 - 94f378b docs: تحديث آلي لملف التسليم
 - 6f86380 معاينة عملاق الشجرة العتيق لحارس الغابة في v26
-- e372032 docs: تحديث آلي لملف التسليم
-- 97437f1 تحميل ملف ضربات الزعماء في فحص المقبرة
 
 ابدأ بمراجعة سجل الفحوص لهذا المرجع؛ لا تفترض نجاح التعديل أو نشره.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
