@@ -298,7 +298,8 @@ test('official: Black Knight menu and Warden special without developer tools', a
   await page.goto('/#lab');
   await expect.poll(() => page.evaluate(() => typeof window.__game)).toBe('object');
   await page.evaluate(() => window.__game.ready);
-  await expect(page.locator('#devBox, #lab, #mLab, #labBtn')).toHaveCount(0);
+  await expect(page.locator('#devBox')).toBeHidden();
+  await expect(page.locator('#lab, #mLab, #labBtn')).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => {
     const knight = scene.getObjectByName('ashenMenuBlackKnight');
     return knight?.visible && knight.userData.actor === 'boss2';

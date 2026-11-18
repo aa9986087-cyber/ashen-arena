@@ -101,8 +101,9 @@ test('hall of ash has five boards, a throne and an accessible rules panel', asyn
   assert.match(src, /js\/ui\/board-rank\.js/);
   assert.ok(html.some(t => t.attrs.id === 'bossCine'));
   assert.match(src, /js\/game\/boss-intro\.js/);
-  assert.ok(!html.some(t => ['mLab', 'labBtn', 'devBox'].includes(t.attrs.id)));
-  assert.doesNotMatch(src, /js\/ui\/(lab|dev)\.js/);
+  assert.ok(!html.some(t => ['mLab', 'labBtn'].includes(t.attrs.id)));
+  assert.ok(html.some(t => t.attrs.id === 'devBox' && 'hidden' in t.attrs));
+  assert.doesNotMatch(src, /js\/ui\/lab\.js/);
   assert.match(await read('js/game/spawning.js'), /bossIntroStart\(G\.boss\)/);
   assert.match(await read('js/game/update.js'), /if \(CINE\.freeze\) return;/);
   assert.ok(html.some(t => t.attrs.id === 'mProfile' && t.attrs['aria-label'] === 'ملفك الشخصي'));

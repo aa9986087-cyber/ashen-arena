@@ -1,15 +1,27 @@
 'use strict';
 /* Draws a frame: camera, player, instanced enemies/projectiles/pickups, effect pools, and the 2D overlay. */
+function syncRunView() {
+  const active = G && G.state !== 'menu' && !DUEL.on;
+  const landscape = innerWidth >= innerHeight;
+  const rotated = !!(active && S.set.landscape && !landscape);
+  const root = document.documentElement.classList;
+  const changed = root.contains('run-rot') !== rotated;
+  root.toggle('run-rot', rotated);
+  root.toggle('run-wide', !!active && (landscape || rotated));
+  return changed;
+}
 function resize() {
-  // the duel can be turned 90° on an upright phone (iPhone landscape): then the drawing area is the screen sideways
-  const rot = document.documentElement.classList.contains('rot');
+  syncRunView();
+  const root = document.documentElement.classList;
+  const rot = root.contains('rot') || root.contains('run-rot');
+  const oldW = W, oldH = H;
   W = rot ? innerHeight : innerWidth;
   H = rot ? innerWidth : innerHeight;
+  if ((W !== oldW || H !== oldH) && typeof clearRunTouch === 'function') clearRunTouch();
   document.documentElement.style.setProperty('--sw', innerWidth + 'px');
   document.documentElement.style.setProperty('--sh', innerHeight + 'px');
-  // the menu is a light scene: draw it at the phone's full sharpness; in play keep the cap (speed and heat)
   const menu = typeof G !== 'undefined' && G && G.state === 'menu';
-  DPR = Math.min(devicePixelRatio || 1, menu ? 3 : S.set.qual ? 2 : 1.25) * (menu ? 1 : RS);
+  DPR = Math.min(devicePixelRatio || 1, GRAPHICS[graphicsLevel()].ratio) * (menu ? 1 : RS);
   renderer.setPixelRatio(DPR);
   renderer.setSize(W, H, false);
   camera.aspect = W / H;
@@ -70,7 +82,7 @@ let lastMenu = null;
 function render(dt, now) {
   const p = G.p,
     playing = G.state !== 'menu';
-  if (lastMenu !== !playing) {
+  if (syncRunView() || lastMenu !== !playing) {
     lastMenu = !playing;
     resize(); // in or out of the menu: its sharpness differs
   }

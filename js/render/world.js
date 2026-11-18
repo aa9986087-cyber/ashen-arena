@@ -39,6 +39,16 @@ gtexC.width = gtexC.height = 512;
     c.ellipse(x, y, r, r * 0.7, 0, 0, TAU);
     c.fill();
   }
+  c.lineWidth = 0.85;
+  for (let i = 0; i < 230; i++) {
+    const x = Math.random() * S0, y = Math.random() * S0, span = rand(3, 11);
+    c.strokeStyle = i % 2 ? 'rgba(95,95,95,.35)' : 'rgba(250,250,250,.28)';
+    c.beginPath();
+    c.moveTo(x, y);
+    c.lineTo(x + span * 0.4, y + span * 0.3);
+    c.lineTo(x + span, y + span * 0.18);
+    c.stroke();
+  }
 })();
 const gtex = new THREE.CanvasTexture(gtexC);
 gtex.wrapS = gtex.wrapT = THREE.RepeatWrapping;
@@ -46,7 +56,7 @@ gtex.repeat.set(16, 16);
 gtex.anisotropy = 4;
 const ground = new THREE.Mesh(
   new THREE.CircleGeometry(110, 48),
-  new THREE.MeshLambertMaterial({ map: gtex, color: 0x3c6b38 })
+  new THREE.MeshStandardMaterial({ map: gtex, color: 0x3c6b38, roughness: 0.96, bumpScale: 0.16 })
 );
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
@@ -101,7 +111,7 @@ const DECOR_SOLID = {
 const OBST = [];
 function setStage(i) {
   const st = arenaStageStyle(STAGES[i]);
-  ground.material.color.setHex(st.ground).multiplyScalar(0.86);
+  ground.material.color.setHex(st.ground).multiplyScalar(0.92);
   scene.fog.color.setHex(st.fog);
   scene.background.setHex(st.fog);
   hemi.color.setHex(st.amb);

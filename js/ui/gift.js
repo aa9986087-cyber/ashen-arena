@@ -52,7 +52,10 @@ async function redeemGift(txt) {
   toast('🎁 وصلتك هدية: +' + amount + ' 🪙');
   $('giftIn').value = '';
 }
-$('giftOk').onclick = () => redeemGift($('giftIn').value);
+$('giftOk').onclick = async () => {
+  const value = $('giftIn').value;
+  if (!(await tryDevCode(value))) await redeemGift(value);
+};
 $('giftIn').addEventListener('keydown', e => {
   if (e.key === 'Enter') $('giftOk').click();
 });

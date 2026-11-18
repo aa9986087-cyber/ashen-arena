@@ -35,9 +35,13 @@ const ray = new THREE.Raycaster(),
   gplane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0),
   ndc = new THREE.Vector2(),
   hitP = new THREE.Vector3();
+function runPointer(e) {
+  return document.documentElement.classList.contains('run-rot')
+    ? [e.clientY, innerWidth - e.clientX]
+    : [e.clientX, e.clientY];
+}
 function setMouse(e) {
-  IN.sx = e.clientX;
-  IN.sy = e.clientY;
+  [IN.sx, IN.sy] = runPointer(e);
 }
 function mouseWorld() {
   ndc.set((IN.sx / W) * 2 - 1, -(IN.sy / H) * 2 + 1);
@@ -57,12 +61,11 @@ glC.addEventListener('pointerdown', e => {
     }
     if (IN.joy === null && G.state === 'play') {
       IN.joy = e.pointerId;
-      IN.j0x = e.clientX;
-      IN.j0y = e.clientY;
+      [IN.j0x, IN.j0y] = runPointer(e);
       IN.jx = IN.jz = 0;
       joyEl.hidden = false;
-      joyEl.style.left = e.clientX + 'px';
-      joyEl.style.top = e.clientY + 'px';
+      joyEl.style.left = IN.j0x + 'px';
+      joyEl.style.top = IN.j0y + 'px';
       joyEl.firstElementChild.style.transform = '';
     }
   } else {
@@ -74,8 +77,8 @@ glC.addEventListener('pointerdown', e => {
 });
 addEventListener('pointermove', e => {
   if (e.pointerId === IN.joy) {
-    let dx = e.clientX - IN.j0x,
-      dy = e.clientY - IN.j0y;
+    const [x, y] = runPointer(e);
+    let dx = x - IN.j0x, dy = y - IN.j0y;
     const d = Math.hypot(dx, dy),
       m = 52;
     if (d > m) {
@@ -87,12 +90,13 @@ addEventListener('pointermove', e => {
     joyEl.firstElementChild.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
   } else if (e.pointerType !== 'touch') setMouse(e);
 });
+function clearRunTouch() {
+  IN.joy = null;
+  IN.jx = IN.jz = 0;
+  joyEl.hidden = true;
+}
 function pUp(e) {
-  if (e.pointerId === IN.joy) {
-    IN.joy = null;
-    IN.jx = IN.jz = 0;
-    joyEl.hidden = true;
-  }
+  if (e.pointerId === IN.joy) clearRunTouch();
   if (e.pointerType !== 'touch') IN.md = false;
 }
 addEventListener('pointerup', pUp);

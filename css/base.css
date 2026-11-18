@@ -69,6 +69,16 @@ canvas {
 #fx {
   pointer-events: none;
 }
+html.run-rot body {
+  position: fixed;
+  inset: 0 auto auto 0;
+  width: var(--sh);
+  height: var(--sw);
+  transform-origin: top left;
+  transform: translateX(var(--sw)) rotate(90deg);
+  --st: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  --sb: var(--st);
+}
 button {
   font: inherit;
   color: inherit;

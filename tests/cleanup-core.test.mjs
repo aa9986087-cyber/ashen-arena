@@ -44,7 +44,8 @@ function inputRuntime() {
   const IN = { k: {}, touch: false, joy: null, md: false, atk: false };
   const G = { state: 'play' };
   const g = runtime('js/input.js', {
-    addEventListener: win.addEventListener.bind(win), document: Object.assign(doc, { body: target() }),
+    addEventListener: win.addEventListener.bind(win),
+    document: Object.assign(doc, { body: target(), documentElement: { classList: { contains: () => false } } }),
     THREE: { Vector3, Vector2, Plane, Raycaster }, IN, G, LAB: true, glC: canvas, $: node,
     W: 200, H: 100, camera: 'camera', AU: { init: () => calls.push(['audio']) },
     dash: () => calls.push(['dash']), special: () => calls.push(['special']), potion: () => calls.push(['potion']),

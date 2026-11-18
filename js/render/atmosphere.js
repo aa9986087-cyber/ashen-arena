@@ -3,11 +3,26 @@
 
 /* ---- sky dome: vertical gradient from the stage's fog colour (horizon) to its sky colour (top) */
 const skyMat = new THREE.ShaderMaterial({
-  uniforms: { top: { value: new THREE.Color(0x0b1a14) }, bottom: { value: new THREE.Color(0x16261c) } },
+  uniforms: {
+    top: { value: new THREE.Color(0x0b1a14) },
+    bottom: { value: new THREE.Color(0x16261c) },
+    detail: { value: 0 },
+  },
   vertexShader:
-    'varying float h; void main(){ h = normalize(position).y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
-  fragmentShader:
-    'uniform vec3 top; uniform vec3 bottom; varying float h; void main(){ gl_FragColor = vec4(mix(bottom, top, smoothstep(-0.05, 0.6, h)), 1.0); }',
+    'varying vec3 skyDir; void main(){ skyDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+  fragmentShader: `
+    uniform vec3 top;
+    uniform vec3 bottom;
+    uniform float detail;
+    varying vec3 skyDir;
+    void main() {
+      vec3 dir = normalize(skyDir);
+      vec3 col = mix(bottom, top, smoothstep(-0.05, 0.6, dir.y));
+      float horizon = 1.0 - smoothstep(0.0, 0.62, abs(dir.y));
+      float glow = smoothstep(0.1, 1.0, dot(dir, normalize(vec3(-0.7, 0.22, -1.0))));
+      col += (bottom * 0.25 + vec3(0.07, 0.035, 0.014)) * horizon * glow * detail;
+      gl_FragColor = vec4(col, 1.0);
+    }`,
   side: THREE.BackSide,
   depthWrite: false,
   fog: false,
@@ -24,9 +39,56 @@ GEO.tuft = merge([
 ]);
 const ITuft = inst(GEO.tuft, lamV, 700, false);
 ITuft.mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+let atmosphereStage;
+
+function lightStage(quality) {
+  if (!atmosphereStage) return;
+  sun.intensity = (atmosphereStage.abyss ? 0.88 : 0.95) + quality.sky * 0.39;
+  hemi.intensity = 0.51 + quality.sky * 0.13;
+}
+
+function applyGraphics() {
+  const level = graphicsLevel(), quality = GRAPHICS[level];
+  sun.castShadow = !!S.set.shadow;
+  const shadowSize = Math.min(quality.shadows, renderer.capabilities.maxTextureSize);
+  if (sun.shadow.mapSize.x !== shadowSize) {
+    sun.shadow.map?.dispose();
+    sun.shadow.map = null;
+    sun.shadow.mapSize.set(shadowSize, shadowSize);
+  }
+  const anisotropy = Math.min(quality.anisotropy, renderer.capabilities.getMaxAnisotropy() || 1);
+  for (const texture of [gtex, arenaSurfaceTexture]) {
+    if (texture.anisotropy === anisotropy) continue;
+    texture.anisotropy = anisotropy;
+    texture.needsUpdate = true;
+  }
+  const floorMap = level ? arenaSurfaceTexture : null;
+  if (arenaFloorMaterial.map !== floorMap) {
+    arenaFloorMaterial.map = floorMap;
+    arenaFloorMaterial.needsUpdate = true;
+  }
+  for (const [material, texture] of [[ground.material, gtex], [arenaFloorMaterial, arenaSurfaceTexture],
+    [arenaPropMaterial, arenaSurfaceTexture]]) {
+    const bumpMap = level === 2 ? texture : null;
+    if (material.bumpMap === bumpMap) continue;
+    material.bumpMap = bumpMap;
+    material.needsUpdate = true;
+  }
+  for (const { mesh } of decor) {
+    if (mesh.name === 'arena-contact-shadows') mesh.visible = !!level;
+    if (mesh.name.startsWith('arena-map-')) mesh.material = level ? arenaPropMaterial : lamV;
+  }
+  ITuft.mesh.count = quality.tufts;
+  skyMat.uniforms.detail.value = quality.sky;
+  if (bloom) bloom.strength = quality.bloom;
+  lightStage(quality);
+}
 
 /** Called by setStage(): retint the world for the stage. */
 function setAtmosphere(st) {
+  atmosphereStage = st;
+  const quality = GRAPHICS[graphicsLevel()];
+  lightStage(quality);
   skyMat.uniforms.bottom.value.setHex(st.fog);
   skyMat.uniforms.top.value.setHex(st.sky || st.fog);
   const c = new THREE.Color(st.tuft || st.ground);
@@ -50,7 +112,7 @@ function setAtmosphere(st) {
     );
   }
   flush(ITuft);
-  ITuft.mesh.count = ITuft.max;
+  ITuft.mesh.count = quality.tufts;
 }
 
 /** Per frame: keep the sky dome around the camera. */
@@ -75,11 +137,12 @@ function setupBloom() {
 /** Size the bloom buffers with the canvas (called from resize). */
 function resizeBloom() {
   if (!composer) return;
-  composer.setPixelRatio(G && G.state === 'menu' ? DPR : Math.min(DPR, 1.5));
-  composer.setSize(W, H);
+  const level = graphicsLevel();
+  composer.setPixelRatio(Math.min(DPR, level === 2 ? 1.8 : 1.35));
+  composer.setSize(level ? W : 1, level ? H : 1);
 }
 /** Draw the 3D scene, with bloom when it is on. */
 function drawScene() {
-  if (composer && S.set.qual) composer.render();
+  if (composer && graphicsLevel()) composer.render();
   else renderer.render(scene, camera);
 }

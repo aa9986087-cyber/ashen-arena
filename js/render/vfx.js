@@ -377,7 +377,7 @@ for (let i = 0; i < 4; i++) {
 
 /* =================== effect recipes =================== */
 const vfxRate = (em, dt, perSec) => {
-  em.acc += perSec * dt * (S.set.qual ? 1 : 0.6);
+  em.acc += perSec * dt * (+S.set.qual === 2 ? 1.15 : S.set.qual ? 1 : 0.6);
   const n = em.acc | 0;
   em.acc -= n;
   return n;

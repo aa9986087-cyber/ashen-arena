@@ -309,14 +309,17 @@ function drawSet() {
   $('oMus').value = S.set.mus;
   $('oShadow').textContent = S.set.shadow ? 'مفعّلة' : 'متوقفة';
   $('oShake').textContent = S.set.shake ? 'مفعّل' : 'متوقف';
-  $('oQual').textContent = S.set.qual ? 'عالية' : 'منخفضة';
+  $('oQual').querySelector('input[value="' + graphicsLevel() + '"]').checked = true;
+  $('oRunView').textContent = S.set.landscape ? 'أفقي' : 'تلقائي';
+  $('oRunView').setAttribute('aria-pressed', String(!!S.set.landscape));
+  $('runViewBtn').setAttribute('aria-pressed', String(!!S.set.landscape));
   $('oFps').textContent = S.set.fps ? 'ظاهر' : 'مخفي';
   $('oEco').textContent = S.set.eco ? 'مفعّل' : 'متوقف';
   $('fps').hidden = !S.set.fps;
   $('oSide').textContent = S.set.left ? 'يسار' : 'يمين';
   document.body.classList.toggle('actsLeft', !!S.set.left);
   $('oReset').textContent = resetArm ? 'اضغط مجدداً للتأكيد' : 'امسح';
-  sun.castShadow = !!S.set.shadow;
+  applyGraphics();
   RS = 1;
   resize();
 }
@@ -333,11 +336,23 @@ $('oMus').oninput = e => {
   AU.vol();
   save();
 };
+$('oQual').onchange = e => {
+  S.set.qual = Number(e.target.value);
+  save();
+  drawSet();
+};
+function toggleRunView() {
+  S.set.landscape = S.set.landscape ? 0 : 1;
+  save();
+  drawSet();
+  if (S.set.landscape && innerHeight > innerWidth && !$('hud').hidden) toast('لف جوالك بالعرض');
+}
+$('oRunView').onclick = toggleRunView;
+$('runViewBtn').onclick = toggleRunView;
 for (const [id, key] of [
   ['oShadow', 'shadow'],
   ['oShake', 'shake'],
   ['oSide', 'left'],
-  ['oQual', 'qual'],
   ['oFps', 'fps'],
   ['oEco', 'eco'],
 ])

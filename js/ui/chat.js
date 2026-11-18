@@ -190,23 +190,23 @@ async function chatSend() {
 let wipeAllArm = false;
 function chatModBar() {
   const B = $('chatMod');
-  B.hidden = !S.dev;
-  if (!S.dev) return;
+  B.hidden = !developerKey;
+  if (!developerKey) return;
   B.innerHTML = '';
-  labBtn(B, CHAT.pick ? '✖️ إلغاء التحديد' : '☑️ حدد رسائل', () => {
+  devButton(B, CHAT.pick ? '✖️ إلغاء التحديد' : '☑️ حدد رسائل', () => {
     CHAT.pick = !CHAT.pick;
     CHAT.sel.clear();
     chatDraw();
   });
   if (CHAT.pick)
-    labBtn(B, '🗑 احذف المحدد (' + CHAT.sel.size + ')', async () => {
+    devButton(B, '🗑 احذف المحدد (' + CHAT.sel.size + ')', async () => {
       if (!CHAT.sel.size) return toast('اضغط على الرسائل اللي تبي تحذفها أول');
       if (await chatAdminDelete([...CHAT.sel])) {
         CHAT.sel.clear();
         CHAT.pick = false;
       }
     });
-  labBtn(B, wipeAllArm ? '⚠️ متأكد؟ اضغط مرة ثانية' : '🧨 احذف الكل', async () => {
+  devButton(B, wipeAllArm ? '⚠️ متأكد؟ اضغط مرة ثانية' : '🧨 احذف الكل', async () => {
     if (!wipeAllArm) {
       wipeAllArm = true;
       chatModBar();
@@ -222,18 +222,13 @@ function chatModBar() {
 }
 /** Delete the given message ids (or all when null). Returns true on success. */
 async function chatAdminDelete(ids) {
-  let key = S.devKey;
-  if (!key) {
-    key = (prompt('اكتب كود المطور للتأكيد') || '').toUpperCase().replace(/\s+/g, '');
-    if (!key) return false;
-  }
+  const key = developerKey;
+  if (!key) return false;
   try {
     const n = await api('/rest/v1/rpc/admin_delete_chat', {
       method: 'POST',
       body: JSON.stringify({ p_key: key, p_ids: ids }),
     });
-    S.devKey = key;
-    save();
     AU.play('select');
     toast('🗑 انحذفت ' + (n | 0) + ' رسالة');
     CHAT.lastId = -1;
@@ -244,8 +239,8 @@ async function chatAdminDelete(ids) {
     const m = String(err.message);
     if (m.includes('404')) toast('خاصية الحذف ما انفعّلت في السيرفر للحين (ملف chat-admin.sql)');
     else if (m.includes('400')) {
-      delete S.devKey;
-      save();
+      lockDeveloperMode();
+      chatModBar();
       toast('كود المطور غير صحيح');
     } else toast('ما انحذفت، تأكد من الإنترنت');
     return false;

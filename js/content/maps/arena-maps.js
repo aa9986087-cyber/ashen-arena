@@ -112,23 +112,78 @@ function openArenaGeometry(model, surface) {
   for (let i = 0, face = 0; i < count; i += 9, face += 3) {
     let rgb = [triangles.charCodeAt(face), triangles.charCodeAt(face + 1), triangles.charCodeAt(face + 2)].map(n => n / 255);
     const tone = rgb[0] * .24 + rgb[1] * .55 + rgb[2] * .21;
-    if (surface === 'frost' && (model !== 'fir' || points[i + 1] > .23))
+    const foliage = ARENA_TREE_MODELS.has(model) && rgb[1] > rgb[0];
+    if (surface === 'frost' && (model !== 'fir' || foliage))
       rgb = [.39 + tone * .47, .54 + tone * .4, .62 + tone * .37];
-    if (surface === 'basalt' && model !== 'brazier')
+    else if (surface === 'basalt' && model !== 'brazier')
       rgb = [.23 + tone * .40, .19 + tone * .35, .18 + tone * .32];
-    if (surface === 'shadow') rgb = [.32 + tone * .47,.28 + tone * .42,.41 + tone * .49];
+    else if (surface === 'shadow') rgb = [.32 + tone * .47,.28 + tone * .42,.41 + tone * .49];
+    else if (ARENA_TREE_MODELS.has(model)) {
+      const shade = 0.86 + 0.24 * (Math.sin(points[i] * 16 + points[i + 2] * 24) * 0.5 + 0.5);
+      rgb = (foliage ? [0.29, 0.44, 0.22] : [0.44, 0.30, 0.19]).map(n => n * shade);
+    }
     for (let v = 0; v < 3; v++) colors.set(rgb, i + v * 3);
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(points, 3));
   g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   g.computeVertexNormals();
+  const normals = g.attributes.normal.array;
+  const uv = new Float32Array(g.attributes.position.count * 2);
+  for (let i = 0, j = 0; i < points.length; i += 3, j += 2) {
+    const x = Math.abs(normals[i]), y = Math.abs(normals[i + 1]), z = Math.abs(normals[i + 2]);
+    uv[j] = (x > y && x > z ? points[i + 2] : points[i]) * 3;
+    uv[j + 1] = (y >= x && y >= z ? points[i + 2] : points[i + 1]) * 3;
+  }
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   g.computeBoundingBox();
   arenaMapMeshCache.set(key, g);
   return g;
 }
 
 const arenaTileShape = white(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2));
+const arenaSurfaceTexture = (() => {
+  const canvas = document.createElement('canvas'), size = 256;
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d'), image = ctx.createImageData(size, size), random = arenaRandom(41317);
+  const layers = [[8, 42], [24, 36], [56, 22], [128, 12]].map(([cells, amplitude]) => ({
+    cells, amplitude, values: Float32Array.from({ length: cells * cells }, () => random() - 0.5),
+  }));
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    let shade = 216;
+    for (const { cells, amplitude, values } of layers) {
+      const u = x * cells / size, v = y * cells / size, i = u | 0, j = v | 0;
+      const sx = u - i, sy = v - j;
+      const fx = sx * sx * (3 - 2 * sx), fy = sy * sy * (3 - 2 * sy);
+      const right = (i + 1) % cells, below = ((j + 1) % cells) * cells;
+      const a = values[j * cells + i] * (1 - fx) + values[j * cells + right] * fx;
+      const b = values[below + i] * (1 - fx) + values[below + right] * fx;
+      shade += (a * (1 - fy) + b * fy) * amplitude;
+    }
+    const k = (y * size + x) * 4;
+    image.data[k] = image.data[k + 1] = image.data[k + 2] = shade;
+    image.data[k + 3] = 255;
+  }
+  ctx.putImageData(image, 0, 0);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+})();
+const arenaFloorMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, bumpScale: 0.16 });
+const arenaPropMaterial = new THREE.MeshStandardMaterial({
+  vertexColors: true, map: arenaSurfaceTexture, roughness: 0.88, bumpScale: 0.075,
+});
+const arenaContactMaterial = (() => {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 64;
+  const ctx = canvas.getContext('2d'), ink = ctx.createRadialGradient(32, 32, 3, 32, 32, 32);
+  ink.addColorStop(0, '#080b0ddd');
+  ink.addColorStop(0.45, '#080b0d80');
+  ink.addColorStop(1, '#080b0d00');
+  ctx.fillStyle = ink;
+  ctx.fillRect(0, 0, 64, 64);
+  return new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true, depthWrite: false });
+})();
 const arenaStoneShape = white(new THREE.ShapeGeometry(new THREE.Shape(
   [[-.50,-.17],[-.31,-.48],[.19,-.49],[.49,-.19],[.43,.33],[.02,.49],[-.4,.36]].map(p => new THREE.Vector2(...p))
 )).rotateX(-Math.PI / 2));
@@ -219,7 +274,7 @@ function arenaFloor(st) {
   }
   for (const [geo, items, height] of [[arenaTileShape, tiles, .021], [arenaStoneShape, stones, .015]]) {
     if (!items.length) continue;
-    const batch = inst(geo, lamV, items.length, false);
+    const batch = inst(geo, arenaFloorMaterial, items.length, false);
     batch.mesh.receiveShadow = true;
     const tint = new THREE.Color();
     let offset = 0;
@@ -276,7 +331,7 @@ function mountArenaMap(st) {
   const [r,g,b] = st.tint;
   for (const [model, locations] of items) {
     const geometry = openArenaGeometry(model, surface);
-    const batch = inst(geometry, lamV, locations.length, true);
+    const batch = inst(geometry, graphicsLevel() ? arenaPropMaterial : lamV, locations.length, true);
     batch.mesh.receiveShadow = true;
     batch.mesh.name = 'arena-map-' + model;
     batch.mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
@@ -285,6 +340,14 @@ function mountArenaMap(st) {
     decor.push(batch);
   }
   arenaFloor(st);
+  if (occupied.length) {
+    const shade = inst(arenaTileShape, arenaContactMaterial, occupied.length, false);
+    shade.mesh.name = 'arena-contact-shadows';
+    shade.mesh.visible = !!graphicsLevel();
+    for (const { x, z, r } of occupied) put(shade, x, 0.036, z, 0, r * 4.5, 1, r * 3.6, 1, 1, 1);
+    flush(shade);
+    decor.push(shade);
+  }
   edge.material.color.setHex(st.rim);
   POSTS.mesh.visible = false;
   return true;

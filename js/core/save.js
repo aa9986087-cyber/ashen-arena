@@ -37,15 +37,21 @@ const defSave = () => ({
     wt: 0,
     wft: 0,
   },
-  set: { sfx: 0.7, mus: 0.5, shadow: 1, shake: 1, qual: 1, left: 1 },
+  set: { sfx: 0.7, mus: 0.5, shadow: 1, shake: 1, qual: 1, left: 1, landscape: 0 },
 });
 let S = defSave();
+function savedProfile(profile = S) {
+  const data = { ...profile };
+  delete data.dev;
+  delete data.devKey;
+  return data;
+}
 try {
   const raw = localStorage.getItem(SAVE_KEY);
   if (raw) {
     const o = JSON.parse(raw),
       d = defSave();
-    S = Object.assign(d, o);
+    S = Object.assign(d, savedProfile(o));
     if (!(o.ver >= 2)) {
       S.perm = {};
       S.ver = 2;
@@ -57,6 +63,6 @@ try {
 } catch {}
 function save() {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(S));
+    localStorage.setItem(SAVE_KEY, JSON.stringify(savedProfile()));
   } catch {}
 }

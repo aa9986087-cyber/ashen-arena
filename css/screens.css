@@ -610,6 +610,63 @@ textarea.txt {
 #settings .wrap {
   max-width: 560px;
 }
+.qualityPanel {
+  min-inline-size: 0;
+  margin: 19px 0 10px;
+  padding: 10px;
+  border: 1px solid var(--goldline);
+  border-radius: 17px;
+  background: linear-gradient(145deg, #282339, #151423 70%);
+}
+.qualityPanel legend {
+  padding-inline: 10px;
+  color: #ffe4a8;
+  font-weight: 800;
+}
+.qualityOptions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+.qualityOption {
+  position: relative;
+  min-width: 0;
+  cursor: pointer;
+  --gem: #a0acbd;
+  --light: #b4bdd044;
+}
+.qualityOption:nth-child(2) { --gem: #69c6af; --light: #64cbb755; }
+.qualityOption:nth-child(3) { --gem: #f6bd67; --light: #efa54955; }
+.qualityOption input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.qualityCard {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 4px;
+  height: 100%;
+  padding: 8px 5px 9px;
+  border: 1px solid #51465e;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 50% 13%, var(--light), transparent 64%), #161526;
+  color: #f1e5ce;
+  text-align: center;
+}
+.qualityCard i {
+  width: 29px;
+  height: 33px;
+  margin: 3px 0 4px;
+  clip-path: polygon(50% 0, 94% 26%, 94% 73%, 50% 100%, 6% 73%, 6% 26%);
+  background: conic-gradient(from 30deg, var(--gem) 0 30%, #413849 31% 49%, var(--gem) 50% 63%, #827387 64% 82%, var(--gem) 83%);
+  box-shadow: inset 0 0 12px #fff8;
+}
+.qualityCard small { font-size: 11px; line-height: 1.35; color: #cabed0; }
+.qualityOption input:checked + .qualityCard {
+  border-color: #f6c45a;
+  background: radial-gradient(ellipse at 50% 13%, var(--light), transparent 69%), #252031;
+  box-shadow: inset 0 0 0 1px #f6c45a66, 0 0 13px #eab65325;
+  color: #fff0bd;
+}
+.qualityOption input:focus-visible + .qualityCard { outline: 2px solid #fff0bd; outline-offset: 2px; }
 #treeNote {
   margin-bottom: 14px;
 }
@@ -967,6 +1024,14 @@ textarea.txt {
 .center {
   justify-content: safe center;
 }
+html.run-rot #pause {
+  flex-flow: row wrap;
+  align-content: safe center;
+  column-gap: 18px;
+}
+html.run-rot #pause h2 { width: 100%; font-size: 40px; }
+html.run-rot #pStats { width: min(380px, 50%); margin: 0; }
+html.run-rot #pause .stack { padding: 12px; gap: 7px; }
 @media (max-height: 520px) {
   #pause {
     flex-flow: row wrap;

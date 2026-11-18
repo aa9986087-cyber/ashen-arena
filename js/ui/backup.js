@@ -3,7 +3,7 @@
    or keep it safe from a cleared browser. The signature stops casual edits, not a determined cheat. */
 const BACKUP_SALT = '#vamos-save';
 function backupCode() {
-  const json = JSON.stringify(S);
+  const json = JSON.stringify(savedProfile());
   return 'AS1-' + b64(json) + '.' + sig(json + BACKUP_SALT);
 }
 /** Parse a backup code; returns the profile object, or null if it is not a valid code. */
@@ -49,7 +49,7 @@ $('bkLoad').onclick = async () => {
   restoreArm = null;
   $('bkLoad').textContent = 'استرجع';
   const gifts = Object.assign({}, o.gifts, S.gifts);
-  S = Object.assign(defSave(), o);
+  S = Object.assign(defSave(), savedProfile(o));
   S.stats = Object.assign(defSave().stats, o.stats || {});
   S.set = Object.assign(defSave().set, o.set || {});
   S.gifts = gifts; // a gift redeemed on this device stays redeemed

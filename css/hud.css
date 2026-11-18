@@ -152,6 +152,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 #pauseBtn,
+#runViewBtn,
 #labBtn {
   pointer-events: auto;
   width: 42px;
@@ -162,6 +163,14 @@
   border: 2px solid var(--gold);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
+#runViewBtn[aria-pressed='true'] {
+  color: var(--xp);
+  border-color: var(--xp);
+}
+html.run-wide #vital { flex-basis: 230px; }
+html.run-wide #acts { gap: 8px; }
+html.run-wide #acts .act { width: 62px; height: 62px; }
+html.run-wide #acts .act.big { width: 72px; height: 72px; }
 #labBtn {
   background: radial-gradient(circle at 35% 30%, #2f8a7f, #0e2a28 75%);
   border-color: var(--xp);
@@ -627,6 +636,7 @@ body.mouse .act.big {
 /* watching someone's run: no controls, a bar with their name */
 #hud.watching #acts,
 #hud.watching #pauseBtn,
+#hud.watching #runViewBtn,
 #hud.watching #joy {
   display: none !important;
 }
