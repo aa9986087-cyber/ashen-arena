@@ -185,8 +185,9 @@ function forgeReact(f, dt) {
     return;
   }
   const strength = Math.sin(15 * hit.age) * Math.exp(-5 * hit.age) * hit.amount;
-  const side = hit.force.x * Math.cos(f.face) - hit.force.z * Math.sin(f.face);
-  const front = hit.force.x * Math.sin(f.face) + hit.force.z * Math.cos(f.face);
+  const scale = 1 / Math.max(.18, hit.amount);
+  const side = (hit.force.x * Math.cos(f.face) - hit.force.z * Math.sin(f.face)) * scale;
+  const front = (hit.force.x * Math.sin(f.face) + hit.force.z * Math.cos(f.face)) * scale;
   const bend = (name, x, y, z) => {
     const bone = goreBone(f, name);
     if (bone) bone.quaternion.multiply(forgeSurfaceQ.setFromEuler(new THREE.Euler(x, y, z)));

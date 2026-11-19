@@ -66,7 +66,7 @@ for (const [id, record] of Object.entries(FORGE_WEAPON_DATA)) {
   const [n, i, category, start, tip, spd, dmg, st, mass, radius, shift, snd] = record;
   const thrust = category === 'point', blunt = category === 'blunt';
   DUEL_WEAPONS[id] = {
-    n, i, category, build: () => forgeWeaponModel(id), hit: [start, tip],
+    n, i, category, twoHanded: ['claymore','greatsword','greataxe','scythe','spear','warhammer'].includes(id), build: () => forgeWeaponModel(id), hit: [start, tip],
     contact: [[shift * 0.72, start, 0], [shift, tip, 0]], thrust, radius, mass,
     tip: thrust ? 'طعن مباشر' : blunt ? 'يضغط على الصد' : 'ضربة قاطعة',
     snd, spd, dmg, st, cut: blunt ? 0 : thrust ? 0.48 : 1.12,

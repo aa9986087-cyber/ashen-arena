@@ -98,3 +98,6 @@
   .forgeWeaponVisual { height: 37px; }
   .forgeWeaponCards { max-height: 34vh; }
 }
+
+#duel #dMsg.go.show { animation-duration: .84s; }
+#duel #dMsg.go b { font-size: clamp(30px, 7vmin, 52px); }

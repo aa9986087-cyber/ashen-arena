@@ -89,7 +89,7 @@ function forgeBuildMenu() {
     }
     host.disabled = join.disabled = true;
     const kind = local ? 'local' : 'live';
-    return duelStartOnline('iron-v4-' + kind + '-' + id, mine, 'خصم المبارزة')
+    return duelStartOnline('iron-v5-' + kind + '-' + id, mine, 'خصم المبارزة')
       .finally(() => { host.disabled = join.disabled = false; });
   };
   host.onclick = async () => {
@@ -145,40 +145,79 @@ forgeBuildMenu();
 
 const forgeAttackButton = $('dAtk');
 let forgePointer = null;
+
+function forgeReleaseBlade(fire = false) {
+  const pointer = forgePointer, f = DUEL.me;
+  forgePointer = null;
+  if (pointer && forgeAttackButton.hasPointerCapture(pointer.id)) forgeAttackButton.releasePointerCapture(pointer.id);
+  forgeAttackButton.classList.remove('held', 'steering');
+  if (!pointer || !f) return;
+  if (f.forgeGesture?.held) {
+    f.forgeGesture.held = false;
+    f.forgeGesture.release = f.t;
+  }
+  if (fire && !pointer.dragged && !pointer.charged && DUEL.phase === 'fight') {
+    if (performance.now() - pointer.time >= DUEL_HOLD * 1000) f.heavy();
+    else f.light();
+  }
+}
+
+function forgeClearControls() {
+  forgeReleaseBlade();
+  DUEL.atkDown = -1;
+  DUEL.heavyFired = DUEL.blockHeld = DUEL.blockWas = DUEL.rmb = false;
+  DUEL.look = DUEL.joy = null;
+  DUEL.yaw = DUEL.tilt = 0;
+  $('dJoy').hidden = true;
+  for (const button of $('dActs').querySelectorAll('.held')) {
+    const id = button.forgeHeldBy;
+    if (id != null && button.hasPointerCapture(id)) button.releasePointerCapture(id);
+    button.forgeHeldBy = null;
+    button.classList.remove('held');
+  }
+  if (DUEL.me) Object.assign(DUEL.me.want, { mx:0, mz:0, run:false, block:false });
+}
+
+function forgeTickControls() {
+  const pointer = forgePointer;
+  if (!pointer || pointer.charged || pointer.dragged) return;
+  if (performance.now() - pointer.time >= DUEL_HOLD * 1000) pointer.charged = DUEL.me.heavy();
+}
+
 forgeAttackButton.addEventListener('pointerdown', event => {
-  if (forgePointer) return;
-  forgePointer = { id: event.pointerId, ...duelPt(event), drag: false };
+  if (forgePointer || !DUEL.on || DUEL.phase !== 'fight' || event.button !== 0) return;
+  event.preventDefault();
+  event.stopPropagation();
+  forgeAttackButton.setPointerCapture(event.pointerId);
+  forgeAttackButton.classList.add('held');
+  forgePointer = { id:event.pointerId, ...duelPt(event), time:performance.now(), dragged:false, charged:false };
 });
 forgeAttackButton.addEventListener('pointermove', event => {
-  const f = DUEL.me;
-  if (!f || forgePointer?.id !== event.pointerId || DUEL.phase !== 'fight') return;
+  const f = DUEL.me, pointer = forgePointer;
+  if (!f || pointer?.id !== event.pointerId || DUEL.phase !== 'fight') return;
   const position = duelPt(event);
-  const dx = position.x - forgePointer.x, dy = position.y - forgePointer.y;
-  const x = clamp(-dx / 78, -1, 1);
-  const y = clamp(-dy / 69, -1, 1);
-  if (!forgePointer.drag) {
-    if (DUEL.heavyFired || Math.hypot(dx, dy) < 9) return;
+  const dx = position.x - pointer.x, dy = position.y - pointer.y;
+  if (!pointer.dragged && Math.hypot(dx, dy) < 9) return;
+  pointer.dragged = true;
+  const x = clamp(-dx / 75, -1, 1), y = clamp(-dy / 65, -1, 1);
+  if (!pointer.steering) {
+    if (pointer.charged && f.act !== 'heavy') return;
     f.forgeAim = -Math.sign(x);
-    f.forgeGesture = { x, y, held: true, release: 0 };
-    if (!f.light()) {
+    f.forgeGesture = { x, y, held:true, release:0 };
+    if (!pointer.charged && !f.light()) {
       f.forgeGesture = null;
       f.forgeAim = 0;
       return;
     }
-    forgePointer.drag = DUEL.heavyFired = true;
+    pointer.steering = true;
   }
   if (f.forgeGesture) Object.assign(f.forgeGesture, { x, y });
   forgeAttackButton.classList.add('steering');
 });
 for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
   forgeAttackButton.addEventListener(type, event => {
-    if (forgePointer?.id !== event.pointerId) return;
-    const f = DUEL.me;
-    if (forgePointer.drag && f?.forgeGesture) {
-      f.forgeGesture.held = false;
-      f.forgeGesture.release = f.t;
-    }
-    forgeAttackButton.classList.remove('steering');
-    forgePointer = null;
+    if (forgePointer?.id === event.pointerId) forgeReleaseBlade(type === 'pointerup');
   });
 }
+addEventListener('blur', () => { if (DUEL.on) forgeClearControls(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && DUEL.on) forgeClearControls(); });

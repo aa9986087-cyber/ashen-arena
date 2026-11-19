@@ -50,8 +50,8 @@ def build(out):
     patch(out, "js/core/penalties.js", [("    if (!pid || !S.pkey) return null;", "    return null;")])
     patch(out, "js/duel/duel-net.js", [
         ("const NET_LOCAL = /netlocal/.test(location.hash);", "const NET_LOCAL = true;"),
-        ("  if (NET_LOCAL) {\n    const bc", "  if (!name.startsWith('duel-iron-v4-live-')) {\n    const bc"),
-        ("new BroadcastChannel('ashen:' + name)", "new BroadcastChannel('ashen-iron-v4:' + name)"),
+        ("  if (NET_LOCAL) {\n    const bc", "  if (!name.startsWith('duel-iron-v5-live-')) {\n    const bc"),
+        ("new BroadcastChannel('ashen:' + name)", "new BroadcastChannel('ashen-iron-v5:' + name)"),
     ])
     (out / "js/duel/duel-lobby.js").write_text(
         (out / "js/duel/duel-lobby.js").read_text().replace("ashen_duels_local", "ashen_iron_duels")
@@ -73,21 +73,40 @@ def build(out):
     end = code.index("    // end of timed states", start)
     code = code[:start] + """    const M = this.M[this.act] || DM[this.act];
     const manual = forgeManual(this);
-    const strike = !this.hitDone && FORGE_ATTACKS.has(this.act) &&
-      (manual ? this.t >= 0.035 : this.t >= M.hitFrom && this.t - dt <= M.hitTo) ? this.act : null;
 """ + code[end:]
     code = replace(code, "    this.hitDone = false;\n  }\n  /** The sword", """    this.hitDone = false;
     forgeBeginAction(this, act);
   }
   /** The sword""")
-    pose = "this.root.rotation.y = this.face;"
-    if code.count(pose) != 2:
-        raise RuntimeError("Expected the local and remote pose exits")
-    code = code.replace(pose, pose + "\n      forgeBodyLean(this, dt);\n      forgeGroundShadow(this);\n      forgePoseAndStrike(this, foe, strike, dt);")
+    code = replace(code, "    this.play(['atk1', 'atk2', 'atk3'][this.combo++ % 3], 0.08, this.M.light.t * 1.15, true);", "    this.combo++;")
+    code = replace(code, "    this.play('heavy', 0.1, this.M.heavy.t * 1.6, true);", "")
+    code = replace(code, "      this.play('block', 0.06, 0, true);", "")
+    start = code.index("      if (this.act === 'idle') {\n        // a real sprint")
+    end = code.index("\n    } else {\n      this.moving = 0;", start)
+    code = code[:start] + code[end:]
+    anchor = "    this.lean = (this.lean || 0)"
+    start = code.index(anchor)
+    code = code[:start] + """    if (this.free || this.act === 'light' || this.act === 'heavy') {
+      const speed = Math.hypot(vx, vz);
+      const forward = vx * fx + vz * fz;
+      if (speed < .15) this.play('idle', .14);
+      else {
+        const run = this.running && this.acts.run, jog = this.jogging && this.acts.jog;
+        this.play(run ? 'run' : jog ? 'jog' : 'walk', .12);
+        this.cur.timeScale = (forward < -.22 ? -1 : 1) * (run || jog ? 1.05 : clamp(speed / 2.35, .32, 1.45));
+      }
+    }
+""" + code[start:]
+    start = code.index("    for (const o of this.others || [foe]) {", code.index("    // move, knock-back"))
+    end = code.index("    const r = Math.hypot(this.x, this.z);", start)
+    code = code[:start] + code[end:]
     start = code.index("    // the killing blow: a staged finisher")
     end = code.index("    if (kind === 'kick') {", start)
     code = code[:start] + "    forgeWound(this, from, kind);\n" + code[end:]
     code = replace(code, "    goreHit(this, from, kind);", "")
+    code = code.replace("this.play('hit', 0.05, this.stun * 1.4, true);", "this.play('idle', .09);")
+    code = replace(code, "this.play(s.a, 0.05, this.stun * 1.4, true);", "this.play('idle', .09);")
+    code = replace(code, "this.play(kind === 'heavy' ? 'knock' : 'hit', 0.05, this.stun * 1.4, true);", "this.play('idle', .09);")
     code = replace(code, "    const cut = this.execute && !(this.cuts & 1) && W.cut ? 'head' : goreDecide(this, kind, from);",
                    "    const cut = goreDecide(this, kind, from);")
     code = replace(code, "    if (s.a === 'hit' || s.a === 'knock') goreHit(this, other, s.a === 'hit' ? 'light' : 'heavy');", "")
@@ -111,15 +130,16 @@ def build(out):
     code = replace(code, "if (kind === 'heavy' || d.st < cost)", "if (d.st < cost || (kind === 'heavy' && W.block > 1.25))")
     code = code.replace("this.st < this.M.light.st * 0.5", "this.st < this.M.light.st")
     code = code.replace("this.st < this.M.heavy.st * 0.5", "this.st < this.M.heavy.st")
-    code = code.replace("blockT: 0, moving: 0", "blockT: 0, moving: 0, vx: 0, vz: 0, forgeSweep: null, forgeLean: 0, forgeMotion: null, forgeGesture: null")
+    code = code.replace("blockT: 0, moving: 0", "blockT: 0, moving: 0, vx: 0, vz: 0, forgeSweep: null, forgePrior: null, forgeGuardBlade: null, forgePreviousGuard: null, forgeGait: null, forgeLean: 0, forgeMotion: null, forgeGesture: null")
     code = replace(code, "    if (M && this.t >= M.t) {", "    if (M && this.t >= (manual ? (this.forgeGesture.held ? 1.45 : Math.max(M.t, this.forgeGesture.release + .26)) : M.t)) {")
     code = replace(code, "    if (this.free) {\n      let mx", "    if (this.free || this.act === 'light' || this.act === 'heavy') {\n      let mx")
     code = replace(code, "* (this.armless ? 0.65 : 1);", "* (this.armless ? 0.65 : (this.act === 'light' || this.act === 'heavy') ? .55 : 1);")
-    code = replace(code, "if (this.act === 'idle') {\n        // a real sprint", "if (this.act === 'idle' || forgeManual(this)) {\n        // a real sprint")
     code = replace(code, "  if (d.act === 'dodge' && d.t > DM.dodge.iFrom && d.t < DM.dodge.iTo) return 'miss';", "")
     code = replace(code, "  if (d.act === 'block' && Math.abs(wrapAng(Math.atan2(a.x - d.x, a.z - d.z) - d.face)) < 1.4) {",
                    "  if (d.act === 'block' && d.forgeContact?.guard) {")
-    code = replace(code, "    goreReset(this);", "    forgeClearInjuries(this);\n    goreReset(this);")
+    code = replace(code, "    goreReset(this);", "    if (this.forgeRig) for (const z of this.forgeRig) z.ready = false;\n    forgeClearInjuries(this);\n    goreReset(this);")
+    code = replace(code, "if (!this.free || this.st < DM.kick.st * 0.5)", "if (!this.free || this.st < DM.kick.st || (this.cuts & GORE_PARTS.legR.bit))")
+    code = replace(code, "if (!this.free || this.st < DM.dodge.st * 0.5)", "if (!this.free || this.st < DM.dodge.st)")
     path.write_text(code)
     mode = out / "js/duel/duel-mode.js"
     code = mode.read_text()
@@ -148,16 +168,54 @@ def build(out):
         ("|| 'fp';", "|| 'tps';"),
         ("    DUEL.scene.add(DUEL.me.root, DUEL.foe.root);",
          "    forgeDress(DUEL.me, 0);\n    forgeDress(DUEL.foe, 1);\n    DUEL.scene.add(DUEL.me.root, DUEL.foe.root);"),
-        ("if (DUEL.atkDown >= 0 && !DUEL.heavyFired && performance.now()", "if (!forgePointer?.drag && DUEL.atkDown >= 0 && !DUEL.heavyFired && performance.now()"),
+        ("if (DUEL.atkDown >= 0 && !DUEL.heavyFired && performance.now()", "if (!forgePointer && DUEL.atkDown >= 0 && !DUEL.heavyFired && performance.now()"),
+        ("  me.want.block = blockNow;", "  me.want.block = blockNow;\n  forgeTickControls();"),
+        ("function duelExit() {", "function duelExit() {\n  forgeClearControls();"),
+        ("function duelSetRot(on) {", "function duelSetRot(on) {\n  if (duelRotated() !== on) forgeClearControls();"),
+        ("  const w = DUEL.me.want;\n  DUEL.me.dodge(w.mx, w.mz);", "  const w = DUEL.me.want, joy = DUEL.joy;\n  DUEL.me.dodge(joy?.x ?? w.mx, joy?.z ?? w.mz);"),
+        ("  J.x = dx / m;\n  J.z = -dy / m;", """  const pressure = Math.max(0, (Math.min(d, m) - 7) / (m - 7));
+  J.x = d > 0 ? (P.x - J.x0) / d * pressure : 0;
+  J.z = d > 0 ? (J.y0 - P.y) / d * pressure : 0;"""),
         ("  duelLock(false);\n  DUEL.pitch = 0;",
          "  duelLock(!watch);\n  DUEL.pitch = 0;\n  me.forgeAttack = foe.forgeAttack = foe.forgeRemoteAttack = 0;"),
-        ("    down();\n  });", "    b.setPointerCapture(e.pointerId);\n    down();\n  });"),
-        ("  b.addEventListener('pointercancel', end);\n  b.addEventListener('pointerleave', end);",
-         """  b.addEventListener('pointercancel', () => {
-    if (id === 'dAtk') DUEL.atkDown = -1;
-    end();
+        ("""const press = (id, down, up) => {
+  const b = $(id);
+  b.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    b.classList.add('held');
+    down();
   });
-  b.addEventListener('lostpointercapture', end);"""),
+  const end = e => {
+    b.classList.remove('held');
+    up && up();
+  };
+  b.addEventListener('pointerup', end);
+  b.addEventListener('pointercancel', end);
+  b.addEventListener('pointerleave', end);
+};
+press('dAtk', duelAtkDown, duelAtkUp);""", """const press = (id, down, up) => {
+  const b = $(id);
+  b.forgeHeldBy = null;
+  b.addEventListener('pointerdown', e => {
+    if (b.forgeHeldBy !== null || !DUEL.on || DUEL.phase !== 'fight') return;
+    e.preventDefault();
+    e.stopPropagation();
+    b.forgeHeldBy = e.pointerId;
+    b.setPointerCapture(e.pointerId);
+    b.classList.add('held');
+    down();
+  });
+  const end = e => {
+    if (e.pointerId !== b.forgeHeldBy) return;
+    b.forgeHeldBy = null;
+    b.classList.remove('held');
+    up?.();
+  };
+  for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(type, end);
+};"""),
+        ("      DUEL.me.update(rdt * ts, DUEL.foe);\n      DUEL.foe.update(rdt * ts, DUEL.me);", "      forgeAdvance([[DUEL.me, DUEL.foe], [DUEL.foe, DUEL.me]], rdt * ts);"),
+        ("    me.update(dt, foe);\n    foe.update(dt, me);", "    forgeAdvance([[me, foe], [foe, me]], dt);"),
         ("  const N = (DUEL.net = { ch, host, room", "  ch = forgeChannel(ch, host);\n  const N = (DUEL.net = { ch, host, room"),
         ("    if (DUEL.foe && DUEL.phase !== 'over') DUEL.foe.netState(s);",
          """    if (DUEL.foe && DUEL.phase !== 'over') {
@@ -179,9 +237,27 @@ def build(out):
       mt: r(me.t),
       md: me.forgeDirection || 0,
       mc: me.combo,"""),
+        ("function duelOutcome(att, def, r) {", "function duelOutcome(att, def, r, at) {"),
+        ("  duelOutcome(me, DUEL.foe, r.o);", "  duelOutcome(me, DUEL.foe, r.o, r.at && new THREE.Vector3(...r.at));"),
+        ("me.x - fx * back - fz * 0.75,", "me.x - fx * back - fz * .94,"),
+        ("me.z - fz * back + fx * 0.75", "me.z - fz * back + fx * .94"),
+        ("goreSparks(att, def, 16);", "goreSparks(att, def, 16, at);"),
+        ("goreSparks(att, def, 42);", "goreSparks(att, def, 42, at);"),
+        ("goreSparks(att, def, 28);", "goreSparks(att, def, 28, at);"),
+        ("    DUEL.me.onHit = r => duelOutcome(DUEL.me, DUEL.foe, r);", "    DUEL.me.onHit = (r, d, kind, at) => duelOutcome(DUEL.me, d, r, at);"),
+        ("    DUEL.foe.onHit = r => duelOutcome(DUEL.foe, DUEL.me, r);", "    DUEL.foe.onHit = (r, d, kind, at) => duelOutcome(DUEL.foe, d, r, at);"),
+        ("""    ? r => {
+        duelOutcome(foe, me, r);
+        DUEL.net && DUEL.net.ch.send('res', { o: r, k: foe.act });
+      }
+    : r => duelOutcome(foe, me, r);""", """    ? (r, d, kind, at) => {
+        duelOutcome(foe, me, r, at);
+        DUEL.net?.ch.send('res', { o: r, k: kind, at: at?.toArray().map(v => Math.round(v * 100) / 100) });
+      }
+    : (r, d, kind, at) => duelOutcome(foe, me, r, at);"""),
         ("  } else if (r === 'block') {\n    duelFloat", """  } else if (r === 'clash') {
     duelFloat('اصطدام النصال', 'blk');
-    goreSparks(att, def, 24);
+    goreSparks(att, def, 24, at);
     DUEL.hitStop = 0.05;
     DS.block();
   } else if (r === 'block') {
@@ -206,14 +282,19 @@ def build(out):
     const verdict = DUEL.clock <= 0 ? 'حُسمت بالوقت' : FORGE_ANATOMY_LABEL[fallen.forgeLastZone] || 'سقوط الخصم';
     duelMsg(meWon ? 'فزت بالجولة' : 'خسرت الجولة', verdict + ' · ' + DUEL.score[0] + ' - ' + DUEL.score[1], meWon ? 'win' : 'lose');
   }"""),
-        ("  DUEL.round = n || DUEL.round + 1;", "  DUEL.round = n || DUEL.round + 1;\n  DUEL.atkDown = -1;\n  DUEL.blockHeld = DUEL.blockWas = false;"),
+        ("  DUEL.round = n || DUEL.round + 1;", "  DUEL.round = n || DUEL.round + 1;\n  forgeClearControls();"),
     ])
     patch(out, "js/duel/duel-ai.js", [
-        ("d < 2.3", "d < Math.min(2.0, me.M.light.reach * 0.8)"),
+        ("      d = Math.hypot(foe.x - me.x, foe.z - me.z);", """      d = Math.hypot(foe.x - me.x, foe.z - me.z);
+    const gap = clamp(me.wp.hit[1] + .35, .88, 1.68);
+    const inReach = d < gap + (me.wp.thrust && me.wpId !== 'spear' ? .08 : .18);"""),
+        ("d < 2.2 &&", "inReach &&"),
+        ("d < 2.3", "inReach"),
+        ("d < DM.kick.reach - 0.1", "d < 1.02"),
+        ("r < 0.75 && foe.t", "r < 0.75 && inReach && foe.t"),
         ("me.want.mz = d > 2.0 ? 1 : d < 1.4 ? -0.7 : 0;",
-         """const gap = me.wpId === 'spear' ? 1.74 : 1.37;
-    const exhausted = me.st < me.M.light.st * 1.3;
-    me.want.mz = d > gap + 0.21 ? (exhausted ? 0.15 : 0.91) : d < gap - 0.19 || exhausted ? -0.76 : 0;"""),
+         """const exhausted = me.st < me.M.light.st * 1.2;
+    me.want.mz = exhausted || d < gap - .13 ? -.62 : d > gap + .11 ? .91 : .08;"""),
     ])
     gore = out / "js/duel/duel-gore.js"
     code = gore.read_text()
@@ -232,6 +313,9 @@ def build(out):
 }
 """ + code[end:])
     patch(out, "js/duel/duel-gore.js", [
+        ("function goreSparks(a, d, n) {", "function goreSparks(a, d, n, at) {"),
+        ("const x = a.x + (d.x - a.x) * 0.55,\n    z = a.z + (d.z - a.z) * 0.55;", "const x = at?.x ?? a.x + (d.x - a.x) * .55,\n    z = at?.z ?? a.z + (d.z - a.z) * .55;"),
+        ("y: 1.25 + rand(-0.1, 0.15),", "y: (at?.y ?? 1.25) + rand(-.04, .06),"),
         ("          f.start('dead');\n          f.play('death', 0.1, 0, true);\n          DS.death(f);",
          "          forgeFall(f, f.lastFrom);"),
         ("""    } else {
@@ -257,6 +341,23 @@ def build(out):
         ("    if (!o.isSkinnedMesh) return;", "    if (!o.isSkinnedMesh || o.userData.forgeHiddenLegacy) return;"),
     ])
     patch(out, "js/duel/duel-ffa.js", [
+        ("  G.state = 'duel';", "  G.state = 'duel';\n  DUEL.phase = 'load';\n  forgeClearControls();"),
+        ("  X.round = n;", "  X.round = n;\n  forgeClearControls();"),
+        ("  for (const f of ffaExtra || []) f.root.visible = false;", """  for (const f of ffaExtra || []) {
+    f.root.visible = false;
+    if (f.forgeShadow) f.forgeShadow.visible = false;
+  }"""),
+        ("  ffaTarget();\n  ffaStep(rdt);", "  ffaTarget();\n  duelRotTick(rdt);\n  ffaStep(rdt);"),
+        ("for (const m of DUEL.me.fpHide) m.visible = !m.userData.cut;", "for (const m of DUEL.me.fpHide) m.visible = forgeFighterVisible(m);"),
+        ("""  for (const f of X.all) {
+    if (f.gone) continue;
+    const foe = f === me ? DUEL.tgt || any : f.ai ? f.ai.foe || me : me;
+    f.update(dt, foe === f ? any : foe);
+  }""", """  const pairs = X.all.filter(f => !f.gone).map(f => {
+    const foe = f === me ? DUEL.tgt || any : f.ai ? f.ai.foe || me : me;
+    return [f, foe === f ? any : foe];
+  });
+  forgeAdvance(pairs, dt);"""),
         ("    ffaExtra = [new Duelist(a, FFA_HUES[2], 104), new Duelist(b, FFA_HUES[3], 124)];",
          "    ffaExtra = [new Duelist(a, FFA_HUES[2], 104), new Duelist(b, FFA_HUES[3], 124)];\n    ffaExtra.forEach((fighter, i) => forgeDress(fighter, i + 2));"),
     ])
@@ -269,15 +370,15 @@ def build(out):
     ])
     html = (out / "index.html").read_text()
     html = replace(html, "<title>ساحة الرماد</title>", "<title>حلبة النغالة | ساحة الرماد</title>")
-    html = html.replace("?v=202611180848", "?v=202611180848&preview=40")
+    html = html.replace("?v=202611180848", "?v=202611180848&preview=41")
     # Reuse the vetted Three.js assets and keep the preview independent of CDN rendering.
     vendors = "\n".join(f'<script src="vendor/{p.name}"></script>' for p in sorted((out / "vendor").glob("*.js")))
     html = re.sub(r'<script src="https://[^"]+"></script>', '', html)
     html = html.replace('<head>', '<head>\n<meta name="robots" content="noindex,nofollow">\n'
         '<meta http-equiv="Content-Security-Policy" content="connect-src \'self\' data: blob: wss://bvxfzcndquirqmpyhtpj.supabase.co https://bvxfzcndquirqmpyhtpj.supabase.co">\n'
-        '<link rel="stylesheet" href="style.css?v=40">', 1)
+        '<link rel="stylesheet" href="style.css?v=41">', 1)
     html = replace(html, '<script src="js/core/config.js', vendors + '\n<script src="js/core/config.js')
-    html = replace(html, '<script src="js/main.js', '\n'.join(f'<script src="{n}.js?v=40"></script>' for n in ['combat','injury','art','gear','network','menu']) + '\n<script src="js/main.js')
+    html = replace(html, '<script src="js/main.js', '\n'.join(f'<script src="{n}.js?v=41"></script>' for n in ['combat','injury','art','gear','network','menu']) + '\n<script src="js/main.js')
     (out / "index.html").write_text(html)
 
 def mobile_file(out, target):
