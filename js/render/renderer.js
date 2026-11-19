@@ -396,12 +396,14 @@ function render(dt, now) {
       b = ballPool[i];
     m.visible = !!q;
     const shell = q?.bossGround?.form === 'shell';
-    b.visible = !!q && q.kind !== 'sky' && (q.kind !== 'boss-special' || (shell && q.d - q.l <= BOSS_SHELL_FLIGHT));
-    if (q) {
-      const k = clamp(q.l / q.d, 0, 1);
-      drawBossWarning(m, q, k);
-      const zc = q.f ? 0xffa020 : q.sty ? BOSS_ULTS[q.sty - 1].zone : 0xff2a1a;
-      m.material.color.setHex(zc);
+    b.visible = !!q && q.kind !== 'sky' && q.kind !== 'slam' &&
+      (q.kind !== 'boss-special' || (shell && q.d - q.l <= BOSS_SHELL_FLIGHT));
+    if (!q) return;
+    const k = clamp(q.l / q.d, 0, 1);
+    drawBossWarning(m, q, k);
+    const zc = q.f ? 0xffa020 : q.sty ? BOSS_ULTS[q.sty - 1].zone : 0xff2a1a;
+    m.material.color.setHex(zc);
+    if (b.visible) {
       b.geometry = shell ? bossShellGeometry : SPH;
       const flight = shell ? clamp(1 - (q.d - q.l) / BOSS_SHELL_FLIGHT, 0, 1) : k;
       const y = (1 - flight) * 26 + 1,

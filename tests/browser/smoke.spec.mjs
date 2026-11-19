@@ -135,6 +135,51 @@ async function boot(page, isolated) {
   await expect(page.locator('#news')).toBeHidden();
 }
 
+test('official: giant ground strikes warn without a falling projectile or friendly fire', async ({ page, isolated }) => {
+  await boot(page, isolated);
+  await page.locator('#mPlay').tap();
+  const results = await page.evaluate(() => {
+    const cases = [];
+    for (const [type, charged] of [['golem', false], ['golem', true], ['brute', false], ['mage', false]]) {
+      newRun();
+      G.state = 'play';
+      G.noWaves = true;
+      G.weapons = [];
+      OBST.length = 0;
+      const enemy = spawn(type, 3.5, 0, false);
+      const nearby = spawn('grunt', 3.5, 3, false);
+      enemy.hp = nearby.hp = 1;
+      enemy.spd = nearby.spd = 0;
+      enemy.mini = type === 'brute';
+      enemy.cd = type === 'mage' || charged ? 0 : 30;
+      enemy.aCd = charged ? 30 : 0;
+      const playerHp = G.p.hp;
+      update(0.05);
+      render(0, performance.now());
+      const warning = zonePool[0].visible;
+      const projectile = ballPool[0].visible;
+      let snapshot;
+      const channel = COOP.ch;
+      COOP.ch = { send: (_, world) => { snapshot = world; } };
+      coopSendWorld();
+      COOP.ch = channel;
+      for (let i = 0; i < 24; i++) update(0.05);
+      COOP.buf = [snapshot];
+      coopMirror(0);
+      render(0, performance.now());
+      cases.push({ warning, projectile, mirroredProjectile: ballPool[0].visible,
+        enemyHp: enemy.hp, nearbyHp: nearby.hp, shots: G.eshots.length, hurt: G.p.hp < playerHp });
+      COOP.buf = [];
+    }
+    return cases;
+  });
+  for (const [i, result] of results.entries()) {
+    const projectile = i === 3; // The mage's falling attack remains visible.
+    expect(result).toEqual({ warning: true, projectile, mirroredProjectile: projectile,
+      enemyHp: 1, nearbyHp: 1, shots: 0, hurt: true });
+  }
+});
+
 async function checkScreens(page, isolated) {
   for (const screen of ['chars', 'shop', 'tree', 'ach', 'settings']) {
     await page.locator(`#menu [data-go="${screen}"]`).click();

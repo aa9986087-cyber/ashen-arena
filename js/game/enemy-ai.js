@@ -377,12 +377,12 @@ function updEnemies(dt) {
         // a melee giant: no bullets; when you're close it slams the ground around it (a red ring warns first)
         if (e.aCd <= 0 && d < 7) {
           e.aCd = 4.5;
-          zone(e.x, e.z, 4.5, 0.9, e.dmg * 0.8, false);
+          zone(e.x, e.z, 4.5, 0.9, e.dmg * 0.8, false, 'slam');
         }
         if (e.cd <= 0 && d < 5) {
           e.st = 1;
           e.stT = 0.95;
-          zone(e.x, e.z, 5, 0.9, e.dmg, false);
+          zone(e.x, e.z, 5, 0.9, e.dmg, false, 'slam');
         }
       }
     } else {
@@ -396,7 +396,7 @@ function updEnemies(dt) {
         // the mini-boss giant fights up close: when you're near it slams the ground (a red ring warns first)
         if (e.mini && e.aCd <= 0 && d < 7) {
           e.aCd = 3.2;
-          zone(e.x, e.z, 4, 0.9, e.dmg * 0.7, false);
+          zone(e.x, e.z, 4, 0.9, e.dmg * 0.7, false, 'slam');
         }
         if (e.cd <= 0 && d < 10) {
           e.st = 1;

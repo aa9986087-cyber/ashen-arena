@@ -464,12 +464,17 @@ function coopSendWorld() {
   const b = G.boss && !G.boss.dead ? G.boss : null,
     es = [],
     zn = [],
+    slams = [],
     pk = [];
   for (const s of G.eshots) {
     es.push(s.id, r1(s.x), r1(s.z), r1(s.vx), r1(s.vz), Math.round(s.dmg), s.sty | 0);
     if (es.length >= 7 * 200) break;
   }
-  for (const z of G.zones) if (!z.f) zn.push(r1(z.x), r1(z.z), r1(z.r), r2(z.l), r2(z.d), z.sty | 0);
+  for (const z of G.zones) {
+    if (z.f) continue;
+    if (z.kind === 'slam') slams.push(zn.length / 6);
+    zn.push(r1(z.x), r1(z.z), r1(z.r), r2(z.l), r2(z.d), z.sty | 0);
+  }
   for (const q of G.picks) {
     pk.push(q.k, r1(q.x), r1(q.z), Math.round(q.v * 10) / 10);
     if (pk.length >= 4 * 240) break;
@@ -561,6 +566,7 @@ function coopSendWorld() {
     gv: COOP.given,
     kd: COOP.kd.splice(0),
   };
+  if (slams.length) s.slams = slams;
   COOP.ch.send('w', s);
 }
 function coopRecvClient(m) {
@@ -954,6 +960,7 @@ function coopMirror(dt) {
       l: sb.zn[o + 3] + age,
       d: sb.zn[o + 4],
       sty: sb.zn[o + 5],
+      kind: sb.slams?.includes(o / 6) ? 'slam' : undefined,
       f: false,
     });
   // pickups (drawn only; the host hands them out)
