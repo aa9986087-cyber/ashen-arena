@@ -118,37 +118,27 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-18T09:02:22.399Z.
-- مرجع العمل: [`c358c3ff5534ced36c1a4f160cb05e5f04189b71`](https://github.com/aa9986087-cyber/ashen-arena/commit/c358c3ff5534ced36c1a4f160cb05e5f04189b71).
-- آخر تعديل: إرجاع المختبر بعد تفعيل وضع المطوّر.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44271143651/attempts/1).
+- وقت التسجيل (UTC): 2026-11-19T06:29:31.681Z.
+- مرجع العمل: [`d2f1b89b5fa0aa9d018cd47db340561b94142e36`](https://github.com/aa9986087-cyber/ashen-arena/commit/d2f1b89b5fa0aa9d018cd47db340561b94142e36).
+- آخر تعديل: Record current project handoff for the next assistant.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44472458130/attempts/1).
 - بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
-- مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
+- مسار الفحص: text؛ متصفح الجوال: **لم يُشغّل**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
 - إصدار التجربة المسجل: `clean-20261118-v33`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`34c270d7802b`: 11 ملفًا.
+مقارنةً بـ`66898a283df4`: 1 ملفًا.
 - `docs/HANDOFF.md`
-- `index.html`
-- `js/core/save.js`
-- `js/game/run.js`
-- `js/ui/dev.js`
-- `js/ui/lab.js`
-- `js/ui/live.js`
-- `js/ui/profile.js`
-- `js/ui/screens.js`
-- `tests/browser/smoke.spec.mjs`
-- `tests/unit/structure.test.mjs`
 
 ### أحدث خمس دفعات على main
 
+- d2f1b89 Record current project handoff for the next assistant
+- 66898a2 Add isolated mobile preview for stage-specific campaign monsters
+- 41f7935 docs: تحديث آلي لملف التسليم
 - c358c3f إرجاع المختبر بعد تفعيل وضع المطوّر
 - 34c270d docs: تحديث آلي لملف التسليم
-- ea545d2 نشر جرافيكس v36 والعرض الأفقي وإصلاح تفعيل أدوات المطوّر
-- 288ce4b docs: تحديث آلي لملف التسليم
-- 975f872 تجربة v36 لخامات الساحات وبطاقات إعدادات الجودة
 
 الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
