@@ -363,7 +363,29 @@ function forgeContact(f, o, sweep, blade, strike, dt) {
   return null;
 }
 
+// Build each procedural pose over the animation's unchanged bones. Some clips omit bone tracks.
+function forgeRestorePose(f) {
+  if (!f.forgeLayerActive) return;
+  for (const [bone, before] of f.forgeLayer) bone.quaternion.copy(before);
+  f.forgeLayerActive = false;
+}
+
+function forgeSavePose(f) {
+  if (!f.forgeLayer) {
+    const arms = ['upperarm', 'lowerarm', 'hand'];
+    const legs = ['thigh', 'calf', 'foot'];
+    const names = ['spine_01', 'spine_02', 'Head',
+      ...['_l', '_r'].flatMap(side => [...arms, ...legs].map(part => part + side))];
+    const bones = names.map(name => goreBone(f, name));
+    f.forgeLayer = [...new Set([...bones, f.hand, f.hand?.parent, f.hand?.parent?.parent])]
+      .filter(Boolean).map(bone => [bone, new THREE.Quaternion()]);
+  }
+  for (const [bone, before] of f.forgeLayer) before.copy(bone.quaternion);
+  f.forgeLayerActive = true;
+}
+
 function forgeSampleFighter(f, dt) {
+  forgeSavePose(f);
   forgeFallPose(f, dt);
   if (f.act === 'dodge' && Math.hypot(f.dx, f.dz) > .2) {
     const heading = wrapAng(Math.atan2(f.dx, f.dz) - f.face);

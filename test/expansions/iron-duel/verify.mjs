@@ -118,6 +118,14 @@ try {
     const hitZone=d.forgeInjuries?.[0].zone;
     const far=swing(3.4);
     setup(3);
+    const height = () => goreBone(d,'Head').getWorldPosition(new THREE.Vector3()).y;
+    const plantedHeights = [height()];
+    for (let i=0;i<170;i++) {
+      forgeFightStep([[a,d],[d,a]], 1/60);
+      if (i%16===0) plantedHeights.push(height());
+    }
+    const posture = { min: Math.min(...plantedHeights), drift: Math.max(...plantedHeights)-Math.min(...plantedHeights) };
+    setup(3);
     a.want.mx = 1;
     a.heavy();
     const turn = a.face;
@@ -139,7 +147,7 @@ try {
     for(let i=0;i<18;i++)a.update(1/60,d);
     const moving=a.vz;
     a.want.mz=0;a.update(1/60,d);
-    return {near,far,strafe,roll,balanced,drops,marks,uniformCount,hitZone,first,moving,coasting:a.vz};
+    return {near,far,posture,strafe,roll,balanced,drops,marks,uniformCount,hitZone,first,moving,coasting:a.vz};
   });
   console.log('Contact and movement',results);
   assert.ok(results.near < 100, JSON.stringify(results));
@@ -148,6 +156,7 @@ try {
   assert.ok(results.strafe.direction < -.12 && Math.abs(results.strafe.face) < .5 && results.strafe.planted, JSON.stringify(results.strafe));
   assert.ok(results.roll.direction < -.25 && results.roll.facing < -.65, JSON.stringify(results.roll));
   assert.ok(results.balanced);
+  assert.ok(results.posture.min > 1.25 && results.posture.drift < .28, JSON.stringify(results.posture));
   assert.ok(results.first>0 && results.first<results.moving && results.coasting>0);
   if (output) {
     await p1.evaluate(() => {

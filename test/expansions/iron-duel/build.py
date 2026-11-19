@@ -137,6 +137,8 @@ def build(out):
     code = replace(code, "  if (d.act === 'dodge' && d.t > DM.dodge.iFrom && d.t < DM.dodge.iTo) return 'miss';", "")
     code = replace(code, "  if (d.act === 'block' && Math.abs(wrapAng(Math.atan2(a.x - d.x, a.z - d.z) - d.face)) < 1.4) {",
                    "  if (d.act === 'block' && d.forgeContact?.guard) {")
+    code = replace(code, "  reset(x, z, face) {", "  reset(x, z, face) {\n    forgeRestorePose(this);")
+    code = replace(code, "  update(dt, foe) {", "  update(dt, foe) {\n    forgeRestorePose(this);")
     code = replace(code, "    goreReset(this);", "    if (this.forgeRig) for (const z of this.forgeRig) z.ready = false;\n    forgeClearInjuries(this);\n    goreReset(this);")
     code = replace(code, "if (!this.free || this.st < DM.kick.st * 0.5)", "if (!this.free || this.st < DM.kick.st || (this.cuts & GORE_PARTS.legR.bit))")
     code = replace(code, "if (!this.free || this.st < DM.dodge.st * 0.5)", "if (!this.free || this.st < DM.dodge.st)")
@@ -370,15 +372,15 @@ press('dAtk', duelAtkDown, duelAtkUp);""", """const press = (id, down, up) => {
     ])
     html = (out / "index.html").read_text()
     html = replace(html, "<title>ساحة الرماد</title>", "<title>حلبة النغالة | ساحة الرماد</title>")
-    html = html.replace("?v=202611180848", "?v=202611180848&preview=41")
+    html = html.replace("?v=202611180848", "?v=202611180848&preview=41r")
     # Reuse the vetted Three.js assets and keep the preview independent of CDN rendering.
     vendors = "\n".join(f'<script src="vendor/{p.name}"></script>' for p in sorted((out / "vendor").glob("*.js")))
     html = re.sub(r'<script src="https://[^"]+"></script>', '', html)
     html = html.replace('<head>', '<head>\n<meta name="robots" content="noindex,nofollow">\n'
         '<meta http-equiv="Content-Security-Policy" content="connect-src \'self\' data: blob: wss://bvxfzcndquirqmpyhtpj.supabase.co https://bvxfzcndquirqmpyhtpj.supabase.co">\n'
-        '<link rel="stylesheet" href="style.css?v=41">', 1)
+        '<link rel="stylesheet" href="style.css?v=41r">', 1)
     html = replace(html, '<script src="js/core/config.js', vendors + '\n<script src="js/core/config.js')
-    html = replace(html, '<script src="js/main.js', '\n'.join(f'<script src="{n}.js?v=41"></script>' for n in ['combat','injury','art','gear','network','menu']) + '\n<script src="js/main.js')
+    html = replace(html, '<script src="js/main.js', '\n'.join(f'<script src="{n}.js?v=41r"></script>' for n in ['combat','injury','art','gear','network','menu']) + '\n<script src="js/main.js')
     (out / "index.html").write_text(html)
 
 def mobile_file(out, target):
