@@ -1,0 +1,194 @@
+{
+  "forest-fungus": {
+    "title": "Mushnub",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/LWKmS30Xxl",
+    "download": "https://static.poly.pizza/55c64684-49a4-4fcc-b393-113126add89b.glb",
+    "license": "CC0-1.0",
+    "sha256": "89814cf4cf3dddb387a6e630b3b2381cebc95f378e4dea372caf6bb69c9741e1"
+  },
+  "forest-stinger": {
+    "title": "Armabee",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/42djT5zJnx",
+    "download": "https://static.poly.pizza/de63aaf6-9170-47f7-933d-439af68826a6.glb",
+    "license": "CC0-1.0",
+    "sha256": "86b7439a55236244b4a49744cd1f4a94611f25e18caabd2db85680dfd597249d"
+  },
+  "forest-warden": {
+    "title": "Mushroom King",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/grnFTziU8u",
+    "download": "https://static.poly.pizza/798301fb-b950-460c-9c67-526621ad8500.glb",
+    "license": "CC0-1.0",
+    "sha256": "9af2a7e3a55af561120c68523d529cd7805c0ddea5f908828d7064a9d7d4d57d"
+  },
+  "desert-cactus": {
+    "title": "Cactoro",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/66CYX5UhRK",
+    "download": "https://static.poly.pizza/625862f9-590e-4fbd-88bc-9056047885dd.glb",
+    "license": "CC0-1.0",
+    "sha256": "a4e6cce189f741ce993dbeb5ea510c284dd3d1d29e75f3c17fae1cdcdc1e839d"
+  },
+  "desert-raider": {
+    "title": "Tribal",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/t91lDHaqRW",
+    "download": "https://static.poly.pizza/1b4759ca-2c00-4718-90f6-2f84bc8e44f9.glb",
+    "license": "CC0-1.0",
+    "sha256": "ba21288ee15df76a84d20b5ae78c98d5f230b5b17fbb1405ae987fbd50263cda"
+  },
+  "desert-golem": {
+    "title": "Goleling",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/71gomWolax",
+    "download": "https://static.poly.pizza/51bf31d7-1aee-4a51-acb1-d667843af205.glb",
+    "license": "CC0-1.0",
+    "sha256": "5b0263b284df58f524f098266b7485aa8af24efd3a5a2f44d78f700e1017ae4c"
+  },
+  "frost-yeti": {
+    "title": "Yeti",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/ceRHrn8HHE",
+    "download": "https://static.poly.pizza/40a831b3-686a-4af8-b189-a13b38a3c26a.glb",
+    "license": "CC0-1.0",
+    "sha256": "22e967d16e7d25b3a8fda918f4fa75d1e2984e0913a59e415667af12b519650b"
+  },
+  "frost-spirit": {
+    "title": "Blue Demon",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/S7jYW6Amye",
+    "download": "https://static.poly.pizza/6fbb8914-bd11-45e1-a906-51ace2ca5d2d.glb",
+    "license": "CC0-1.0",
+    "sha256": "57f4093061b1d0c8ae7330b2f129ad4cd7044207454f9bef3301d30093512251"
+  },
+  "frost-golem": {
+    "title": "Goleling Evolved",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/iHEuXiH6Aj",
+    "download": "https://static.poly.pizza/d6308fbf-fa2e-4cfe-b235-def7ede1ab90.glb",
+    "license": "CC0-1.0",
+    "sha256": "9520fb08d5ae678f7ffb341e92e4f8595aea1ff392fbcbdf49487df7eea3255a"
+  },
+  "castle-guard": {
+    "title": "Orc Enemy",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/Q3z8ZX4kUy",
+    "download": "https://static.poly.pizza/3076c5f7-9bdf-4c27-8083-f280ee6cd64b.glb",
+    "license": "CC0-1.0",
+    "sha256": "c31fb3d75a1ef71c4351e1bd25616ba8297c5b5677ccdf47cb09a08457cae342"
+  },
+  "castle-sorcerer": {
+    "title": "Wizard",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/o87Upt5uHX",
+    "download": "https://static.poly.pizza/d206c071-7934-40eb-9091-35ebdf93c317.glb",
+    "license": "CC0-1.0",
+    "sha256": "e9f47e14f7d652d0311ebe8e0dca589d38146695745a8e2584640856cd8c0d04"
+  },
+  "castle-knight": {
+    "title": "Orc",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/5vO2YJsPEf",
+    "download": "https://static.poly.pizza/52a479b3-a635-4a23-92cb-6697eaa5eed5.glb",
+    "license": "CC0-1.0",
+    "sha256": "0370f9e03a8bb413833e4f0b4cce79029c6d7354ee901b9ca7d7b26f853b6656"
+  },
+  "iron-scout": {
+    "title": "George",
+    "author": "Quaternius",
+    "source": "https://quaternius.com/packs/animatedmech.html",
+    "download": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/mech_pack/George.glb",
+    "license": "CC0-1.0",
+    "sha256": "c948acde8523dcb493686fbafb306298799066b717350c137e7512df732ad2ca"
+  },
+  "iron-gunner": {
+    "title": "Leela",
+    "author": "Quaternius",
+    "source": "https://quaternius.com/packs/animatedmech.html",
+    "download": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/mech_pack/Leela.glb",
+    "license": "CC0-1.0",
+    "sha256": "ade77361265a54b597940f9b56aa79f35beb4c5f892ca98365e62c86447a7967"
+  },
+  "iron-sentinel": {
+    "title": "Stan",
+    "author": "Quaternius",
+    "source": "https://quaternius.com/packs/animatedmech.html",
+    "download": "https://raw.githubusercontent.com/trebeljahr/quaternius-showcase/0128ca510d653bb04d6d1e4885bd8890b5050b4f/public/glb/mech_pack/Stan.glb",
+    "license": "CC0-1.0",
+    "sha256": "b58b0ec3d1338080cae96efea1f93a5f1a90804315c08d25c0cbcf031f6daa0f"
+  },
+  "lava-demon": {
+    "title": "Demon",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/LnfIziKv4o",
+    "download": "https://static.poly.pizza/46b52ba4-5d2a-4fc8-85cc-3e980f199141.glb",
+    "license": "CC0-1.0",
+    "sha256": "3aca2d6136226c4792ff6d5923f0c81a04170ddc7066bd327f312fbc2a35fe1c"
+  },
+  "lava-drake": {
+    "title": "Dragon",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/3rUm1cN3yp",
+    "download": "https://static.poly.pizza/ae5b8510-1fa5-4d53-b943-a4f3b88fb629.glb",
+    "license": "CC0-1.0",
+    "sha256": "34b3d08dbefc0f3b262e92d5e56519eb9ab7892943770e43a74829edc1602b4f"
+  },
+  "lava-beast": {
+    "title": "Dragon Evolved",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/LlwD0QNUPj",
+    "download": "https://static.poly.pizza/90ed3740-d8c4-4910-88ce-ac2ed426022d.glb",
+    "license": "CC0-1.0",
+    "sha256": "c7ac65ec2340078ae59f2aab442ca038706e4895ee3d6b48f4fa55bf536a27cb"
+  },
+  "grave-skeleton": {
+    "title": "Skeleton",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/DM4QScSmbS",
+    "download": "https://static.poly.pizza/852e5efb-89a7-4e7c-af17-e9d3b8f6654b.glb",
+    "license": "CC0-1.0",
+    "sha256": "939e035eeed6d1ac7570889aa5a574f73cd057119c0c7a6300da07e77db66f7d"
+  },
+  "grave-ghost": {
+    "title": "Ghost",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/Iip30bDHmu",
+    "download": "https://static.poly.pizza/810f60a2-6e45-4c4e-a0d5-da91cd7288bd.glb",
+    "license": "CC0-1.0",
+    "sha256": "8ba63202ae8daa0625e4249ec6f731a68d9fe2e7c2a188456a32b7a3a2817abe"
+  },
+  "grave-skull": {
+    "title": "Ghost Skull",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/TX8r9WBXpe",
+    "download": "https://static.poly.pizza/0716bf8e-1894-4a90-8d10-34868975a239.glb",
+    "license": "CC0-1.0",
+    "sha256": "048abdb899a1ec7d424a1249cc6b797097845bc2197376aaadb603f0cf619f4d"
+  },
+  "abyss-stalker": {
+    "title": "Alien",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/RRliSQBP7r",
+    "download": "https://static.poly.pizza/b048d82a-7fc2-4631-b859-4bde0ed19b59.glb",
+    "license": "CC0-1.0",
+    "sha256": "c17ac809a7b35dbc2ae7d9fe2e66a420a0df1f78f8715eed1da5e3c13a1fd360"
+  },
+  "abyss-seer": {
+    "title": "Hywirl",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/zjr7CmWGER",
+    "download": "https://static.poly.pizza/6500a805-0588-4823-bb8d-2f8ffdf338ab.glb",
+    "license": "CC0-1.0",
+    "sha256": "ecec61136e6ac1e6df0d1e232cefa9f5f64c6b19a490bdcda9f48104e910253d"
+  },
+  "abyss-horror": {
+    "title": "Squidle",
+    "author": "Quaternius",
+    "source": "https://poly.pizza/m/54QyRcsogk",
+    "download": "https://static.poly.pizza/cbe8419d-59d4-4ee8-92f1-8bccb25af378.glb",
+    "license": "CC0-1.0",
+    "sha256": "1dad0db66928026bde314217f2e67a44b0cb7c6705e77aaa2aa22b9cfdfe35e0"
+  }
+}
