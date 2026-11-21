@@ -332,7 +332,8 @@ textarea.txt {
 textarea.txt {
   min-height: 92px;
   resize: none;
-  font-size: 13px;
+  /* 16px or more: iPhone Safari zooms the whole page when a smaller field is focused, and stays zoomed */
+  font-size: 16px;
   word-break: break-all;
 }
 #nameScr {
@@ -750,7 +751,7 @@ textarea.txt {
   width: min(46vw, 220px);
   padding: 8px 10px;
   direction: ltr;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 /* hero special line on the heroes screen */
@@ -793,7 +794,7 @@ textarea.txt {
 #bkIn {
   min-height: 64px;
   direction: ltr;
-  font-size: 12px;
+  font-size: 16px;
 }
 .bkBtns {
   display: flex;
