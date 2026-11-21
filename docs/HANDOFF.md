@@ -121,27 +121,29 @@
 <!-- AUTO-HANDOFF:START -->
 ## آخر حالة محفوظة تلقائيًا
 
-- وقت التسجيل (UTC): 2026-11-19T06:29:31.681Z.
-- مرجع العمل: [`d2f1b89b5fa0aa9d018cd47db340561b94142e36`](https://github.com/aa9986087-cyber/ashen-arena/commit/d2f1b89b5fa0aa9d018cd47db340561b94142e36).
-- آخر تعديل: Record current project handoff for the next assistant.
-- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44472458130/attempts/1).
+- وقت التسجيل (UTC): 2026-11-21T09:15:17.384Z.
+- مرجع العمل: [`3f59b12f286430ef145e0b59f117d894b06d0a72`](https://github.com/aa9986087-cyber/ashen-arena/commit/3f59b12f286430ef145e0b59f117d894b06d0a72).
+- آخر تعديل: Stop iPhone Safari zooming in on the code fields.
+- [سجل الفحوص — المحاولة 1](https://github.com/aa9986087-cyber/ashen-arena/actions/runs/44888097830/attempts/1).
 - بوابة check: **ناجح**؛ الاختبارات السريعة: **ناجح**.
-- مسار الفحص: text؛ متصفح الجوال: **لم يُشغّل**.
+- مسار الفحص: mobile؛ متصفح الجوال: **ناجح**.
 - نشر GitHub Actions: **لم يُشغّل**. عند استخدام Pages legacy يكون النشر منفصلًا؛ نجاح الفحوص وحده لا يثبت ظهوره على الموقع.
 - إصدار التجربة المسجل: `clean-20261118-v33`. هذا لا يعني نقل إصلاحاتها إلى الأساسية.
 
 ### الملفات المتغيرة في هذا الرفع
 
-مقارنةً بـ`66898a283df4`: 1 ملفًا.
+مقارنةً بـ`93f751b3ce1e`: 3 ملفًا.
+- `css/screens.css`
 - `docs/HANDOFF.md`
+- `js/data/news.js`
 
 ### أحدث خمس دفعات على main
 
+- 3f59b12 Stop iPhone Safari zooming in on the code fields
+- 93f751b docs: تحديث آلي لملف التسليم
 - d2f1b89 Record current project handoff for the next assistant
 - 66898a2 Add isolated mobile preview for stage-specific campaign monsters
 - 41f7935 docs: تحديث آلي لملف التسليم
-- c358c3f إرجاع المختبر بعد تفعيل وضع المطوّر
-- 34c270d docs: تحديث آلي لملف التسليم
 
 الفحوص ناجحة لهذا المرجع؛ تابع العمل المتبقي المكتوب في القسم اليدوي.
 هذا سجل Git والفحوص، وليس تفريغًا للمحادثة. القرارات والمهام غير المرفوعة تبقى في القسم اليدوي.
